@@ -305,6 +305,19 @@ what the prompt asks for, and it needs no instrument beyond the document.
 **Computing** — encode the reconstructed rules as an **executable model** and let it
 *traverse* what is reachable. See `references/executable-spec-model.md`.
 
+**Computing needs the document to carry the rules in a form the model can read.** A guard
+written in prose — "the customer e-mail is on file" — cannot be evaluated, so a model
+that has to evaluate it must have somebody hand-encode it, and a hand-encoded rule layer
+is that document's rules, written in code. To compute against *any* document, §14's
+transitions carry a **guard expression and an effect expression**, §15's invariants carry a
+**formal expression**, and §3.1 declares the **vocabulary** those expressions draw on.
+Build the model after the document, against the rules the document already states.
+
+**Run the model's own check before trusting anything it says.** It resolves every
+expression in the document against the document's vocabulary. A failure means an
+expression names a term the document does not define — a defect in the document, fixed
+in the document.
+
 The distinction is load-bearing. A model that visits hand-built states and prints a count
 has **asserted** reachability; a model that starts from one initial state and applies
 only the actions the spec permits at the current stage has **computed** it. Reachability

@@ -556,6 +556,20 @@ Keep the aggregate and one worked example per invariant in the export; a per-sta
 of every reachable state can be hundreds of megabytes, which is far too large to embed
 in a page.
 
+**The export carries the model's coverage, not just its counts.** A reader who sees
+"12 of 48 invariants checked" can tell what the model did and did not reach. So the
+export carries, beside the numbers: which invariants were **checkable** and which were
+not, and **why** they were not (the document marks a condition "not expressible" — the
+reason says whether the specification does not model it or the analysis did not reach
+it); the **executable gaps** — transitions the model could not execute, and why; the
+**divergences**, each with the two readings and the path that produced them; and for
+every transition, the guard and effect expressions it was built from.
+
+**A page that shows only the findings hides the coverage.** If half the invariants were
+never checked, a table of violations reads as "the model found nothing wrong" when it
+means "the model could not look". Render the checkable count beside the violation count,
+and render the gaps, so the reader can weigh the silence.
+
 **Two copies of the data means two copies to drift.** Once the export lives inside the
 HTML, the standalone `.json` on disk is a build artifact, not a runtime dependency —
 re-running the exporter without re-inlining leaves the page serving stale figures with
