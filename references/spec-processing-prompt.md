@@ -319,6 +319,24 @@ Types are `flag`, `text`, `set`, `number`. A term whose domain the source spec l
 takes the literal `—` for its values. Terms come from the source document's own field
 names — never invented for the model.
 
+#### 3.5.3 What "not expressible" has to say
+
+A condition the document does not model as data cannot be written over the vocabulary:
+a person's role, an external system's answer, a stored history, a comparison against a
+list the source does not contain. Write `not expressible` in the expression cell — and
+**say what would be needed to express it**, in the same cell or beside it.
+
+```
+| TR-306 | … | `not expressible` — the match compares the legal name against the approved
+  account's name in the Licensing app; modelling the approved accounts as data would
+  express it | … |
+```
+
+A marking with no reason is indistinguishable from a marking nobody got to, and the
+verifier's coverage figure becomes hollow: a document may mark half its invariants
+unexpressive and still pass every check. The reason is what lets a reader tell
+"the specification does not model this" from "the analysis did not reach this".
+
 ### 3.6 State invariants
 
 Identify all business invariants associated with each state machine.
@@ -341,10 +359,13 @@ For each invariant, document:
 - **Formal expression, written in the expression language of §3.5.1.** This is
   mandatory wherever the invariant is a condition on the aggregate's data — which is
   nearly always. Where it genuinely is not expressible (it constrains something outside
-  the model), write `not expressible` and say what would be needed; do not paraphrase it
-  into prose and call the invariant formal.
+  the model), write `not expressible` **and say what would be needed to express it**
+  (§3.5.3); do not paraphrase it into prose and call the invariant formal.
 - Scope.
-- Applicable states.
+- Applicable states. Name them as state identifiers or state names, or write
+  **All states** — which means the invariant holds in every machine's states. A cell
+  that names neither a state nor a transition does not say which machine owns the
+  invariant, and is a defect in the document.
 - Applicable transitions.
 - Enforcement responsibility.
 - Consequences of violation.
