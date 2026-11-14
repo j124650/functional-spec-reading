@@ -18,6 +18,14 @@
 | Term ID | Business Term | Definition | Synonyms | Context | Evidence | Classification |
 |---|---|---|---|---|---|---|
 
+### 3.1 Expression vocabulary
+
+Every data name the document uses, with its type. Expressions in §14 and §15 may name
+these terms and nothing else.
+
+| Term | Type | Domain / Values | Notes |
+|---|---|---|---|
+
 ## 4. Domain Concepts and Relationships
 
 Describe concepts and their business relationships. Include a Mermaid class or flow diagram only when it clarifies the model.
@@ -75,13 +83,13 @@ Repeat the state-machine template for each machine.
 
 ## 14. State Transition Tables
 
-| Transition ID | From | Trigger / Command | Guard | Actor / Process | To | Events | Rejection | Evidence |
-|---|---|---|---|---|---|---|---|---|
+| Transition ID | From | Trigger / Command | Guard | Guard (expression) | Actor / Process | To | Effect (expression) | Events | Rejection | Evidence |
+|---|---|---|---|---|---|---|---|---|---|---|
 
 ## 15. State and Aggregate Invariants
 
-| ID | Invariant | Category | Scope | States / Transitions | Enforcement Responsibility | Violation Consequence | Evidence |
-|---|---|---|---|---|---|---|---|
+| ID | Invariant | Category | Scope | States / Transitions | Formal expression | Enforcement Responsibility | Violation Consequence | Evidence |
+|---|---|---|---|---|---|---|---|---|
 
 ## 16. Cross-State-Machine Dependencies
 

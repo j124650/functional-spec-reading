@@ -245,10 +245,79 @@ Create a complete transition table for each state machine.
 
 Use these columns:
 
-| From State | Trigger / Command | Guard Conditions | Business Actor | Resulting State | Domain Events | Rejection Conditions | Evidence |
-|---|---|---|---|---|---|---|---|
+| From State | Trigger / Command | Guard Conditions | Guard (expression) | Business Actor | Resulting State | Effect (expression) | Domain Events | Rejection Conditions | Evidence |
+|---|---|---|---|---|---|---|---|---|---|
+
+`Guard Conditions` is the business reading, in prose. `Guard (expression)` is the SAME
+condition written in the expression language below — it is what a verifier evaluates, and
+it is **mandatory**, not a summary of the prose. `Effect (expression)` states what the
+transition does to the aggregate's data; a transition that only changes state leaves it
+empty.
 
 Include forbidden or unspecified transitions in a separate section rather than silently assuming they are impossible.
+
+#### 3.5.1 The expression language
+
+Expressions are written over the **expression vocabulary** declared in the glossary
+section (§3.1): every term the document uses as a data name, with its type. No other
+identifier may appear in an expression — a name that is not in the vocabulary is an
+unresolvable expression, and it must be reported, not guessed.
+
+**Terms** — a term name, optionally with an accessor:
+
+| Form | Meaning |
+|---|---|
+| `term` | a `flag` term is true when set; a `text` term is its string value (empty when absent) |
+| `term.count` | number of elements in a `set` term |
+| `term.contains('x')` | true when the set contains `x` |
+| `term.empty()` | true when the term is absent, empty, or an empty set |
+| `state` | the id of the state the transition's own machine is in |
+| `input` | the value the command carried with it — the text the actor typed, or the map of field/value pairs an edit command carried |
+
+**Operators** — `&&`, `||`, `!`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `=>` (implication), parentheses.
+
+**Effects** — a `;`-separated list of assignments:
+
+| Form | Meaning |
+|---|---|
+| `set('term', 'value')` | set a text term |
+| `set('term', true)` | set a flag term |
+| `set('term', input)` | set a text term to the value the command carried |
+| `set(input, 'value')` | set the term **whose name the command carried** — used where the command says which instance it acts on |
+| `apply(input)` | write the field/value pairs an edit command carried onto the aggregate |
+| `clear('term')` | unset a term |
+| `add('term', 'value')` | add an element to a set term |
+| `remove('term', 'value')` | remove an element from a set term |
+| `if <expression> then <effect>` | apply an effect only when the condition holds |
+
+A transition's state change is carried by the `Resulting State` column, not by an effect.
+
+**Alternative readings.** Where the spec admits two readings of one rule, the cell carries
+both, separated by `||`, and the verifier evaluates each and reports a divergence when
+they land on different states:
+
+```
+set('clock started', true) || clear('clock started')
+```
+
+A `Resulting State` cell that names two states — `ST-004 In Review or ST-002 Returned to
+Sales` — is read the same way: two readings of one transition.
+
+**Every expression must be evaluable from the aggregate alone.** If a condition depends on
+something the document does not model as data — a person outside the system, an external
+system's answer — it is not expressible, and the transition's guard expression says so
+explicitly rather than being approximated.
+
+#### 3.5.2 The expression vocabulary
+
+Declare the vocabulary in the glossary section, as a table under §3:
+
+| Term | Type | Domain / Values | Notes |
+|---|---|---|---|
+
+Types are `flag`, `text`, `set`, `number`. A term whose domain the source spec leaves open
+takes the literal `—` for its values. Terms come from the source document's own field
+names — never invented for the model.
 
 ### 3.6 State invariants
 
@@ -269,7 +338,11 @@ For each invariant, document:
 
 - Invariant ID.
 - Business statement in natural language.
-- Formal or logical expression, where possible.
+- **Formal expression, written in the expression language of §3.5.1.** This is
+  mandatory wherever the invariant is a condition on the aggregate's data — which is
+  nearly always. Where it genuinely is not expressible (it constrains something outside
+  the model), write `not expressible` and say what would be needed; do not paraphrase it
+  into prose and call the invariant formal.
 - Scope.
 - Applicable states.
 - Applicable transitions.
