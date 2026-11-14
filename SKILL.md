@@ -117,14 +117,21 @@ into loose cells it is unreadable and uncitable.
 The Hermes venv has no `pip`; use `uv` and an isolated environment:
 
 ```bash
-uv venv mdvenv --python 3.12
-uv pip install --python mdvenv/Scripts/python.exe "markitdown[docx]>=0.1.0"
+uv venv "$TMPDIR/mdvenv" --python 3.12
+uv pip install --python "$TMPDIR/mdvenv/Scripts/python.exe" "markitdown[docx]>=0.1.0"
 ```
+
+**PUT THE VENV IN THE SCRATCH DIRECTORY, NOT THE WORKING DIRECTORY.** `uv venv mdvenv`
+with a bare relative path creates the environment in whatever directory the shell is
+sitting in — which is the folder holding the source document and, later, the deliverable.
+A multi-hundred-megabyte environment then sits beside the artifact the reader receives,
+and it is easy to mistake for part of the output. Name an explicit scratch path, and
+delete the venv when the conversion is done.
 
 Then run the skill's script with that interpreter:
 
 ```bash
-mdvenv/Scripts/python.exe <skill>/scripts/convert_word_to_md.py "input.docx"
+"$TMPDIR/mdvenv/Scripts/python.exe" <skill>/scripts/convert_word_to_md.py "input.docx"
 ```
 
 **Mixed input types:** when the input is a folder containing `.docx`, `.pdf` and
@@ -577,8 +584,11 @@ there once and in full; the rules below are the ones that reach past the explore
 - **The Hermes venv has no `pip`.** The conversion skill needs Python 3.10+ and
   `markitdown`; use `uv` with an isolated environment rather than assuming
   `python -m pip` works:
-  `uv venv mdvenv --python 3.12` then
-  `uv pip install --python mdvenv/Scripts/python.exe "markitdown[docx]>=0.1.0"`.
+  `uv venv "$TMPDIR/mdvenv" --python 3.12` then
+  `uv pip install --python "$TMPDIR/mdvenv/Scripts/python.exe" "markitdown[docx]>=0.1.0"`.
+  Put the venv in the scratch directory — a bare `mdvenv` path creates it in the
+  working directory, beside the source document and the deliverable, where it reads as
+  part of the output.
 - **A folder of mixed input needs ALL the sibling skills.** `.docx`, `.pdf` and
   `.xlsx` each have their own conversion skill; invoking only one silently
   skips the others.

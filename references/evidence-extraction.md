@@ -28,10 +28,16 @@ document has embedded images.
 The Hermes venv has no `pip`; use `uv` and an isolated environment:
 
 ```bash
-uv venv mdvenv --python 3.12
-uv pip install --python mdvenv/Scripts/python.exe "markitdown[docx]>=0.1.0"
-mdvenv/Scripts/python.exe <skill>/scripts/convert_word_to_md.py "input.docx"
+uv venv "$TMPDIR/mdvenv" --python 3.12
+uv pip install --python "$TMPDIR/mdvenv/Scripts/python.exe" "markitdown[docx]>=0.1.0"
+"$TMPDIR/mdvenv/Scripts/python.exe" <skill>/scripts/convert_word_to_md.py "input.docx"
 ```
+
+**Build the venv in the scratch directory, not in the working directory.** A bare
+`uv venv mdvenv` creates the environment in the shell's current directory — beside the
+source document and, later, the deliverable — where a large toolchain directory reads as
+part of the output. Name an explicit scratch path and remove it when the conversion is
+done.
 
 **Output location:** the script's default is next to the source file, and that is
 the required default. Only pass `-o` when the user explicitly names a destination.
