@@ -37,15 +37,16 @@ model/
     Program.cs            `tests` | `explore` | `export [file] [slim]` | `all`
 ```
 
-**Split the model across files with `partial`.** `Application` spans the state fields and
-the transition methods; `public sealed partial class Application` in both files.
+**This layout is the TRANCRIBED model — one spec's rules, hand-written as code.** It is
+the right choice when the instrument exists to answer a question about ONE document and
+the reader will read the source. Choose deliberately; see the two modes below.
 
 **The traversal needs deep-copy.** To branch, each successor is applied to a *clone* of
 the current state, so exploring one branch never mutates the state another branch came
 from. A model that mutates in place can only walk one path.
 
-**Transcribe, don't paraphrase.** Every enum member carries the spec's ID and its source
-section in a comment:
+**Transcribe, don't paraphrase** — in the transcribed model. Every enum member carries
+the spec's ID and its source section in a comment:
 
 ```csharp
 public enum Stage
@@ -58,12 +59,110 @@ public enum Stage
 }
 ```
 
+This enum is **this spec's** stages. It is the clearest single marker of which mode you
+are in: a document-driven model has no enum, because the state ids come from the parsed
+document at run time. If you later find yourself wanting the model to work on another
+spec, this enum is the first thing that has to go — and it is far cheaper to never write
+it than to unpick it later.
+
 ## Keep the transition table as data
 
 Model the rules as **data** (a table the explorer walks) and have the methods apply
 them. Then the explorer and the tests read the same table, and a rule you add in one place
 shows up in both. The `ActionDef` shape below is the one to use — it carries the stage
 each action is legal at, which the explorer needs and a flat transition record lacks.
+
+## Two modes — decide which one you are building, first
+
+| | **Transcribed model** | **Document-driven model** |
+|---|---|---|
+| The rules live | in C#, hand-written | in the document, parsed at run time |
+| One document, one engine | ✅ | ✅ |
+| A second document, same engine | ❌ the engine does not fit it | ✅ |
+| Cost | lower | higher — the document must carry machine-readable logic |
+| Use it when | the instrument answers one question about one spec | the verifier is to be re-runnable against any spec in this format |
+
+**Choose before writing code.** Building a transcribed model and then asking for it to be
+universal is how a per-spec engine ends up wearing a universal label: it parses the
+document's *structure* faithfully while its *rules* stay hand-written for one spec, so it
+works on the document in front of you and fails on the next one. The tell is a rule layer
+whose predicate names things the document's schema does not contain — an aggregate with a
+property per entity, a key struct per machine, a context table listing which fields each
+machine reads.
+
+**A rule layer is unavoidable; a per-spec rule layer is not.** A guard written in prose —
+"the customer's e-mail is on file" — cannot be evaluated mechanically, so *somebody* must
+encode it. The choice is whether that encoding lives in C# or in the document. If the
+verifier is to be reusable, it lives in the document: the fix is to the **generation
+rules**, not to the engine.
+
+**So fix the input format instead of working around it in code.** When the generated
+document lacks a field the verifier needs, add that field to the *document's* rules and
+regenerate. Do not add a hand-written predicate to the engine to compensate. A
+workaround in the engine is invisible in the document, so the next reader cannot tell
+which rules came from the spec and which came from the author of the model — and the
+author of the model is the wrong place for the spec's rules to live.
+
+The document-driven shape:
+
+```
+model/
+  Onboarding.Model/
+    Model/Document.cs     the parser: machines, states, transitions, invariants, vocabulary
+    Model/Expressions.cs  the expression language: tokenise, parse, evaluate
+    Model/Aggregate.cs    machine id -> state id, plus the attribute bag
+    Model/Graph.cs        the transition table AS DATA, built from the parsed rows
+    Model/Invariants.cs   checks driven by the document's invariant expressions
+    Model/Explorer.cs     the breadth-first traversal over that table
+    Model/Tests.cs        the two test kinds
+    Program.cs            `parse` | `check` | `explore` | `export [file] [slim]` | `all`
+```
+
+**The engine holds no entity of any particular document.** No property named after a
+spec's stage, link, credit check or person; no literal value; no hand-written key struct
+per machine. The aggregate is a map from machine id to state id, the key is derived from
+the document's own state and coupling tables, and the rules are the document's expression
+columns.
+
+**The guard column is prose; prose cannot be evaluated.** This is the single fact that
+decides the mode. If the verifier's rules are prose in the document, they must be
+hand-written in C#, and then they are that document's rules. The document therefore needs
+an expression beside the prose — a guard condition and an effect for each transition, a
+formal expression for each invariant, and a vocabulary the expressions draw on. The
+processing prompt's §3.5 and §3.6 specify those columns and §3.1 declares the vocabulary;
+the vocabulary is what lets a reader check that every expression names a term the
+document defines.
+
+**Give the engine a `check` mode and run it before anything else.** It resolves every
+expression in the document against the document's own vocabulary and reports any that
+names an undefined term. That check is what makes the universality claim mechanical
+rather than promised — an engine that cannot even resolve its own document's expressions
+is not ready to verify anything. Run it, and treat a failure as a defect in the
+document's expressions, not as something to work around in the engine.
+
+**Two things an expression parser must get right.** A vocabulary term may be several
+words ("legal business name"), so the tokenizer matches terms against the vocabulary
+rather than splitting on whitespace — otherwise the term becomes three undefined
+identifiers and every expression naming it fails to resolve. And a literal pipe is
+ordinary text: `||` is the language's "or", and in a Markdown table cell an unescaped
+`|` ends the cell, so the table parser must rejoin a pipe pair before the expression is
+read.
+
+**`not expressible` must be justified, or the coverage claim is hollow.** A condition
+the document does not model as data — a person's role, an external system's answer, a
+stored history — cannot be written over the vocabulary, and it is marked
+`not expressible`. But a marking with no reason is indistinguishable from a marking
+nobody got to. So every `not expressible` states **what would be needed to express it**:
+the system, the field, or the role that would have to be modelled. The report then
+distinguishes "the specification does not model this" from "the analysis did not reach
+this" — and a document that marks half its invariants unexpressive without saying why
+is not ready to be verified.
+
+**A document that says "All states" means every machine.** When an invariant binds to no
+particular machine, its "States / Transitions" column says "All states", and it is
+checked against every machine's states. A cell that names neither a state nor a
+transition is a defect in the document, not a licence to guess which machine owns the
+invariant.
 
 ## The two test kinds
 
@@ -138,7 +237,8 @@ reachability claim turns out to be false.
 ### The transition table as the explorer's input
 
 Give every action a **group** (the action family), a **reading** (which sentence of the
-spec authorises it), the **stages it is available at**, a **guard**, and an **effect**:
+spec authorises it), the **stages it is available at**, a **guard**, and an **effect**. In
+the transcribed model the guard and the effect are code:
 
 ```csharp
 public sealed record ActionDef(
@@ -147,8 +247,23 @@ public sealed record ActionDef(
     string? Note = null, bool Enabled = true);
 ```
 
-`From` is what makes an action legal: the spec's stage table says who may act in each
-stage, so an action offered outside its stages is not permitted. Without it the graph
+In the document-driven model they are **expressions parsed from the document's rows**:
+
+```csharp
+public sealed record ActionDef(
+    string Id, string Machine, string Group, string Reading, string Section,
+    string[] From, string[] To,
+    string GuardExpression,   // the document's own "Guard (expression)" cell
+    string EffectExpression,  // the document's own "Effect (expression)" cell
+    string Label);
+```
+
+The second shape is the one that keeps the engine spec-neutral: the guard is evaluated by
+the expression engine against the aggregate, so the same code verifies a document it has
+never seen. The first shape cannot be, because the predicate *is* the spec.
+
+`From` is what makes an action legal: the spec's state table says who may act in each
+state, so an action offered outside its states is not permitted. Without it the graph
 invents transitions the spec never allows, and the state count inflates.
 
 **Two readings of one group that land on different states is a contradiction, found by
@@ -206,6 +321,20 @@ the reachable set infinite, the traversal hits its cap, and the result is a trun
 frontier — which is an *asserted* result wearing a computed result's clothes. Enforce
 the spec's own cardinality rule ("one line per division") in the effect, not just in a
 comment.
+
+**A command that carries a value makes the state space branch.** An edit, a note, a
+chosen item — each brings a value the document does not name, so the traversal must
+supply candidates or it cannot explore the state at all. Two rules keep that bounded:
+
+- **Take the candidates from the document.** The values a term may take come from the
+  vocabulary's declared domain; where the document leaves a domain open, the term has
+  no declared values and the traversal uses one placeholder — the term's own name. Do
+  not invent domain data to make the traversal interesting.
+- **Impose a canonical order on the edits.** If every field may be edited in every
+  combination, the frontier is exponential and never closes. Edit the fields in the
+  order the document lists them — one field per step, in a fixed order — so the
+  reachable set is finite and every *rule* still gets to fire. This is a bound on the
+  exploration, not a claim that the order does not matter; say so in the report.
 
 **Report the frontier as exhausted or not.** A capped traversal must say so in its own
 output; a reader who sees only a state count cannot tell a closed frontier from a
@@ -281,20 +410,27 @@ credibility of everything else:
 - **Where two readings exist**, the model implements the one the spec's dominant
   construction supports, and the defect test asserts the other. Say so explicitly.
 
-## Run all three
+## Run the commands
 
 The paths below are one project's layout. Use whatever your project uses, and make the
-three commands discoverable from the model's own README.
+commands discoverable from the model's own README.
 
 ```bash
 cd <model project>
-dotnet run -- tests                              # conformance green, defect reproductions confirmed
-dotnet run -- explore                            # reachable-state report
+dotnet run -- parse                                 # what the document contains
+dotnet run -- check                                 # the gate: every expression resolves
+dotnet run -- explore                               # reachable-state report
 dotnet run -- export <path>/explorer-data.json slim   # the data the diagram reads
 ```
 
-Report the actual counts in the deliverable. "14 defects reproduce mechanically" is a
-different claim from "14 defects were found", and only the first is load-bearing.
+**Run `check` first, and treat its failure as a defect in the document.** It resolves every
+expression against the document's own vocabulary. A failure means an expression names a
+term the document does not define — the fix is to the document, not to the engine.
+
+**Run `explore` and report the frontier.** Report the actual counts in the deliverable.
+"14 defects reproduce mechanically" is a different claim from "14 defects were found", and
+only the first is load-bearing. A traversal that stopped at its cap must say so; a reader
+who sees only a state count cannot tell a closed frontier from a truncated one.
 
 **Say what the model is.** The deliverable must state that the model is of the *spec*,
 not of the product, and that it can prove a finding reachable but says nothing about an
@@ -302,6 +438,8 @@ implementation. A reader who cannot tell which is being modelled will read a
 model-only claim as a product claim.
 
 ## Build order
+
+**Transcribed model:**
 
 1. States and IDs, transcribed.
 2. The aggregate's fields.
@@ -313,3 +451,16 @@ model-only claim as a product claim.
 8. The export that emits the computed result for the diagram to consume.
 9. Iterate until conformance is green, every defect test fails for its stated reason,
    every probe agrees with its finding, and the traversal exhausts its frontier.
+
+**Document-driven model:**
+
+1. The parser: machines, states, transitions, invariants, and the §3.1 vocabulary.
+2. The expression evaluator, and the `check` gate that proves every expression resolves.
+3. The aggregate: machine id → state id, plus the attribute bag.
+4. The transition table as data, built from the parsed rows.
+5. Invariant checks driven by the document's own expressions.
+6. The key, derived from the document's state and coupling tables.
+7. The breadth-first traversal, plus the probes for each finding's reachability claim.
+8. The export that emits the computed result for the diagram to consume.
+9. Iterate until `check` passes, every probe agrees with its finding, and the traversal
+   exhausts its frontier.
