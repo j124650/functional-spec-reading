@@ -60,7 +60,11 @@ const pageRecords = new Map();
     if (hit) {
       const sevField = node.sev ?? node.severity ?? node.priority;
       const sev = typeof sevField === "string" ? (sevField.match(SEV_RX) || [])[0] : undefined;
-      pageRecords.set(id, sev ? sev.toLowerCase() : undefined);
+      const kindField = node.kind ?? node.kindLabel;
+      const kind = typeof kindField === "string"
+        ? (kindField.replace(/\*/g, "").trim().toLowerCase().match(/^(confirmed defect|spec gap)\b/) || [])[0]
+        : undefined;
+      pageRecords.set(id, { sev: sev ? sev.toLowerCase() : undefined, kind });
     }
   }
   Object.values(node).forEach(walk);
@@ -68,25 +72,61 @@ const pageRecords = new Map();
 
 /* ---- the documents' records ---- */
 
-/* A record is a heading that starts with an ID: "### F-01 - Title - Critical".
-   The severity is the word after the last middot, if it is one. */
+/* A record is EITHER
+     - a heading that starts with an ID: "### F-01 - Title - Critical", or
+     - a table row whose FIRST CELL is an ID: "| F-01 | Title | Confirmed defect | ...".
+   Both shapes are used by real analysis documents, and a checker that only
+   understood headings would compare nothing while still exiting zero - which
+   reads as a pass but is a vacuous one. */
 const docRecords = new Map();
 const ownedPrefixes = new Set();
+
+/* A cell that is exactly one severity word. */
+function cellSeverity(cells) {
+  for (const c of cells) {
+    const m = c.match(/^\*{0,2}(critical|high|medium|low|blocker|major|minor|info)\*{0,2}$/i);
+    if (m) return m[1].toLowerCase();
+  }
+  return undefined;
+}
+
+/* A cell that names what KIND of record it is: "Confirmed defect", "Spec gap".
+   A cell may carry a qualifier after it ("Confirmed defect (broken by
+   construction)"), so only the leading kind is compared. */
+function cellKind(cells) {
+  for (const c of cells) {
+    const t = c.replace(/\*/g, "").trim().toLowerCase();
+    const m = t.match(/^(confirmed defect|spec gap)\b/);
+    if (m) return m[1];
+  }
+  return undefined;
+}
 
 for (const p of docPaths) {
   const text = fs.readFileSync(p, "utf8");
   text.split("\n").forEach(line => {
     const h = line.match(/^#{1,6}\s+(.*\S)\s*$/);
-    if (!h) return;
-    const head = h[1];
-    const hit = head.match(ID_RX);
-    if (!hit) return;
+    if (h) {
+      const head = h[1];
+      const hit = head.match(ID_RX);
+      if (!hit) return;
+      const id = hit[0];
+      ownedPrefixes.add(id.replace(/-\d.*$/, ""));
+      const parts = head.split("·");
+      const tail = parts.length > 1 ? parts[parts.length - 1] : head.replace(ID_RX, "");
+      const sev = (tail.match(SEV_RX) || [])[0];
+      docRecords.set(id, { sev: sev ? sev.toLowerCase() : undefined, kind: undefined });
+      return;
+    }
+    const row = line.match(/^\|\s*([^|]+?)\s*\|(.*)$/);
+    if (!row) return;
+    const first = row[1].replace(/\*/g, "").trim();
+    const hit = first.match(ID_RX);
+    if (!hit || hit[0] !== first) return;   // the ID must be the whole first cell
     const id = hit[0];
     ownedPrefixes.add(id.replace(/-\d.*$/, ""));
-    const parts = head.split("·");
-    const tail = parts.length > 1 ? parts[parts.length - 1] : head.replace(ID_RX, "");
-    const sev = (tail.match(SEV_RX) || [])[0];
-    docRecords.set(id, sev ? sev.toLowerCase() : undefined);
+    const cells = row[2].split("|").map(c => c.replace(/\*/g, "").trim());
+    docRecords.set(id, { sev: cellSeverity(cells), kind: cellKind(cells) });
   });
 }
 
@@ -129,12 +169,26 @@ if (inPageOnly.length) {
 
 /* A severity that differs is worse than a missing one: the page states a
    level the document no longer says. */
-for (const [id, docSev] of docInScope) {
-  const pageSev = pageInScope.get(id);
-  if (pageSev === undefined || docSev === undefined) continue;
-  if (docSev !== pageSev) {
+for (const [id, docRec] of docInScope) {
+  const pageRec = pageInScope.get(id);
+  if (!pageRec) continue;
+  if (pageRec.sev === undefined || docRec.sev === undefined) continue;
+  if (docRec.sev !== pageRec.sev) {
     problems.push("severity differs for " + id + ": document says "
-      + docSev + ", page says " + pageSev);
+      + docRec.sev + ", page says " + pageRec.sev);
+  }
+}
+
+/* So is a KIND that differs: a confirmed defect presented as a spec gap
+   sends the reader to the wrong remedy - amend the spec, or decide and add
+   the rule. */
+for (const [id, docRec] of docInScope) {
+  const pageRec = pageInScope.get(id);
+  if (!pageRec) continue;
+  if (pageRec.kind === undefined || docRec.kind === undefined) continue;
+  if (docRec.kind !== pageRec.kind) {
+    problems.push("kind differs for " + id + ": document says "
+      + docRec.kind + ", page says " + pageRec.kind);
   }
 }
 
