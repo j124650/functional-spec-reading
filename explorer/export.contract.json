@@ -1681,7 +1681,9 @@
           },
           "count": {
             "type": "number",
-            "description": "How many ids the series holds."
+            "description": "How many ids the series holds. The exporter computes it from the records it parsed; the page does not show it - a filter the reader picks is named, not counted. It travels with the data because it is a fact about the document being analysed, not about the format.",
+            "x-view": "machine-only",
+            "x-presentation": "stat"
           }
         }
       }
