@@ -1810,28 +1810,28 @@
         {
           "key": "machine",
           "label": "Machine",
-          "width": "10%"
+          "width": "11%"
         },
         {
           "key": "trigger",
           "label": "Trigger",
           "role": "name",
-          "width": "11%"
+          "width": "18%"
         },
         {
           "key": "from",
           "label": "From",
-          "width": "8%"
+          "width": "9%"
         },
         {
           "key": "to",
           "label": "To",
-          "width": "8%"
+          "width": "9%"
         },
         {
           "key": "guard",
           "label": "Guard",
-          "width": "12%"
+          "width": "16%"
         },
         {
           "key": "actor",
@@ -1841,12 +1841,12 @@
         {
           "key": "guardExpression",
           "label": "Guard expression",
-          "width": "15%"
+          "width": "18%"
         },
         {
           "key": "evidence",
           "label": "Evidence",
-          "width": "24%"
+          "width": "7%"
         }
       ],
       "filters": [
@@ -1894,7 +1894,7 @@
         },
         {
           "key": "expression",
-          "label": "Formal expression",
+          "label": "In words",
           "width": "12%"
         },
         {
