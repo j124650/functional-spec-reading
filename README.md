@@ -60,6 +60,7 @@ The pipeline has eight passes, and the order matters — later passes depend on 
 | `references/evidence-extraction.md` | Getting quotable text out of a source document and citing it. |
 | `references/executable-spec-model.md` | Building the traversal, the state key, and the probes. |
 | `references/interactive-diagrams.md` | The self-contained HTML explorer's rules and generator. |
+| `references/export-contract.md` | The contract between the exporter and the explorer, and the three obligations it binds. |
 | `templates/` | Skeletons for the domain model, state machine, and transition table. |
 | `examples/example-domain-model.md` | A worked example showing the format — and what must *not* be inferred. |
 | `scripts/` | Node helpers: vocabulary build, explorer generation, and the explorer test harness. |
@@ -78,14 +79,24 @@ then loads automatically whenever a request matches its description.
 
 ## Run the helpers
 
-The four scripts under `scripts/` are dependency-free Node programs.
+The eight scripts under `scripts/` are dependency-free Node programs.
 
 ```bash
 node scripts/test-explorer-cdp.js <page.html> [checks.js]   # headless-Chrome regression test for the HTML explorer
 node scripts/check-explorer.js <explorer.html> <document.md> # verifies the page still matches the document it summarises
+node scripts/check-export-contract.js <export.json> [contract.json] # checks the export against the contract it must satisfy
+node scripts/check-contract-vs-page.js [contract.json] [page.html]  # checks the contract against the page that implements it
+node scripts/check-id-catalogue.js <page.html> <document.md>  # checks the page's id catalogue against the document
+node scripts/check-model-expressions.js <document.md>         # checks the document's expressions against the vocabulary
 node scripts/build-vocabulary.js <book.json> <out.md>        # regenerates the vocabulary reference from the DDD Reference source
 node scripts/parse-ddd-source.js <src-dir> <out.json>        # parses the DDD Reference source into structured data
 ```
+
+The two contract scripts close the seam between the exporter and the explorer. The contract is
+one JSON Schema file that says what the export carries, what each field *means*, and how the
+page renders it; `check-export-contract.js` fails when the export does not conform, and
+`check-contract-vs-page.js` fails when the page has drifted from what the contract describes.
+Both exit non-zero and name the disagreement.
 
 `test-explorer-cdp.js` exits non-zero when the page raises an uncaught exception, logs a
 console error, fails to parse, or breaks any check in the checks file. `check-explorer.js`

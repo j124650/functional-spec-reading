@@ -159,9 +159,10 @@ and what the words mean.
   deliverables (one consolidated `domain-model-and-state-machines.md` with twenty
   numbered sections), the identifier scheme (`ENT-001`, `VO-001`, `AGG-001`,
   `CMD-001`, `EVT-001`, `SM-001`, `ST-001`, `TR-001`, `INV-001`, `POL-001`,
-  `SCN-001`, `Q-001`), and the evidence classes (`EXPLICIT` · `INFERRED` ·
-  `CANDIDATE` · `CONFLICTING` · `UNSPECIFIED`). It also requires a second
-  analytical pass — the adversarial review in step 9 is that pass.
+  `SCN-001`, `Q-001`, `SRC-001`, `TERM-001`, `N-01`), the evidence classes
+  (`EXPLICIT` · `INFERRED` · `CANDIDATE` · `CONFLICTING` · `UNSPECIFIED`), and the
+  shape each record takes. It also requires a second analytical pass — the
+  adversarial review in step 9 is that pass.
 
   **Two section lists exist, and the longer one wins.** The prompt's §8 lists twenty
   sections; the domain-discovery layout adds `Source Inventory`, `Bounded Contexts`,
@@ -190,6 +191,11 @@ and what the words mean.
   upstream typesetting source before parsing a PDF, repair the artefacts a PDF
   text layer leaves behind, parse into structured data and generate the
   reference from it, and carry the licence with the quote.
+- **`references/export-contract.md`** — the contract between the verifier's
+  exporter and the explorer page: what the export must carry, what each field
+  *means*, and how the page renders it. Both sides are bound by one file, and a
+  machine checks the binding — so a renamed field breaks the build instead of
+  rendering an empty table. Read it before changing either side.
 
 **Templates and a worked example.** `templates/domain-model-template.md`,
 `templates/state-machine-template.md` and `templates/transition-table-template.md`
@@ -483,6 +489,16 @@ asserts numbers the model no longer produces. Export the computed result as JSON
 from the harness and have the page read it — and put the page's *other* data in the
 same document, because two sources means the copy you forget is the one that drifts.
 
+**Embed the JSON in the page, and embed the document's STRUCTURE in it too.** A
+`fetch()` of a sibling file is blocked when the HTML is opened from disk (`file://`) —
+exactly how a reviewer opens it — and the failure is quiet: the page renders with the
+data-driven views empty. So the JSON goes in a script block inside the HTML. And the
+export carries the document's structure **resolved**, not as raw cells: the page must
+not parse the document's cells, because that puts the structure in two places — the
+engine's parse and the page's re-parse — and the two drift apart. Ship the resolved
+state ids and the hierarchy (machine → states → outgoing/incoming), and the page
+reads both from the export.
+
 **The same rule applies to document-derived data.** When the page also summarises the
 findings document — severities, titles, which findings each issue groups, how many
 tests back each finding — those arrays are a second copy of the document, and a copy
@@ -590,6 +606,93 @@ as "nothing to say", and a blank is how ambiguity hides.
 sorting, the generator, layout, escaping, and the browser harness. They are stated
 there once and in full; the rules below are the ones that reach past the explorer.
 
+- **Unwrap Markdown decoration BEFORE comparing a cell to a sentinel value.** A cell
+  reading `` `not expressible` `` is the sentinel `not expressible` — the backticks
+  are decoration, and a comparison made against the raw cell misses them, so every
+  unexpressible condition is reported as evaluable and the whole unchecked set
+  silently becomes a checked one. Strip the decoration first, then compare, then
+  parse; the order is the difference between an honest coverage report and a wrong
+  one.
+- **A Markdown table parser must skip separator rows.** A header edit that adds a
+  column without removing the old separator leaves two separator rows, and the
+  parser that skips only the second row reads the first one as data — a phantom
+  record whose fields are dashes. It reaches the output as a finding, a term, or a
+  transition, and it counts toward a total the reader trusts. Reject any row whose
+  cells are only dashes and colons, whatever its position.
+- **A record's heading is not always numbered like its section.** A document that
+  puts its scenarios under `### SCN-001 — …` while its other headings carry a
+  section number (`### 7.1 AGG-001 — …`) defeats a parser whose heading regex
+  requires a digit-led number: the scenario heading never enters the branch that
+  collects it, and the series comes back EMPTY with no error anywhere — a missing
+  series that a catalogue check then reports as a series the export omitted.
+  Match each heading on the shape it actually has — the id pattern, the section
+  number, or both — rather than on the one the first example used. Check a
+  collected series for being empty before believing it was absent from the
+  document.
+- **One section can hold two different tables.** A section whose first table is a
+  role inventory and whose second is a set of numbered rules parses as one table,
+  and every rule row lands in the role records or is dropped. Route a row by what
+  it CONTAINS — a cell holding an id of the series being collected — not by which
+  section it is in.
+- **A record whose body is structured content must keep that structure.** An
+  aggregate's aspect table and a scenario's labelled bullet list are not one
+  paragraph each: flattening them to a string loses the breakdown the reader
+  consults, and the page then shows "Content" instead of the root, the members
+  and the consistency expectation. Parse the aspects and the parts as records and
+  carry them through the export — the detail panel shows what the document says,
+  not a summary of it.
+- **The export must carry what the page needs to READ the document, not only what
+  it needs to COUNT it.** A page that reads an expression in words needs the
+  vocabulary — the terms, their types, and the values they may hold — in the export,
+  because the page cannot parse the document and the vocabulary is what turns
+  `state != 'ST-006'` into "the current state is not Approved". A count-only export
+  forces the page to hardcode the document's terms, which is the per-spec leak the
+  engine rules forbid, one level up.
+  **The same holds for the document's identifiers: the export must carry every series
+  the document issues, with the name each id carries.** That catalogue is what lets the
+  page turn `VO-004` into "setup information" instead of showing a bare handle. A
+  series the export omits has nothing to decode into, so the page shows the id as an
+  unexplained token — and the reader cannot tell whether the analysis skipped it or
+  the id is meaningless.
+  **It must also carry the document's STRUCTURE, resolved.** When the page re-parses
+  a From/To cell to work out which state a transition belongs to, the document's
+  structure lives in two places — the engine's parse and the page's re-parse — and
+  they drift: a cell naming five states was resolved to five by the engine and to one
+  by the page. Ship the resolved ids (`fromStates`, `toStates`) and the hierarchy
+  (machine → states → outgoing/incoming), so there is one resolution of the
+  document's structure and the page never parses a cell.
+- **The contract between an instrument and what it consumes must be written down.**
+  The export JSON is the only thing the engine and the page share, and it is the one
+  interface with no written definition: the engine emits a field, the page reads a
+  name, and nothing connects them. Rename the field on one side and the page renders
+  an empty table — no error, no warning, and the reader sees a complete-looking
+  analysis with a hole in it. **Put a schema version and a required-field list in the
+  export, and have the consumer assert them on load and fail loudly.** The same rule
+  governs anything an instrument reads: the shape it depends on is stated, and the
+  thing that consumes it checks.
+  **A contract that describes the consumer needs a checker against the consumer too.**
+  A contract that names the page's tabs, columns and filters drifts from the page's
+  code exactly as it drifts from the data, and nothing notices until a reader meets a
+  column the contract does not have.
+  **And the consumer must DERIVE what it knows from the contract, not from a list
+  written by hand.** The identifier scheme is a property of the OUTPUT FORMAT: the
+  explorer defines it, so every document that goes through it comes out with the same
+  prefixes and different content, and a literal list of prefixes in the page is a
+  legitimate statement of the format, not a leak. What is not legitimate is writing
+  that list again in the engine, again in the page and again in the checks — three
+  copies drift and nothing reports it. The export already carries the catalogue, so
+  derive the pattern from it. A status vocabulary or a tab list IS document-specific:
+  build the filter's options from the values the data carries, because a filter whose
+  buckets are written from memory collapses into one useless bucket on the next
+  document.
+- **An instrument's consumer must cover every section the instrument carries, and an
+  empty section is still a section.** The export carried the divergences and the
+  executable gaps; the page rendered neither. Both were empty, so nothing was lost
+  that day — and the page would have dropped them silently the day one was not
+  empty, because there was never a view to hold them. **A check of the form "the
+  table's row count equals the array's length" passes against a page with no table
+  at all**, because zero equals zero: assert the VIEW exists and says so when the
+  data is empty, then assert it holds everything when it is not.
 - **Do not infer the domain model from the data model.** The five classic
   shortcuts, each of which is wrong most of the time: entity from every noun;
   value object from every structured field; aggregate from every parent-child
@@ -755,6 +858,16 @@ there once and in full; the rules below are the ones that reach past the explore
   said to stop or to narrow the task. Stop what is running, and say what you stopped.
   A subagent that completes after the task was narrowed returns a result nobody
   asked for, and folding it in re-opens settled ground.
+- **Ground a design proposal in a measurement, and answer the feasibility question with
+  facts.** When the reader asks whether something is possible — "explain me is it
+  possible", "what needs to be done" — the answer is a measured fact and a named
+  consequence: the size of the export, the count of records a view would have to
+  render, the field that is missing, the number of places a list is written down. Not
+  a menu of architectures with invented names for the options, and not a preference
+  dressed as a finding. A proposal whose premises are assumed reads as invention, and
+  the reader spends a turn telling you which invented parts to drop. Measure first —
+  read the shape of the data, count what is in it, and let the constraint choose the
+  design; then state the design as a decision with its cost.
 - **Do not report a fact you have not verified, and do not dress a guess as a
   finding.** A claim that a document's cell is truncated, that an expression is
   malformed, that a state count is too low — each needs the mechanism shown. When a
@@ -766,6 +879,13 @@ there once and in full; the rules below are the ones that reach past the explore
   truncated when the row simply contains the language's `||`, and believing it sends
   you to repair a correct document. Dump the raw bytes of the suspect cell and read
   them before naming a defect.
+- **Price written-but-unrun code as written, not as working.** When asked how far
+  along a build is, an honest percentage discounts code that has never been compiled
+  or executed, and says so — the reader is budgeting the remaining work, and a number
+  that counts unrun code as done is a number that misleads them. Give the percentage,
+  the per-component breakdown, and the discount with its reason in one line each; a
+  reader who needs the detail can ask for it. Do not round up to reassure, and do not
+  hide the unrun work behind a summary that reads as finished.
 - **Do not report a defect you already know how to fix.** Finish the fix and re-verify
   it, then report. A report that names a known defect and hands it back to the reader
   is a delivery in name only, and it reads as "the work stopped here" — the reader
@@ -778,10 +898,38 @@ there once and in full; the rules below are the ones that reach past the explore
   paying for the fix, not for a map of it. End the turn with the change landed and
   verified. When the budget genuinely runs out mid-fix, name the one command that
   continues it, so the next turn starts from the fix rather than from the diagnosis.
+  **A feature that spans layers is delivered in all of them or not delivered.** When
+  the ask spans the engine, the export and the page, building the engine half and
+  listing the page half under "what remains" is a partial delivery wearing a
+  summary's clothes: the reader has to ask for the rest, and the next turn opens by
+  rebuilding the context for work that was already agreed.
 - **A layout assertion must be shown to fail.** A check that passes against the
   broken build is measuring the wrong thing — the headless default window is small
   enough that the overflow cannot happen. Set a desktop viewport in the harness, then
   revert the fix and confirm the assertion catches it.
+- **An assertion that measures an element must put it on screen first.** A hidden
+  element's rectangle is all zeros, so a comparison against it passes trivially —
+  "the checked column is narrower than the widest" holds for every column in the page
+  when nothing was measured. Open the tab, assert the measurement is non-zero, and
+  only then compare. A check that cannot fail is worse than no check, because it
+  reports the defect as absent. Judge the layout at the reference viewport too: a
+  column that fits at the harness's desktop width genuinely clips in a narrow
+  interactive window, and the small window is not the reader's.
+- **A view that is present in the DOM is not a view the reader can see.** Assert
+  visibility, not presence: exactly one section on screen at a time, and the primary
+  panel's rectangle inside the viewport. A stacked layout, a panel pushed below the
+  fold, and a canvas whose content sits outside its `viewBox` all leave every
+  element-count check passing while the artifact the reader came for is not on
+  screen — and the screenshot shows a complete-looking page with the graph missing.
+  **Look at the screenshot of the whole page**, not only of the diagram's crop: a
+  missing primary artifact is invisible to an assertion that counts elements and
+  obvious in a picture.
+- **The CSS selector and the script that toggles classes must name the same class.**
+  When the stylesheet hides `section.on` and the script toggles a different class,
+  no section ever gains the class the stylesheet watches, every section keeps its
+  default display, and they stack — pushing the primary panel off-screen while the
+  page still looks alive. Hide by default, reveal with one class, and use that class
+  in both places.
 - **A NEGATIVE TEST WHOSE MUTATION DID NOT APPLY IS NOT A PASSING TEST.** To prove a
   comparison script can fail, break a copy of the artifact and confirm the script
   rejects it — and confirm the mutation actually landed before believing the
@@ -837,6 +985,13 @@ there once and in full; the rules below are the ones that reach past the explore
 - **Verify each artifact the moment you write it.** A defect introduced in the last
   twenty minutes of a long session is invisible to a summary written from memory, and
   a summary that claims more than was checked is worse than one that admits the gap.
+- **Apply the known fixes together, then rebuild and test once.** When several defects
+  are already diagnosed, patching them one at a time and re-running the whole build
+  between each spends the budget on repetition and leaves the artifact unverified when
+  it runs out. Batch the independent edits into as few passes as the tooling allows,
+  then rebuild, re-export and re-test once. The corollary: a status-only turn — one
+  that reports what is broken without changing anything — costs a turn and delivers
+  nothing, so when the next command is known, run it.
 - **Check whether the deliverable is still current against its source.** An artifact
   rebuilt from hand-entered numbers drifts from the model the moment the model changes.
   Compare timestamps and the figures themselves before reporting that the deliverable
@@ -855,7 +1010,11 @@ there once and in full; the rules below are the ones that reach past the explore
   repository, committed and pushed — not only in the local profile directory, where a
   reinstall or a curator pass discards it and no diff survives. Check the repository
   before concluding that a skill is unversioned: a local `git` probe that finds no
-  repository says nothing about a remote that holds it.
+  repository says nothing about a remote that holds it. The installed copy and the
+  clone drift apart, so diff them before pushing and carry the changes across — and
+  diff on CONTENT, not on bytes: a checkout and an installed copy can disagree on
+  line endings alone, which reports every file as changed and hides a real edit in
+  the noise.
 ## Verification
 
 Before delivering:
@@ -906,7 +1065,7 @@ deliverable is fine.
 
 *If you built an explorer page:*
 
-11. **The interactive HTML has been opened in a browser and exercised: filters, selection,
+12. **The interactive HTML has been opened in a browser and exercised: filters, selection,
     sorting, and every panel. A file that was written but never rendered is not verified.
     **Assert a non-zero element count for every rendered view** — a JS error blanks only
     the view it breaks, so the page still looks complete while one panel is empty.
@@ -920,18 +1079,27 @@ deliverable is fine.
     exceptions and console errors, and runs a checks file:
     `node scripts/test-explorer-cdp.js <page.html> checks.js`.
     It needs no dependencies — Node 22 ships global `fetch` and `WebSocket`.
-12. **The page itself does not scroll vertically**; each section scrolls its own content.
+    **`templates/explorer-checks.js` is a starter checks file** — copy it next to the
+    page, adapt the selectors marked ADAPT, and run it. Writing the assertions from
+    scratch each time loses the ones that already caught a defect.
+13. **The page itself does not scroll vertically**; each section scrolls its own content.
     Check `document.documentElement.scrollHeight <= window.innerHeight`.
-13. **Every table column sorts**, and clicking a row expands in place without switching
+    **Also assert the page shows ONE section at a time and that the primary panel is
+    inside the viewport**: `getBoundingClientRect()` on the panel must sit on screen
+    and be larger than a minimum size, and exactly one section may carry the visible
+    class. Sections that stack rather than swap pass every element-count check while
+    pushing the diagram off-screen — and the reader sees a finished page with no graph
+    on it.
+14. **Every table column sorts**, and clicking a row expands in place without switching
     tabs. A heading that displays the sort arrow must actually sort, and the sort must
     survive a filter re-render.
-14. **The first view renders with no interaction** — open the file and assert content
+15. **The first view renders with no interaction** — open the file and assert content
     before clicking anything.
-15. **The page's inline script compiles.** Extract it and run it through a parser
+16. **The page's inline script compiles.** Extract it and run it through a parser
     (`new vm.Script(code)`) before trusting anything the page shows. A parse error
     blanks every view while the page still looks alive, and it is invisible in the
     browser unless you happen to look at the console.
-16. **Every derived view agrees with the document it summarises.** Compare the page's
+17. **Every derived view agrees with the document it summarises.** Compare the page's
     finding count, severities and ID set against the document that owns them —
     mechanically, not by eye. A page that lists a severity the document downgraded,
     or omits a finding the document added, contradicts the document in front of the
@@ -941,14 +1109,109 @@ deliverable is fine.
     namespaces the documents own, and it distinguishes an ID the document *heads*
     from one it merely *mentions* — a document that says "F-03b is a probe label,
     not a finding" must not read as a missing finding.
-17. **The page's build pipeline runs clean and is idempotent.** Run the generator
+    **And every identifier series the document issues must be in the page's
+    catalogue.** `scripts/check-id-catalogue.js` checks that in one command:
+    `node scripts/check-id-catalogue.js <page.html> <document.md>`. It reads the
+    document's own ID registry for the series it issues, and reports a series the
+    catalogue lacks, an empty series, an entry with no name to decode into, and an
+    id the document never issued. A series the export omits is the silent failure
+    this catches: nothing errors, the page renders, and every id of that series
+    reaches the reader as a bare handle.
+18. **The page's build pipeline runs clean and is idempotent.** Run the generator
     twice and diff: the second run must change nothing, and the page's inline script
     must compile after each run. A generator that only works once leaves the artifact
     in a state nobody can reproduce.
-18. **The generator did not take any of the page's own code with it.** Diff the
+19. **The generator did not take any of the page's own code with it.** Diff the
     regenerated page against the previous one and confirm the only changes are the
     data. A generator that replaces a region between markers removes every helper in
     that region, and a removed helper fails inside one render function rather than at
     load — so the artifact still opens, still draws its chrome, and is quietly wrong.
     Assert the helpers are still present after the run:
     `grep -c 'const q = s' explorer.html` and the same for each other helper.
+20. **Every control's appearance matches its behaviour.** Assert that each filter
+    input is of the type its behaviour requires, that a radio is drawn round and a
+    checkbox square, and that two independent radio groups sit in separate labelled
+    containers. A control that looks like a checkbox and behaves like a radio puts
+    the reader's expectation and the page's behaviour in conflict, and the reader
+    cannot see the conflict in a screenshot.
+21. **Every section the export carries has a view, and the view holds all of it.**
+    Assert the glossary table's row count equals the export's glossary length, and
+    the same for the transitions, invariants and findings tables. A view that shows
+    fewer rows than the data has is the defect a reader sees as an incomplete
+    analysis.
+    **Assert the coverage MECHANICALLY, and do not let an empty array make the
+    assertion vacuous.** A row-count check passes against a page with no table at
+    all, because zero equals zero — so assert the view EXISTS for every section the
+    export carries, that it says so when the section is empty, and that it holds
+    everything when it is not. The export carries the divergences and the executable
+    gaps; a page with no view for either loses them the day they are not empty.
+    **Assert the export contract too**: the export carries a schema version and a
+    required-field list, and the page checks it on load and fails loudly. A page
+    that reads a field the export no longer carries renders an empty table with no
+    error anywhere.
+    **The contract states MEANING, not only presence** — a field list cannot catch a
+    value that is present, correctly typed, and always wrong, and the constraint that
+    would catch it ("TRUE iff every reachable state was enumerated") has to be written
+    down somewhere the exporter can be held to.
+    **And the contract is checked at BUILD time, not only at load.** A separate
+    contract file plus a checker that gates the build means a non-conforming export
+    never becomes a page; the page's load-time check then catches the page that
+    predates a change. Report the checker by SHAPE — how many records lack the field
+    — not one line per record.
+    **The contract has TWO seams, and the second one drifts too.** It describes the
+    DATA and it describes the PAGE — its tabs, each view's columns with their labels
+    and widths, its filter groups. The export-side checker closes the first seam; the
+    contract drifts from the page exactly as it drifts from the data, and a contract
+    that claims a page that is not the page is worse than no contract. Check both:
+    `node scripts/check-export-contract.js <export.json> <contract.json>` and
+    `node scripts/check-contract-vs-page.js <contract.json> <page.html>`.
+    **A column's handle must be the DATA KEY** — `k:"expression"` rendering
+    `t.guardExpression` leaves the contract no unambiguous name for the column, and
+    the comparison then fails on a difference that is not one.
+    **The contract must be checkable by a plain-JS subset**, because the page is
+    self-contained and offline and cannot carry a schema library: give every property
+    a `type`, every record an `items.required` list, and every stated count a place to
+    live.
+    **A contract describes DATA. A transform that renders the data stays in the
+    consumer** — a working decypherer in the page is the page's business, and moving
+    it into the exporter to satisfy the contract rewrites a working consumer and puts
+    a presentation concern in the data.
+22. **The selected item is visibly selected.** Compare the selected node's computed
+    fill and stroke width against an unselected node's — the class alone proves
+    nothing, because the class can be applied and the style can be missing.
+    **The selected EDGE is accented too, and the accent survives scaling**: assert
+    the accent's `vector-effect` is `non-scaling-stroke`, because a halo that scales
+    with the drawing vanishes on a machine drawn small to fit its panel.
+    **Selecting a state dims the other states AND the transitions that do not touch
+    it** — and judge "touches" by the edge's DRAWN ends, not by every state the
+    transition names in a cell: a From cell may list five states while the edge is
+    drawn from one of them, and an edge that does not touch the selected box must dim.
+    **Assert the dimming against the geometry** (where each edge is actually drawn),
+    not against a second copy of the rule derived from the export's cell texts — a
+    check that reads the cells the same way the implementation does passes against
+    the bug.
+    **Clicking the empty canvas clears the selection.**
+23. **The diagram fits its panel and does not scroll.** Assert the SVG's rectangle is
+    inside its panel's rectangle and that the panel does not scroll in either
+    direction. A graph that overflows is a graph the reader cannot read, and every
+    element-count check passes against it.
+24. **A named thing is shown by its name, and its id is a handle.** Assert the human
+    title is bold and the identifier is not, in a filter chip and in a table cell.
+25. **Every expression in the document reads in words.** Pick a transition whose
+    guard names a state id, render it, and assert the reading exists, contains the
+    state's NAME, and contains none of the operators it replaced. Count how many
+    expressions translated and how many did not — a reader that silently renders
+    nothing for the one hard expression hides exactly the rule the reviewer came for.
+26. **The export carries the document's structure RESOLVED, and the page reads it.**
+    Assert that each transition's `fromStates` and `toStates` are lists, that the
+    hierarchy covers every machine with an outgoing and an incoming list per state,
+    and that the page's incoming/outgoing lists match the export's hierarchy. A page
+    that re-parses the document's cells has the document's structure in two places,
+    and the two drift apart.
+27. **Filtering a table does not change its column widths.** Measure the header
+    cells' widths, apply a filter that removes rows, measure again, and require them
+    to be identical. Under the default table layout the browser hands the space to
+    whichever column holds the longest unbroken text, and the panel's scrollbar
+    coming and going shifts the content box — so both have to be fixed: declared
+    widths with a fixed layout, and a stable scrollbar gutter. A table that reshapes
+    itself under the reader's feet is a table they lose their place in.
