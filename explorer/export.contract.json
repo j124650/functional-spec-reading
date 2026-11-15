@@ -12,6 +12,7 @@
     "counts",
     "statesVisited",
     "statesViolating",
+    "maxStates",
     "frontierExhausted",
     "trace",
     "machines",
@@ -115,6 +116,12 @@
     "statesVisited": {
       "type": "number",
       "description": "How many aggregate states the exploration enumerated. Bounded by the state cap; see `trace`.",
+      "x-view": "reach",
+      "x-presentation": "stat"
+    },
+    "maxStates": {
+      "type": "number",
+      "description": "The bound the exploration ran under — the largest number of states it would enumerate. A count reached under a bound is a property of the BOUND, not of the specification, so the page shows the bound beside the count. The page must NOT report the analysis as complete while this bound was reached.",
       "x-view": "reach",
       "x-presentation": "stat"
     },
