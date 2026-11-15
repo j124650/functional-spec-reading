@@ -35,32 +35,30 @@ to be missing from it.
 
 | series | kind | family | glyph | codepoint | code shown |
 |---|---|---|---|---|---|
-| SM | State machine | model | ▦ | U+25A6 | yes |
-| ST | State | model | ▢ | U+25A2 | yes |
+| SM | State machine | model | ▣ | U+25A3 | yes |
+| ST | State | model | □ | U+25A1 | yes |
 | TR | Transition | model | → | U+2192 | yes |
 | INV | Invariant | model | ✓ | U+2713 | yes |
 | SRC | Source | definitions | § | U+00A7 | no |
 | TERM | Glossary term | definitions | ▤ | U+25A4 | no |
 | ENT | Entity | definitions | ● | U+25CF | no |
-| VO | Value object | definitions | ◇ | U+25C7 | no |
-| AGG | Aggregate candidate | definitions | ⬡ | U+2B21 | no |
-| BC | Bounded context | definitions | ▣ | U+25A3 | no |
-| SCN | Scenario | definitions | ☰ | U+2630 | no |
+| VO | Value object | definitions | ○ | U+25CB | no |
+| AGG | Aggregate candidate | definitions | ◆ | U+25C6 | no |
+| BC | Bounded context | definitions | ⊞ | U+229E | no |
+| SCN | Scenario | definitions | ≡ | U+2261 | no |
 | N | Role-rewritten rule | definitions | ¶ | U+00B6 | no |
-| CMD | Command | behaviour | ▷ | U+25B7 | yes |
-| EVT | Domain event | behaviour | ✷ | U+2737 | yes |
-| POL | Policy | behaviour | ⚖ | U+2696 | yes |
-| F | Finding | work | ✖ | U+2716 | no |
+| CMD | Command | behaviour | ▶ | U+25B6 | yes |
+| EVT | Domain event | behaviour | ★ | U+2605 | yes |
+| POL | Policy | behaviour | ⊘ | U+2298 | yes |
+| F | Finding | work | ✕ | U+2715 | no |
 | Q | Question | work | ? | U+003F | no |
 
-**Glyph safety.** The glyphs are text, not emoji. Anything with *emoji
-presentation* — ⚡ ✅ ❗ ❓ ⚠ ⛨ — must not be used: it renders in colour on
-Windows, breaks the palette and the size. Two of the glyphs have patchy
-coverage in older Segoe UI Symbol: **⬡** (AGG) and **⚖** (POL). Either ship
-them as an inline SVG sprite, or fall back to ◈ and ⊘.
-
-**An alternative for INV** is ⊢ (U+22A2, the turnstile) — the logic symbol
-for *must hold*, and more distinctive — but ✓ is instantly readable.
+**No fancy marks.** Every glyph is plain text from the common blocks —
+Geometric Shapes, Mathematical Operators, General Punctuation — and each
+one is text-presentation by default. Anything with *emoji presentation*
+(⚡ ✅ ❗ ❓ ⚠ ⛨) is excluded: it renders in colour on Windows and breaks
+the palette and the size. The set is deliberately dull: a reader learns
+fourteen marks in a minute, and no mark competes with the name beside it.
 
 ## The families and their colours
 
@@ -111,6 +109,18 @@ but the id it recognised, and it never decides what anything *means*.
 
 A cell that lists eight states must not show eight rectangles: it is a
 list, so it is quiet. A cell whose whole content is one state is a chip.
+
+## The legend
+
+A reader who cannot tell the accents apart needs a key — and the key must
+not be a second, separate list of the same facts. **The legend is read
+from the same table the chips are drawn from.**
+
+The table holds, per series: the prefix, the kind's name, the mark, the
+family, and whether the code is shown. The families are in the stylesheet,
+one class each, so a legend's swatch is the very class a chip wears.
+
+`legendRows()` returns exactly that table, ready to render as a key.
 
 ## Where the chip applies
 
