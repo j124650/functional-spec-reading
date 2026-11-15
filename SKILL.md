@@ -195,7 +195,14 @@ and what the words mean.
   exporter and the explorer page: what the export must carry, what each field
   *means*, and how the page renders it. Both sides are bound by one file, and a
   machine checks the binding — so a renamed field breaks the build instead of
-  rendering an empty table. Read it before changing either side.
+  rendering an empty table. Read it before changing either side. It also covers
+  the case this arrangement exists for: **a document cell that carries two
+  shapes** becomes an object with a list per shape, and the
+  flat field is replaced rather than kept beside it.
+- **`references/expression-reading.md`** — how the page renders the document's
+  formal rules in English: unwrapping the inline-code decoration before the tokenizer
+  sees it, the vocabulary matcher, the parser's precedence, the effect reader, and
+  the audit that finds every expression-bearing field the reader never reached.
 
 **Templates and a worked example.** `templates/domain-model-template.md`,
 `templates/state-machine-template.md` and `templates/transition-table-template.md`
@@ -489,6 +496,14 @@ asserts numbers the model no longer produces. Export the computed result as JSON
 from the harness and have the page read it — and put the page's *other* data in the
 same document, because two sources means the copy you forget is the one that drifts.
 
+**The page is a RENDERER, not a reader: every value it shows comes from the embedded
+JSON.** Not from the document, not from a file beside it, not from a rule the page
+knows. The page's own code decides how a value is DRAWN — how a row is laid out, how
+a link is made, how an expression is read in words — and it decides nothing about what
+the value MEANS. A page that works out a document cell's meaning has the document's
+structure in two places, and the reader cannot tell which of the two the artifact
+believes.
+
 **Embed the JSON in the page, and embed the document's STRUCTURE in it too.** A
 `fetch()` of a sibling file is blocked when the HTML is opened from disk (`file://`) —
 exactly how a reviewer opens it — and the failure is quiet: the page renders with the
@@ -606,13 +621,23 @@ as "nothing to say", and a blank is how ambiguity hides.
 sorting, the generator, layout, escaping, and the browser harness. They are stated
 there once and in full; the rules below are the ones that reach past the explorer.
 
-- **Unwrap Markdown decoration BEFORE comparing a cell to a sentinel value.** A cell
+- **Unwrap Markdown decoration BEFORE comparing a cell to a sentinel value AND before
+  reading it as an expression.** A cell
   reading `` `not expressible` `` is the sentinel `not expressible` — the backticks
   are decoration, and a comparison made against the raw cell misses them, so every
   unexpressible condition is reported as evaluable and the whole unchecked set
   silently becomes a checked one. Strip the decoration first, then compare, then
   parse; the order is the difference between an honest coverage report and a wrong
   one.
+  **The reader on the page side has the same defect, and it is quieter.** The
+  decoration is stripped before a comparison but not before a TOKENIZER, whose
+  default branch discards the characters outside the grammar — so the backticks
+  vanish and `` `true` `` reaches the keyword reader as the literal `true`, which
+  is read as the answer "Yes". A constant-true guard then says yes/no instead of
+  saying there is no condition, and every such guard in the document is wrong the
+  same way. Unwrap once at the top of the reader, and give every reader of the same
+  language the same unwrap — a fix applied to one and not the other is a defect
+  waiting for the other call site.
 - **A Markdown table parser must skip separator rows.** A header edit that adds a
   column without removing the old separator leaves two separator rows, and the
   parser that skips only the second row reads the first one as data — a phantom
@@ -659,8 +684,59 @@ there once and in full; the rules below are the ones that reach past the explore
   structure lives in two places — the engine's parse and the page's re-parse — and
   they drift: a cell naming five states was resolved to five by the engine and to one
   by the page. Ship the resolved ids (`fromStates`, `toStates`) and the hierarchy
-  (machine → states → outgoing/incoming), so there is one resolution of the
+  (machine → states → outgoing/incoming),  so there is one resolution of the
   document's structure and the page never parses a cell.
+  **The rule is not about structure alone: the page may not DERIVE anything from a
+  document cell's text.** A cell may be shown; it may not be interpreted. Three
+  shapes, and the exporter supplies what each one needs: a cell that names a
+  record's code beside its name ("CMD-001 Create application") is read as the
+  name, so the export ships the name; a cell that writes ids as a RANGE
+  ("INV-001…INV-011 as in Draft") is resolved against the document's own records,
+  so the page reads ids; a cell holding a MARKER where a value would be
+  ("not expressible") is shipped as a BOOLEAN FLAG, because a marker read as
+  words is not an absence but nonsense — "not expressible" tokenises into the term
+  "not". **A cell that mixes two shapes is shipped as one list per shape**, and
+  the flat field is REPLACED rather than kept beside it — two fields carrying one
+  cell's meaning is one more thing to keep in step, and the flat one is the one
+  that lies. Two lists need no discriminator: the consumer reads the list it
+  wants, and the page composes the cell from the lists — the states first, then
+  the transitions. **Ship the document's own cell only when the page must SHOW
+  the document's words**; when the cell is composed from the resolved ids, a raw
+  the page can quote is a cell the reader must re-interpret by eye. **And a scope
+  that covers EVERYTHING is written out as the list it covers** — with the lists
+  alone an empty list is ambiguous between "none" and "all", so "All states" ships
+  the states it holds in: the states of the machine the scope was RESOLVED
+  against, not of every machine the rule binds to.
+  **And the export's resolution of a cell must be the ENGINE'S.** Where the
+  engine already read a cell — the scope a rule holds in, the states a transition
+  leaves — the export carries that result rather than resolving the cell a second
+  time for its own purposes: two resolutions agree today and diverge the moment
+  one of them is changed, and the export is what the page trusts.
+- **A cell that QUOTES the document and a cell that INTERPRETS it must not share a
+  class.** The page marks a cell that carries a reading with its own class, and the
+  checks select cells by that class to assert the reading — so a cell showing the
+  document's own words with the reading in its HINT, given the same class, is found
+  first by every check that looks for a reading, and the suite fails on a change
+  that broke nothing. Give each kind of cell its own class and let the check name it.
+- **A consumer identifies a thing by its ID, and never by recovering the ID from the
+  text it rendered.** A check that strips the id back out of a rendered label with a
+  pattern is guessing identity by string: it mis-reads the label the moment the
+  rendering changes, and it cannot fail on the thing it exists to protect. Where a
+  name is not unique on its own — two transitions can share a trigger, because one
+  command has two branches — the rendering carries the id beside the name ("Submit
+  (TR-004)") and carries it as DATA: the id travels in its own element, so the
+  consumer reads the id from the markup and compares it with the id it already knows.
+  This holds wherever an id is written down — in the export, in the markup, in the
+  checks, in the matrix. Identity is a fact the data states, never a shape the text
+  suggests.
+- **An assertion must not forbid what the document actually says.** When the export
+  resolves a cell and the result is EMPTY, that is usually a fact about the document
+  — it named something the document does not have — not a defect in the export.
+  Assert that the page REVEALS the emptiness; asserting that the resolution succeeded
+  forbids the export from reporting a real gap, and the gap it hid was the finding.
+- **Read what you need in one batched pass, then act on it.** Re-reading a file to
+  re-derive a fact already in hand is the loop, not the thoroughness: the context is
+  what the next edit needs, and a second pass over the same file only delays it.
 - **The contract between an instrument and what it consumes must be written down.**
   The export JSON is the only thing the engine and the page share, and it is the one
   interface with no written definition: the engine emits a field, the page reads a
@@ -685,6 +761,15 @@ there once and in full; the rules below are the ones that reach past the explore
   build the filter's options from the values the data carries, because a filter whose
   buckets are written from memory collapses into one useless bucket on the next
   document.
+  **The CHECKS are a second consumer, and they leak the same way.** An assertion
+  that says "the header mentions the specification" hardcodes one document's word in
+  the one file whose job is to work for any document — and the export already
+  carries what the export is a model OF, so the assertion compares the page against
+  that instead. The page must read the document's words from the export for the
+  same reason: a literal in the page is a per-spec leak one level up from the
+  engine's, and a check that names the document's words passes on this document
+  and fails on the next one — or is quietly edited each time the document changes,
+  until nobody is left holding the rule.
 - **An instrument's consumer must cover every section the instrument carries, and an
   empty section is still a section.** The export carried the divergences and the
   executable gaps; the page rendered neither. Both were empty, so nothing was lost
@@ -693,6 +778,44 @@ there once and in full; the rules below are the ones that reach past the explore
   table's row count equals the array's length" passes against a page with no table
   at all**, because zero equals zero: assert the VIEW exists and says so when the
   data is empty, then assert it holds everything when it is not.
+  **Audit the FIELDS the export carries, not the tabs the page has.** The gaps
+  appear where a field exists in the export and the page renders it in symbols, or
+  renders it nowhere. Enumerate the export's fields whose value is an expression,
+  then find each one's render site and ask whether it is read in words, shown in
+  symbols, or missing: a field shown in symbols where the reader would have read it
+  is a visible gap, and a field rendered NOWHERE is worse, because the reader is
+  told a rule applies and is never shown it.
+- **The gate's coverage depends on a convention in the page, so a page that breaks
+  the convention loses the gate silently.** The contract-vs-page checker finds tables
+  by their call site — `DataTable($("#someId"), { id: "tName", … })` — so a table
+  rendered through a VARIABLE (`DataTable(host, {…})`) is never seen: its columns are
+  never compared with the contract's, and its absence is never reported. The gate
+  stays green over a table nobody checks. Write every table's host as a literal, and
+  when the gate names a table no view claims, DECLARE it in the contract rather than
+  reshaping the page until the checker stops noticing — a gate satisfied by hiding
+  from it is not a gate.
+- **When the contract's vocabulary cannot express what the page does, WIDEN the
+  vocabulary — do not reshape the page to fit the vocabulary it already has.** A
+  detail panel whose tables are ALTERNATIVES (tabs the reader switches between) is
+  not two tables side by side, so the contract's left/right pair would be a lie; the
+  contract gained a per-table column map for exactly that case. The same applies to a
+  field the page reads and the contract does not name, and to a column the page
+  renders and the contract does not list. The contract is format-level and is meant
+  to be widened; the page is the artifact the reader asked for.
+- **An assertion that compares what the page SHOWS with the document's RAW string
+  must render the expectation through the page's own helper.** The page renders
+  Markdown emphasis — `**or**` becomes bold — so the raw source keeps the asterisks
+  and the comparison fails on any emphasised text, and the failure reads as "the
+  field is missing" when the field is on screen. Build the expectation by passing
+  the source through the page's own cell renderer and reading its text, so the
+  assertion compares like with like.
+- **A document that lists ids as a RANGE with a reference to another record means
+  that record's ids within the span.** "INV-001…INV-011 as in Draft" says the
+  invariants DRAFT holds whose numbers fall in that span — not every id between the
+  endpoints. Read literally, the range hands a record rules the document never gave
+  it, because the ids in between are scoped to the referenced record alone. Resolve
+  the shorthand against the document's own records, and tell the reader the list was
+  written as a range.
 - **Do not infer the domain model from the data model.** The five classic
   shortcuts, each of which is wrong most of the time: entity from every noun;
   value object from every structured field; aggregate from every parent-child
@@ -729,6 +852,14 @@ there once and in full; the rules below are the ones that reach past the explore
   *combination* determines a condition. The prompt classifies each machine as
   `Explicit` · `Implicit` · `Partially specified` · `Candidate` — with the
   evidence that decided it.
+  **A reader's first question about a reconstructed diagram is whether the document
+  states it or the analysis assembled it — so the diagram answers it unasked.** The
+  classification is not a footnote on the machine; it is the difference between the
+  document's model and the analyst's reconstruction, and a reader who cannot tell
+  them apart reads the reconstruction in the document's voice. Carry the KIND and the
+  REASON apart as two fields — the cell that holds them is one sentence, and a
+  consumer that re-parses that sentence to recover the kind has put the document's
+  structure in two places, which is the drift the export exists to prevent.
 - **A field named `status` is not a state machine.** The prompt says it
   explicitly, and it is right: a machine is a set of states with transitions
   between them, and a field holds one value. Prove a machine by exhibiting the
@@ -841,11 +972,22 @@ there once and in full; the rules below are the ones that reach past the explore
   markup but not the scripts that read it leaves a broken page. When the structure
   changes, change the markup and the code that drives it in the same pass and re-verify
   in the browser before moving on.
+- **When the reader redirects a placement, offer concrete options in ONE question.**
+  "I want to place them differently" names a decision, not an answer — guessing the
+  intended arrangement costs a rebuild and then a correction. Give three or four
+  concrete placements in a single question, each a sentence saying where the thing
+  lands and what the reader sees, so one reply settles it. Rebuilding to the first
+  plausible reading is the expensive way to ask the same question.
 - **Answer the question that was asked.** A question about the workflow, the method, or
   what a deliverable looks like is answered by the method — not by building the thing.
   When the reader asks "what are we developing?", answer that; do not start writing
   scaffolding. When they ask how to invoke this in a fresh session, give the invocation
   and stop.
+  **The frame the reader states narrows the question.** "We are talking about the
+  contract" is not one topic among several — it IS the question. An answer that works
+  on a different layer (a different file, a different phase, a different design) reads
+  as not having heard them, and costs a turn to be told. Take the frame as the
+  question, answer inside it, and put anything outside it in one line or not at all.
   **Deliver the shape that was asked for.** A request for a list gets a list — items, one
   line each, grouped under the headings that organise them, with no paragraphs arguing
   the case around them. A request for a plan gets steps; a request for a feasibility
@@ -857,12 +999,34 @@ there once and in full; the rules below are the ones that reach past the explore
   what the next step will be reads as looping and spends the budget the execution
   needs. When the budget is tight, spend what is left on the fix and its verification:
   a summary describing an unexecuted plan is worth less than one line of state.
+  **The reconnaissance is spent, not renewed.** The reads that informed the
+  questions are the reads; answering the questions does not invalidate them. A
+  turn that re-opens files already read — to re-confirm a signature, re-check a
+  shape, re-establish what a file holds — spends a step of the implementation and
+  reads as hesitation to a reader who asked for the work and is watching it not
+  start. When the answers name the shape, the next action is the edit.
 - **One task at a time, and finish the one you were given.** When the reader narrows
   the ask — "one task at a time", "fix the verifier", "verifier first, then the UI" —
   that narrowing is the plan. Do not start the next task while the current one is
   unfinished, and do not widen the current one to include it. A half-finished
   verifier plus a half-built page is two broken things instead of one finished one,
   and the reader has to re-establish which of them is actually in progress.
+  **And when the named task IS finished, stop and wait for the next instruction.**
+  Rolling into the improvement you spotted instead of delivering the ask makes the
+  reader interrupt you to get the thing they asked for; state what landed, what is
+  verified, and what is deliberately not committed, then wait.
+  **An operational instruction is executed literally, on the next call.** "Regenerate
+  the UI", "commit", "run the tests", "rebuild" — the command is known, so run it and
+  report what it returned. Do not spend turns reading adjacent files to decide what
+  else the instruction might license, and do not fold a self-assigned improvement
+  it: a rebuild that becomes a feature plan is a rebuild the reader did not ask for,
+  and the drift surfaces as the reader asking why you are stuck.
+  **And a terse reply to YOUR question is an answer only when it names the question.**
+  "Regenerate the UI" after you asked "implement these six promises, or weaken the
+  contract?" is an instruction to regenerate — not a decision to implement. The reader
+  answers in the register they use for instructions, and an instruction that names an
+  action is that action. Read it as what it says, and put the still-open question back
+  in one line rather than inferring an approval that was never given.
 - **A blocked task is a blocker to name, not a reason to re-plan.** When the current
   task cannot proceed, say what blocks it and what would unblock it, and stop. Do not
   start a neighbouring task, re-derive the architecture, or widen the scope to fill
@@ -1105,6 +1269,11 @@ deliverable is fine.
     scratch each time loses the ones that already caught a defect.
 13. **The page itself does not scroll vertically**; each section scrolls its own content.
     Check `document.documentElement.scrollHeight <= window.innerHeight`.
+    **And a DETAIL PANEL does not scroll either.** Its heading, its fields and its
+    tab strip stay put, and only the table under them scrolls — a panel that scrolls
+    takes the tab strip out of reach, and the tab strip is the only way to reach the
+    other lists. Assert the panel's scrollHeight does not exceed its clientHeight,
+    and that the tab strip's rectangle does not move when the table scrolls.
     **Also assert the page shows ONE section at a time and that the primary panel is
     inside the viewport**: `getBoundingClientRect()` on the panel must sit on screen
     and be larger than a minimum size, and exactly one section may carry the visible
@@ -1186,12 +1355,29 @@ deliverable is fine.
     that claims a page that is not the page is worse than no contract. Check both:
     `node scripts/check-export-contract.js <export.json> <contract.json>` and
     `node scripts/check-contract-vs-page.js <contract.json> <page.html>`.
+    **And there is a THIRD seam, under both: the fields the contract points at a
+    view that the page never reads.** The two checkers above compare the contract's
+    SHAPE against the export's and the page's — neither asks whether the page
+    actually USES a field whose `x-view` names a view. A contract that says "the
+    page renders the engine's trace verbatim" while the page renders no trace is a
+    contract making a promise nobody keeps, and it survives every gate.
+    `node scripts/check-contract-promises.js <contract.json> <page.html>` asks the
+    question the `x-view` convention implies. It REPORTS rather than fails: a field
+    the page has not grown yet is not the same as a promise the contract should not
+    make, and only a reader can say which is which — so it prints the unkept
+    promises in the contract's own words and leaves the decision to a person.
     **The contract instance is format-level, so it ships with the skill** — at
     `explorer/export.contract.json` beside the scripts — while the page and the export
     are the project's. A project holds no copy of the contract: it resolves the
     skill's, the way it resolves the checkers. A copy in the project is a second copy
     to drift, and it drifts silently, because a stale contract and a conforming export
     still agree with each other.
+    **And a scope that resolved to NOTHING is a report, not a null.**
+    `node scripts/check-scope-resolution.js <export.json>` names the invariants whose
+    scope matched no id — a rule that quietly holds nowhere, which hides inside a
+    prose cell that reads like it resolved. The usual cause is a word matched too
+    narrowly ("submit" does not match "Resubmit" under a whole-word test), so the
+    reader needs the miss named.
     **A column's handle must be the DATA KEY** — `k:"expression"` rendering
     `t.guardExpression` leaves the contract no unambiguous name for the column, and
     the comparison then fails on a difference that is not one.
@@ -1224,11 +1410,24 @@ deliverable is fine.
     element-count check passes against it.
 24. **A named thing is shown by its name, and its id is a handle.** Assert the human
     title is bold and the identifier is not, in a filter chip and in a table cell.
+    **That holds when the DOCUMENT puts the code beside the name.** A trigger cell
+    that reads "CMD-001 Create application" is the document's own sentence, and the
+    cell shows the name with the code in the hint — the code is a handle for the
+    reader who needs it, not the thing the reader reads. A trigger may name two
+    commands ("CMD-002 Save, CMD-003 Edit"): both codes go, both names stay.
 25. **Every expression in the document reads in words.** Pick a transition whose
     guard names a state id, render it, and assert the reading exists, contains the
     state's NAME, and contains none of the operators it replaced. Count how many
     expressions translated and how many did not — a reader that silently renders
     nothing for the one hard expression hides exactly the rule the reviewer came for.
+    **Assert the constant case too, because it is the one that reads plausibly:** a
+    guard that is always true must read as the absence of a condition, never as
+    "yes" or "no". A boolean literal is a value, and reading it as the answer to a
+    yes/no question is wrong in a way that survives a glance.
+    **And assert it for EVERY field that carries an expression, not only the one the
+    reader noticed** — the transition guard, the condition inside an effect, the
+    invariant's formal expression, the probe's predicate. A reader wired to one
+    field leaves the rest in symbols while the page looks complete.
 26. **The export carries the document's structure RESOLVED, and the page reads it.**
     Assert that each transition's `fromStates` and `toStates` are lists, that the
     hierarchy covers every machine with an outgoing and an incoming list per state,
@@ -1242,3 +1441,21 @@ deliverable is fine.
     coming and going shifts the content box — so both have to be fixed: declared
     widths with a fixed layout, and a stable scrollbar gutter. A table that reshapes
     itself under the reader's feet is a table they lose their place in.
+28. **Every assertion resets the state it depends on.** A check that reads a
+    selection, a filter, or a radio reads whatever the previous check left behind,
+    so the suite's verdict depends on the order it happens to run in — and the order
+    changes the moment a check is added. Set the state the assertion needs (select
+    the machine, clear the selection, open the tab) rather than assuming it, and
+    leave it as you found it, so the next check starts from the same place.
+    **And an assertion whose subject is conditional must FIND that subject, or
+    fail.** A check that looks for "the state that lists invariants" and reports no
+    problems when it finds no such state has proved nothing — it passed against a
+    page with no invariants at all. Find the subject in the data (the export says
+    which machine's states carry invariants; select its chip), and treat "no subject"
+    as a failure rather than as an empty result.
+    **When the reader inverts a requirement, rewrite the assertion that encoded the
+    old one — do not delete it.** A rule that changes ("the evidence column is
+    narrow" becomes "the evidence column is wide") is still a rule, and the
+    assertion is where it is written down. Deleting it loses the requirement
+    entirely; inverting it keeps the requirement and stops its opposite from
+    coming back.
