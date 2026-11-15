@@ -328,13 +328,14 @@
         "type": "object",
         "required": [
           "id",
-          "machine",
-          "name",
-          "meaning",
-          "kind",
+          "invariantIds",
           "invariants",
-          "source",
-          "reachable"
+          "kind",
+          "machine",
+          "meaning",
+          "name",
+          "reachable",
+          "source"
         ],
         "properties": {
           "id": {
@@ -365,6 +366,15 @@
           "reachable": {
             "type": "boolean",
             "description": "Whether the exploration reached this state at all."
+          },
+          "invariantIds": {
+            "type": "array",
+            "description": "The SAME list, resolved. The document writes a state's invariants as a sentence - 'INV-001, INV-008, …' - and for one state as a RANGE, 'INV-001…INV-011 as in Draft', which means the invariants the NAMED state holds, within that span. Read literally the range would give the state rules the document never gave it. The exporter resolves it, so the page reads ids and interprets nothing.",
+            "x-view": "machines",
+            "x-presentation": "records",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }
@@ -386,12 +396,14 @@
           "fromStates",
           "guard",
           "guardExpression",
+          "guardNotExpressible",
           "id",
           "machine",
           "to",
           "toStates",
           "toUnstated",
-          "trigger"
+          "trigger",
+          "triggerName"
         ],
         "properties": {
           "id": {
@@ -486,6 +498,18 @@
                 }
               }
             }
+          },
+          "triggerName": {
+            "type": "string",
+            "description": "The trigger's NAME: the trigger without the id codes it carries. The document names its command by code and by name - 'CMD-001 Create application' - and the code is a handle for the reader who needs it, not a reading. The exporter reads the trigger once so the page strips nothing.",
+            "x-view": "machines",
+            "x-presentation": "text"
+          },
+          "guardNotExpressible": {
+            "type": "boolean",
+            "description": "True when the document put a MARKER where the guard's expression would be. The page asks this rather than recognising the marker by its wording.",
+            "x-view": "machines",
+            "x-presentation": "flag"
           }
         }
       }
@@ -498,17 +522,18 @@
       "items": {
         "type": "object",
         "required": [
-          "id",
-          "text",
+          "appliesTo",
           "category",
-          "scope",
-          "states",
-          "expression",
           "checkable",
+          "evidence",
+          "expression",
+          "id",
+          "machine",
+          "notExpressible",
           "reason",
           "register",
-          "evidence",
-          "machine"
+          "scope",
+          "text"
         ],
         "properties": {
           "id": {
@@ -525,10 +550,6 @@
           "scope": {
             "type": "string",
             "description": "What the invariant binds to — an aggregate, a machine, a state or a transition."
-          },
-          "states": {
-            "type": "string",
-            "description": "The document's own 'States / Transitions' column, verbatim."
           },
           "expression": {
             "type": "string",
@@ -551,6 +572,53 @@
           },
           "machine": {
             "type": "string"
+          },
+          "notExpressible": {
+            "type": "boolean",
+            "description": "True when the document put a MARKER where an expression would be, because it could not write the rule as one. The marker is not an expression and must not be read as one - the page asks this, and never has to recognise the marker by its wording.",
+            "x-view": "invariants",
+            "x-presentation": "flag"
+          },
+          "appliesTo": {
+            "type": "object",
+            "description": "WHERE the rule holds, resolved. §15's column mixes two things that mean different things — a rule that holds in a state, and a rule that guards a move — so the export says which it is, and names the ids. The resolution is the CHECKER's own: the same scope the invariant was judged by. A consumer never has to read the cell to know whether it names states or transitions.",
+            "x-view": "invariants",
+            "x-presentation": "scope",
+            "required": [
+              "kind",
+              "states",
+              "transitions",
+              "raw"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "What the scope names: 'all' — the rule holds wherever the aggregate is; 'states' — it holds in the named states; 'transition' — it is a precondition of the named transitions, and is checked when the transition fires, not in a state.",
+                "enum": [
+                  "all",
+                  "states",
+                  "transition"
+                ]
+              },
+              "states": {
+                "type": "array",
+                "description": "The state ids the scope names. Empty when the scope is not a state scope.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "transitions": {
+                "type": "array",
+                "description": "The transition ids the scope names. Empty when the scope is not a transition scope.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "raw": {
+                "type": "string",
+                "description": "The document's own 'States / Transitions' cell, verbatim — what it wrote, for the reader who wants the source."
+              }
+            }
           }
         }
       }
@@ -1986,9 +2054,10 @@
           "width": "12%"
         },
         {
-          "key": "states",
-          "label": "States / Transitions",
-          "width": "13%"
+          "key": "appliesTo",
+          "label": "Holds in",
+          "width": "13%",
+          "description": "Where the rule holds, as the export resolved it: the kind of scope and the ids it names. The document's own cell is in the hint."
         },
         {
           "key": "expression",
