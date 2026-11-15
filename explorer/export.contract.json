@@ -50,7 +50,8 @@
     "divergences",
     "divergenceCount",
     "gaps",
-    "samples"
+    "samples",
+    "spec"
   ],
   "properties": {
     "document": {
@@ -1775,6 +1776,90 @@
           }
         }
       }
+    },
+    "spec": {
+      "type": "array",
+      "description": "The specification itself, cut into paragraphs. The page shows the document the analysis was read from and navigates it by paragraph. Every reference the document makes to another paragraph is resolved to that paragraph id, so a link the page draws is a link to something that exists.",
+      "x-view": "spec",
+      "x-presentation": "paragraphs",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "section",
+          "heading",
+          "parts",
+          "refs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The paragraph s handle - P001."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What the paragraph is: a heading, text, a list, a table or code.",
+            "enum": [
+              "heading",
+              "text",
+              "list",
+              "table",
+              "code"
+            ]
+          },
+          "section": {
+            "type": "string",
+            "description": "The section the paragraph sits under, e.g. 6.2."
+          },
+          "heading": {
+            "type": "string",
+            "description": "The heading s own text, when the paragraph is a heading."
+          },
+          "parts": {
+            "type": "array",
+            "description": "The paragraph, cut where it refers to another paragraph - so the page never has to look for a reference in a sentence.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece."
+                },
+                "reference": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with."
+                }
+              }
+            }
+          },
+          "refs": {
+            "type": "array",
+            "description": "The paragraphs it refers to, resolved to their ids.",
+            "items": {
+              "type": "object",
+              "required": [
+                "text",
+                "id"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words the reference was written with."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The paragraph it means."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "x-idSeries": [
@@ -2537,6 +2622,14 @@
       "controls": [
         "catk"
       ]
+    },
+    {
+      "id": "spec",
+      "label": "Specification",
+      "renderer": "outline",
+      "data": "spec",
+      "tables": [],
+      "controls": []
     }
   ]
 }

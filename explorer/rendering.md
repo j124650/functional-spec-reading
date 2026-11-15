@@ -46,7 +46,8 @@ to be missing from it.
 | AGG | Aggregate candidate | definitions | ◆ | U+25C6 | no |
 | BC | Bounded context | definitions | ⊞ | U+229E | no |
 | SCN | Scenario | definitions | ≡ | U+2261 | no |
-| N | Role-rewritten rule | definitions | ¶ | U+00B6 | no |
+| N | Role-rewritten rule | definitions | ✎ | U+270E | no |
+| P | Paragraph of the specification | definitions | ¶ | U+00B6 | no |
 | CMD | Command | behaviour | ▶ | U+25B6 | yes |
 | EVT | Domain event | behaviour | ★ | U+2605 | yes |
 | POL | Policy | behaviour | ⊘ | U+2298 | yes |
@@ -63,15 +64,22 @@ fourteen marks in a minute, and no mark competes with the name beside it.
 ## The families and their colours
 
 Each family paints the **rectangle**: a tinted background and a darker
-border of the same hue. The name and the code keep the text colours; the
-icon takes the family's dark colour, so the type still reads as a type.
+border of the same hue. The icon takes the family's dark colour, so the
+type still reads as a type.
 
-| family | series | border | background | icon |
-|---|---|---|---|---|
-| **model** | SM ST TR INV | `#5B21B6` | `#F5F3FF` | `#5B21B6` |
-| **definitions** | SRC TERM ENT VO AGG BC SCN N | `#115E59` | `#F0FDFA` | `#115E59` |
-| **behaviour** | CMD EVT POL | `#166534` | `#F0FDF4` | `#166534` |
-| **work** | F Q | `#991B1B` | `#FEF2F2` | `#991B1B` |
+| family | series | border | background | hover | icon |
+|---|---|---|---|---|---|
+| **model** | SM ST TR INV | `#5B21B6` | `#F5F3FF` | `#EDE9FE` | `#5B21B6` |
+| **definitions** | SRC TERM ENT VO AGG BC SCN N P | `#115E59` | `#F0FDFA` | `#CCFBF1` | `#115E59` |
+| **behaviour** | CMD EVT POL | `#166534` | `#F0FDF4` | `#DCFCE7` | `#166534` |
+| **work** | F Q | `#991B1B` | `#FEF2F2` | `#FEE2E2` | `#991B1B` |
+
+**The chip is ONE rectangle** — the mark sits inside it, not in a badge
+of its own, and the mark is the same size every time.
+
+**The visual state is the rectangle's shade.** On hover the background
+darkens one step and nothing else moves: no border, no underline, no
+change of colour.
 
 The border is a darker shade of the background's hue, so the chip reads as
 a solid object rather than a tinted label. All four are clear of the page's
@@ -104,11 +112,13 @@ but the id it recognised, and it never decides what anything *means*.
 
 | variant | when | what it shows |
 |---|---|---|
-| **chip** | the reference *is* the cell's content | icon, name, code |
-| **quiet** | the reference is one of several in a cell | icon, name — no rectangle, no code |
+| **chip** | the reference *is* the cell's content | the mark, the name, the id |
+| **quiet** | the reference is one of several in a cell | the same rectangle, without the border |
 
-A cell that lists eight states must not show eight rectangles: it is a
-list, so it is quiet. A cell whose whole content is one state is a chip.
+A cell that lists eight states must not show eight bordered rectangles:
+it is a list, so it is quiet. A cell whose whole content is one state is
+a chip. Both carry the id — a reader must never have to go looking for
+which thing is meant.
 
 ## The legend
 
@@ -130,16 +140,18 @@ one class each, so a legend's swatch is the very class a chip wears.
 | prose — the detail panels, guard sentences | inline link, as today: a chip in a sentence is noise |
 | the graph and the matrix | unchanged: a diagram has its own language, and a chip in it would fight the nodes |
 
-## Why the code, where it is shown
+## Where the code is shown
 
-The code appears exactly where the name can stand for more than one thing:
+The code rides along wherever the table does not show the id in a column
+of its own. There is no point saying it twice — and a reader must never
+have to go looking for which thing is meant.
 
-- **model** — "Approved" is SM-001's terminal state *and* SM-004's
-  per-division state.
-- **behaviour** — CMD-006 and CMD-007 are both "Submit".
-
-It does not appear for definitions or work: there the name is the
-document's own and says what it is.
+Two families' names say which thing they mean only once the id is there:
+**model** ("Approved" is SM-001's terminal state *and* SM-004's
+per-division state) and **behaviour** (CMD-006 and CMD-007 are both
+"Submit"). The others could carry it or not; the id is carried anyway,
+because a chip that does not say which thing it is is a chip the reader
+has to work at.
 
 *This rule may be made data-driven later: the exporter already holds every
 series' names, so it could say which of them repeat, and the page would
