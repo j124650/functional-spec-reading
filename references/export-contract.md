@@ -48,8 +48,23 @@ truth for the seam, and it is read by both sides.
 explorer/export.contract.json
 ```
 
-It lives beside the exporter and the page, because it is checked in with them and a diff
-against either side is a diff of the contract.
+### Where the two kinds of file live
+
+The contract is **format-level** and the page is **project-level**, and they must not be
+confused:
+
+| | Lives with | Why |
+|---|---|---|
+| **The contract**, the namespace, the checkers | the skill | it says what the export carries and how the page renders it — the same for every project in this format |
+| **The page**, the export, the data | the project | the page is the thing being checked; the export is that project's analysis |
+
+So a project holds **no copy** of the contract: it resolves the skill's, the way it resolves
+the checkers, and the build runs both against it. A copy in the project is a second copy to
+drift — which is the fault this whole arrangement exists to remove — and it drifts silently,
+because a stale contract and a conforming export still agree with each other.
+
+The page's side of the seam is still checked the same way: the contract names the page's
+tabs, columns and filters, and `check-contract-vs-page.js` compares them.
 
 ### The shape
 
@@ -91,6 +106,16 @@ from the collections it parsed.
 filters. The explorer has a fixed set of pages and knows how to draw them; a view naming a
 renderer the explorer does not have must be **reported, not skipped**.
 
+### The catalogue is flat
+
+One record per identifier, every record the same shape: `series`, `kind`, `id`, `name`,
+`detail`, `extra`, `evidence`. The series the record belongs to travels with it.
+
+Flat because **every view's table is over one shape**. A nested catalogue — a series, each
+with its entries — makes the page flatten it before it can render, and a page that flattens
+and an exporter that nests are two shapes to reconcile on every change: the flattening can
+disagree with the source, and the disagreement is invisible because both produce rows.
+
 ### Counts belong to the export, not the contract
 
 The contract declares the *namespace* — prefix, kind, and the property that carries it. The
@@ -109,10 +134,18 @@ the export, and the checker compares the export's own counts against the contrac
 3. **Derive, do not assert.** `frontierExhausted` is true *if and only if* the exploration
    enumerated every reachable state. A field that reports on the engine's own behaviour is the
    engine's to compute, and the engine has the truth; the contract says what the truth means.
+   **Never read the boolean out of the engine's own log text.** A substring test over the
+   trace is true on both branches when both branches mention the word — "the frontier *was
+   exhausted*" and "the frontier is *not exhausted*" both contain "exhausted" — so the field
+   was permanently true while the log beside it said the opposite, and the page repeated the
+   false claim to the reader. The engine exposes a property; the export reads it.
 4. **Do not put the reading in the data.** How a guard reads in English is the explorer's own
    live code. The contract carries the *expression*; the explorer carries the decypherer.
 5. **The build is the gate.** The checker runs before the export is embedded. An export that
-   does not conform stops the build.
+   does not conform stops the build. Give the build one documented way past the gate — a flag,
+   not an edit to the build — for the case where the CONTRACT is what you are changing. A gate
+   you have to disable by editing the gate gets disabled by editing the gate, and the next
+   reader cannot tell it was ever on.
 
 ## The explorer's obligations
 
@@ -153,6 +186,12 @@ Every column in the contract declares how it is drawn and where its value comes 
 | `lookup` | a value from another collection, matched by the record's id or by a field; with `count` for a count |
 
 A column whose value is neither a field nor a lookup is **derived**, and says so.
+
+**A column's key is the data key.** The contract's `key` is the property the cell reads,
+and the page's column handle is the same string — not a convenient label for it. When the
+two differ (`k:"expression"` rendering `guardExpression`) the contract cannot name the
+column unambiguously and the checker cannot compare the two sides. The checker says so
+plainly: *a column's handle must be the DATA KEY*.
 
 **The tone and text maps live in the contract, as data.** If the pill renderer has to know that
 "Critical" is red, that is per-column code and the whole arrangement collapses back into
@@ -219,8 +258,8 @@ renderer. "Generated from the contract" means no hand-written code *per table* �
 
 | Check | Where it runs | What it fails on |
 |---|---|---|
-| `check-contract.js` | the build, and by hand | the export not conforming: a missing property, a wrong kind, a record missing a field, a count that disagrees |
-| `check-views.js` | the build, and by hand | the contract and the page disagreeing: a tab, a column, a width, a control, a data property |
+| `check-export-contract.js` | the build, and by hand | the export not conforming: a missing property, a wrong kind, a record missing a field, a count that disagrees |
+| `check-contract-vs-page.js` | the build, and by hand | the contract and the page disagreeing: a tab, a column, a width, a control, a data property |
 | `check-id-catalogue.js` | by hand | the catalogue and the document disagreeing about the identifiers |
 | the CDP suite | the build | the page's behaviour regressing |
 
@@ -228,6 +267,20 @@ The first two read the contract and the artefact and compare them. The third rea
 and the catalogue and compares those. The fourth asserts behaviour, and is what makes a
 refactor of the page into a contract-driven page safe: **the contract-driven page must pass the
 same assertions as the page it replaces.**
+
+**The checks live in the skill, not in the project that uses them.** One implementation rather
+than a copy per project — and a copy of a checker is a checker that drifts, exactly as a copy
+of the contract is a contract that drifts. The project's build invokes them by path and
+resolves the path from the environment, so the skill's location is a fact of the machine
+rather than a path baked into the project.
+
+**A shipped checker must work with no arguments in BOTH trees.** The contract is format-level
+and ships with the skill; the page is project-level. So the contract is looked for beside the
+script and the page in the working directory, and both defaults resolve: running the checker
+from a project finds the skill's contract and that project's page, and running it from the
+skill's own tree finds the contract and reports honestly that there is no page there. A
+checker whose default path only works from one of the two is a checker the other caller has
+to be taught to call with arguments — and nobody reads the help.
 
 Run all of them. A check that is not in the loop is a check that reports a problem nobody reads.
 

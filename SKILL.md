@@ -818,6 +818,16 @@ there once and in full; the rules below are the ones that reach past the explore
   appends without limit makes the traversal hit its cap, and a truncated frontier is an
   asserted result wearing a computed result's clothes. Enforce the spec's own
   cardinality rules in the effect, and report whether the frontier was exhausted.
+  **An engine's own boolean must be a property of the engine, not a reading of its own
+  output.** A field reporting on the engine's behaviour — did the frontier close, was the
+  bound reached — is computed by asking the engine. A substring test over the log it
+  printed is true on every branch when the branches mention the word, so the field was
+  permanently true while the log beside it said the opposite, and the page repeated the
+  false claim to the reader. Expose the boolean; let the export read it.
+  **And the bound travels with the count.** A figure reached under a cap is a property of
+  the cap, so the export carries the bound and the page shows it beside the number —
+  a reader who cannot tell a bound artifact from a genuine defect inherits the doubt on
+  every number on the page.
 - **A violation count is not a finding count.** The bound that keeps the frontier
   closing also shapes WHICH states the traversal reaches: it edits one field at a
   time, so the reachable set includes half-filled forms. An invariant about a
@@ -836,6 +846,11 @@ there once and in full; the rules below are the ones that reach past the explore
   When the reader asks "what are we developing?", answer that; do not start writing
   scaffolding. When they ask how to invoke this in a fresh session, give the invocation
   and stop.
+  **Deliver the shape that was asked for.** A request for a list gets a list — items, one
+  line each, grouped under the headings that organise them, with no paragraphs arguing
+  the case around them. A request for a plan gets steps; a request for a feasibility
+  answer gets a measured fact and its named consequence. The shape is part of the ask,
+  and prose wrapped around a list reads as padding an answer the reader did not want.
 - **Execute the agreed plan instead of re-deriving it.** Once the reader has approved a
   plan, the remaining turns are that plan's steps — not a fresh analysis of whether it
   is still the right plan. Restating it, asking which step comes first, or announcing
@@ -997,6 +1012,12 @@ there once and in full; the rules below are the ones that reach past the explore
   Compare timestamps and the figures themselves before reporting that the deliverable
   reflects the latest analysis — the question "is this based on the most recent data?"
   deserves a real check, not an assurance.
+  **The deliverable must not misdescribe the analysis that produced it.** The document
+  states its own coverage — what was checked, what was found, what the model could not
+  reach — and those statements are claims like any other. A document that says no
+  executable model was built, or quotes a figure from an earlier run, tells the reader
+  something false about the very artifact they are holding, and no checker compares the
+  document's self-description against the instrument.
 - **A tool that writes must never be able to write over the file it reads.** An export
   command whose first argument is BOTH the input document and the output path replaces
   the deliverable with its own output on the first run — and nothing recovers it, because
@@ -1165,6 +1186,12 @@ deliverable is fine.
     that claims a page that is not the page is worse than no contract. Check both:
     `node scripts/check-export-contract.js <export.json> <contract.json>` and
     `node scripts/check-contract-vs-page.js <contract.json> <page.html>`.
+    **The contract instance is format-level, so it ships with the skill** — at
+    `explorer/export.contract.json` beside the scripts — while the page and the export
+    are the project's. A project holds no copy of the contract: it resolves the
+    skill's, the way it resolves the checkers. A copy in the project is a second copy
+    to drift, and it drifts silently, because a stale contract and a conforming export
+    still agree with each other.
     **A column's handle must be the DATA KEY** — `k:"expression"` rendering
     `t.guardExpression` leaves the contract no unambiguous name for the column, and
     the comparison then fails on a difference that is not one.
