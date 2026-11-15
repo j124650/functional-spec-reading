@@ -112,6 +112,7 @@ model/
     Model/Expressions.cs  the expression language: tokenise, parse, evaluate
     Model/Aggregate.cs    machine id -> state id, plus the attribute bag
     Model/Graph.cs        the transition table AS DATA, built from the parsed rows
+    Model/Scope.cs        what an invariant's scope column means, resolved from the document
     Model/Invariants.cs   checks driven by the document's invariant expressions
     Model/Explorer.cs     the breadth-first traversal over that table
     Model/Tests.cs        the two test kinds
@@ -120,18 +121,18 @@ model/
 
 **The engine holds no entity of any particular document.** No property named after a
 spec's stage, link, credit check or person; no literal value; no hand-written key struct
-per machine. The aggregate is a map from machine id to state id, the key is derived from
-the document's own state and coupling tables, and the rules are the document's expression
-columns.
+per machine. The aggregate is a map from machine id to state id, the key is computed from
+the document's own state tables and expression columns, and the rules are the document's
+expression columns.
 
 **The guard column is prose; prose cannot be evaluated.** This is the single fact that
 decides the mode. If the verifier's rules are prose in the document, they must be
 hand-written in C#, and then they are that document's rules. The document therefore needs
 an expression beside the prose — a guard condition and an effect for each transition, a
 formal expression for each invariant, and a vocabulary the expressions draw on. The
-processing prompt's §3.5 and §3.6 specify those columns and §3.1 declares the vocabulary;
-the vocabulary is what lets a reader check that every expression names a term the
-document defines.
+processing prompt's §3.5 and §3.6 specify those columns and §3.5.2 declares the
+vocabulary; the vocabulary is what lets a reader check that every expression names a
+term the document defines.
 
 **Give the engine a `check` mode and run it before anything else.** It resolves every
 expression in the document against the document's own vocabulary and reports any that
@@ -234,6 +235,30 @@ directly bypasses every guard the spec states, so it proves your construction wa
 possible, not that the spec permits the path. This is the single most common way a
 reachability claim turns out to be false.
 
+### One aggregate, one traversal — not one traversal per machine
+
+**The document's machines are dimensions of ONE aggregate, so the traversal runs once
+over that aggregate.** Every transition is a step on it, whichever machine owns it.
+The per-machine traversal — one frontier per machine, each machine's own transitions
+only — is the shape the "one initial state" rule above warns against, and it fails in
+a specific way: a target machine's guard often reads a term that only a *different*
+machine's transition sets ("the customer's e-mail is on file"), so the target's guard
+can never hold inside its own state space. The target then reports one reachable
+state and an exhausted frontier, which reads as a healthy result and is not.
+
+**Do not repair it by walking the source machine's transitions inside the target's
+traversal.** That is the obvious fix and it does not work: the coupling relation is
+transitive, and a document in which one machine is the source for most of the others
+(§16 is usually exactly that) makes the closure the whole document. The repair then
+multiplies each machine's frontier by every other machine's, and the traversal stops
+closing rather than starting to. The coupling is real, but it is a property of the
+AGGREGATE, not a licence to cross frontiers.
+
+So: one aggregate (machine id → state id, plus the data bag), one frontier, one
+visited set. The hierarchy is preserved in the aggregate's STRUCTURE and in the
+REPORT's grouping — the report asks, per machine, how many reachable states have the
+application in that machine's state — not in the traversal's shape.
+
 ### The transition table as the explorer's input
 
 Give every action a **group** (the action family), a **reading** (which sentence of the
@@ -292,6 +317,35 @@ new("ir.item-credit-refuse",  "item-credit-refuse",  "9", "Sec. 9", "Refuse the 
 The divergence check then compares only the two readings of one action, and the false
 positives disappear.
 
+### A guard may test what the command carried, not only what the aggregate holds
+
+A create command carries the value it sets. A guard of the form `business unit != ''`
+then never holds, because the aggregate does not hold the value until the transition
+that the guard is blocking has fired — a deadlock that reads as "the machine has one
+reachable state" rather than as an error.
+
+So a guard on a value the command brings tests `input`, and the traversal evaluates
+the guard **once per candidate input**, not once per state:
+
+```
+| TR-001 | — (initial) | CMD-001 Create application | Business unit chosen | `input != ''` | Sales | ST-001 Draft | `set('business unit', input)` | … |
+```
+
+**When a machine explores fewer states than it has, suspect this first.** A guard that
+cannot hold, a `From` cell that names no state the machine can be in, and an effect
+that writes a term nothing reads all produce the same symptom: a tiny reachable set
+with an exhausted frontier, which looks healthy. Check that each machine's reachable
+count is consistent with its own state table before believing the frontier closed.
+
+**The fourth cause is coupling, and it is the one a per-machine traversal cannot see.**
+If the machine's guard reads a term that only a *different* machine's transition sets,
+the guard can never hold inside the machine's own state space — the target reports one
+reachable state, exactly as a guard that cannot hold would. A machine whose count
+stays at one while its own state table lists five states is not a machine with one
+reachable state — it is a machine whose inputs nobody supplies. The fix is the
+traversal's shape, not a rule added to the target: see *One aggregate, one
+traversal*.
+
 ### The visited-set key must include every field an invariant or action can read
 
 This is the subtlest bug in the whole instrument. The key identifies a state for the
@@ -315,6 +369,36 @@ public static StateKey KeyOf(Application a) => new(
     a.PricingDisplay?.ToString() ?? "-");
 ```
 
+**In the document-driven model the key is COMPUTED, not written.** The same rule applies —
+every field an invariant or action can read MUST appear — but the list of those fields is
+read out of the document rather than typed by hand: take every vocabulary term named by
+ANY transition's guard and effect expression, plus every term named by ANY invariant's
+formal expression, and hold those values in the key alongside the state of EVERY
+machine. Because the traversal runs over one aggregate, the key must too: a key holding
+one machine's state lets the aggregate's other dimensions collapse, and the states that
+collapse are exactly the ones a coupled guard was waiting for.
+
+Two ways this goes wrong, and both are silent:
+
+- **The key holds only the machine's state.** Then every state that differs only in data
+  collapses into one, the second is never explored, and the reachable set collapses to a
+  handful of states — the traversal looks healthy and reports almost nothing.
+- **The key holds a hand-written list of this document's fields.** Then the engine no
+  longer fits another document, and the universality claim is false even though every
+  test passes.
+- **The key renders a flag's unset and its false as different values.** The document's
+  own type says a flag is true or unset — "false" is not a third state of it. So the
+  key must render an unset flag and a flag set to false identically, or the two never
+  collide, the traversal explores both, and a dozen flags become two to the power of a
+  dozen states that differ in nothing. Render what the value IS, not whether it was
+  written. A flag's candidate values are `true` alone for the same reason — offering
+  `false` doubles every flag's branch count for a value the aggregate already
+  represents as absence.
+
+**Derive the key's contents from the document, and let the derivation be the check.** If
+the computed read-set is empty for a machine whose guards clearly read something, the
+parser is wrong — not the machine.
+
 **Keep the state space bounded, or the frontier never closes.** An action that appends
 without limit (say, an "edit" that adds a discount line instead of replacing it) makes
 the reachable set infinite, the traversal hits its cap, and the result is a truncated
@@ -336,9 +420,141 @@ supply candidates or it cannot explore the state at all. Two rules keep that bou
   reachable set is finite and every *rule* still gets to fire. This is a bound on the
   exploration, not a claim that the order does not matter; say so in the report.
 
+  Two ways this goes wrong, and both are silent:
+
+  - **The order is alphabetical, not the document's.** A vocabulary read into a
+    `Dictionary` and enumerated with `OrderBy(x => x)`, or a read-set collected into a
+    `SortedSet<string>`, reorders the document's list without changing anything else.
+    The document groups its terms by what they are FOR, and that grouping is what
+    makes the edit order meaningful; an alphabetical order is a different order, and
+    the traversal silently explores a different space than the one you meant to. Keep
+    the document's order in a list that preserves insertion, and never sort a set
+    whose order the document owns.
+  - **The edit offered is a field the key does not read.** Then the edit changes
+    nothing in the visited-set key, the successor collides with the state it came
+    from, and the traversal dead-ends — with an exhausted frontier, which looks
+    healthy. Offer only a field the machine's own key reads.
+
+### Four ways a document-driven model invents a defect that is not there
+
+Each of these produces a report that is confidently wrong, and each is a silent
+failure in the engine rather than a defect in the document.
+
+**1. An accessor applied to the wrong type is coerced instead of rejected.** The
+expression language defines `term.count` and `term.contains('x')` as **set**
+operations. Applied to a `text` term they have no meaning — so the evaluator must
+return *unknown*, not zero. A `text` term's `count` coerced to `0` turns
+`business unit.count == 1` into a permanent falsehood, and every state of the
+machine then reports the violation. `check` must treat the type mismatch as a defect
+**in the document** — the expression names a set operation on a term the document
+typed as text — because the engine cannot invent the reading that would fix it.
+
+**2. An expression that does not evaluate is reported as a violation.** This is the
+opposite error and just as damaging: a condition the document marks `not expressible`,
+or one whose conjuncts are only partly expressible, is **unchecked**, not broken.
+Reporting it as violated asserts that the specification breaks a rule it never states.
+Keep the two counts apart in the report, and say how many invariants were checked in
+full, in part, and not at all — a reader who sees "12 of 48 invariants checked" can
+weigh the silence, and a reader who sees "40 violations" cannot.
+
+Split an expression on its top-level `&&` before judging it: the conjuncts are
+independently checkable, so one unevaluable conjunct does not condemn the rest. An
+invariant written `divisions.count > 0 && not expressible` has a checkable half and
+an unevaluable half, and the report says exactly that.
+
+**3. An invariant is checked in states its scope does not cover.** The "States /
+Transitions" column is not decoration — it says where the invariant is in force. An
+invariant scoped `Draft → submit` is a precondition of that submit, and checking it
+in every state of the machine manufactures a violation in every state the scope
+excludes. A scope of **All states** means every machine's states; a scope naming
+states, state names, or transitions means those. A cell that names neither a state
+nor a transition is a defect in the document, not a licence to guess.
+
+The scope also decides HOW MANY TIMES an invariant is checked. An invariant scoped
+**All states** holds wherever the aggregate is, so it is checked ONCE against the
+aggregate — not once per machine, which multiplies every violation by the machine
+count and reports several hundred checks over a few hundred states as several
+hundred violations of several different rules. A state-scoped invariant is checked in
+the states it names, on the machine those states belong to.
+
+**4. A coupled machine is traversed in isolation, so its guards never come to hold.**
+§16 says which machine's trigger moves which machine's state. A target machine whose
+guard reads a term only a source machine's transition sets — "the customer's e-mail
+is on file" — has a guard that can never be satisfied inside the target's own state
+space, so the target reports one reachable state and an exhausted frontier. The
+machines are dimensions of one aggregate, so the traversal runs once over the
+aggregate and the coupling is expressed by the aggregate's own structure — not by
+adding the source machine's transitions to the target's frontier, which makes the
+coupling closure the whole document and the frontier stops closing. See *One
+aggregate, one traversal*.
+
+**The symptom is the same in all four, and it looks like health.** A tiny reachable
+set with an exhausted frontier is what a guard that cannot hold, a `From` cell that
+names no reachable state, an effect that writes a term nothing reads, and a
+mis-ordered edit list all produce. So check the machine's reachable count against its
+own state table before believing the frontier closed — and when the count is far
+short of it, work down this list before adding anything new.
+
+### A violation count is not a finding count
+
+The canonical edit order bounds the exploration by editing one field per step, in the
+document's order. That bound has a consequence the report must state: **the states it
+reaches include the ones where the form is half filled.** An invariant whose subject
+is a field the order has not reached yet — `customer type != ''` — therefore fails in
+every one of those states, and its count is a property of the BOUND, not of the
+specification.
+
+So the report owes the reader a distinction it cannot skip: which violations survive
+in a state where the exploration could have filled the field, and which exist only
+because the bound stopped half way through the form. The diagnostic is the SCOPE — an
+invariant scoped to the entry or the submit transition is about a completed form and
+cannot be judged in a partial one — together with how far the bound reached.
+
+Report it rather than leaving the reader to infer it. "Every reachable state violates
+an invariant", with no note that the bound never finished filling the form, is a
+confidently wrong result, and it buries the violations that are real: a reader cannot
+tell a bound artifact from a genuine defect, and every number in the report inherits
+the doubt.
+
+### The inner loop must not re-derive what does not change between states
+
+The traversal evaluates the same expression against the same vocabulary once per state
+per invariant, and resolving an expression against a vocabulary of any size is a scan
+of every term in it. Done per state, that dominates the run: a traversal that reached
+5,000 states in 23 seconds reached them in 3 once the per-invariant work was done once
+instead of once per state.
+
+Cache the four things that do not change between states:
+
+- the **tokens** of an expression, keyed by the expression text and the vocabulary it
+  was tokenised against — give the vocabulary an identity, so one document's terms can
+  never be served to another's expressions;
+- whether an invariant is **checkable**, and why it is not — both resolve the
+  expression against the whole vocabulary;
+- an invariant's **scope**, resolved from the document once per invariant;
+- an invariant's **conjuncts**, split once instead of per evaluation.
+
+Each is a lookup keyed by the invariant's id, and each replaces a whole-document scan
+per state. The rule generalises: in a traversal, anything a rule reads that the
+DOCUMENT owns is constant across states, so compute it once and look it up.
+
+**Give a failed run a stack trace.** When a traversal dies with a bare message —
+"Object reference not set" — the cost of finding the cause is a rebuild with the
+exception printed. Print the stack trace under an environment flag so the ordinary
+run stays clean and the diagnostic run costs one variable set. A bare message sends
+the reader looking at the wrong file: the clone that lost the vocabulary looks
+identical to every clone that kept it, right up to the line that dereferences it.
+
 **Report the frontier as exhausted or not.** A capped traversal must say so in its own
 output; a reader who sees only a state count cannot tell a closed frontier from a
 truncated one.
+
+**Report what the model could NOT execute.** A transition whose guard or effect is
+`not expressible`, or that names a term the document does not define, cannot be
+evaluated — so it is reported as an executable gap, with the reason, and never silently
+skipped. A transition that is skipped in silence is a rule that never fired, and the
+report then reads "the model found no violation here" when it means "the model could not
+look here". The gap list belongs in the export beside the counts.
 
 ```
 STATES VISITED: 29242
@@ -351,6 +567,36 @@ STATES VISITED: 29242
 
 **Invariant checks return the violation AND its evidence**, so the report reads without
 cross-referencing back to the model.
+
+### Four more engine bugs that surface as a crash or an invented state
+
+These are engine bugs, not document defects, and each one is silent until it is not.
+
+**A transition's `From` and `To` belong to machines that are not always the
+transition's own.** The `From` cell names the states a transition may be taken at, and
+the `To` cell the states it lands in — and both are states of whatever machine OWNS
+them, which is not always the machine whose section the row sits in. Resolve the
+owning machine per state id, and use it for two things: whether the action is legal
+(the owner of the From state must be in that state) and where the state change lands
+(the owner of the To state receives it). Assuming the row's own machine owns both
+puts the aggregate into a state no document describes — "Send link" belongs to the
+application machine and moves the customer-link machine's state to *Sent* — and every
+later guard that reads it compares against the wrong thing. Carry the owning machine
+alongside each From and To state id.
+
+**A deep copy carries the document-derived context it was built with.** The clone the
+traversal branches on must carry everything the original had — the vocabulary, the
+state space — not just the data fields. A clone that drops the vocabulary looks
+identical in every assertion about fields and then fails at the first expression it
+is asked to evaluate, which points at the evaluator rather than at the copy. Give the
+copy a stack trace on failure: the copy is not where the bug is, and the message says
+so.
+
+**Unwrap an expression's code fence before you take it apart.** The document writes an
+expression in backticks and the cell keeps them. The evaluator unwraps a whole
+expression, so it never sees them — but anything that SPLITS an expression (on `&&`,
+to check conjuncts independently) leaves the fence inside a fragment, and the fragment
+does not parse. Unwrap first, then split.
 
 ### Probe the claims, do not narrate them
 
@@ -379,6 +625,17 @@ Have the harness **export its computed output as JSON** and have the interactive
 explorer load that file, rather than hand-copying numbers into the HTML. Hand-copied
 numbers silently go stale the moment the model changes, and the artifact then asserts
 figures the model no longer produces.
+
+**The export's output path must never be able to be the document it read.** Take the
+input and the output as SEPARATE arguments, and refuse when they resolve to the same
+file. A harness whose first argument serves both roles replaces the deliverable with
+its own output on the first run — and a hand-built document with no copy and no
+version control is gone, recoverable only by reconstruction from a session log.
+
+**So version-control the deliverable before the instrument runs against it.** The
+document is hours of work and exists nowhere else; `git init` and one commit cost a
+minute and turn an unrecoverable loss into a checkout. Do it before the first export,
+not after the first mistake.
 
 ```csharp
 case "export":
@@ -454,13 +711,17 @@ model-only claim as a product claim.
 
 **Document-driven model:**
 
-1. The parser: machines, states, transitions, invariants, and the §3.1 vocabulary.
+1. The parser: machines, states, transitions, invariants, and the §3.5.2 vocabulary.
 2. The expression evaluator, and the `check` gate that proves every expression resolves.
-3. The aggregate: machine id → state id, plus the attribute bag.
-4. The transition table as data, built from the parsed rows.
-5. Invariant checks driven by the document's own expressions.
-6. The key, derived from the document's state and coupling tables.
-7. The breadth-first traversal, plus the probes for each finding's reachability claim.
+3. The aggregate: machine id → state id, plus the attribute bag — ONE aggregate, not
+   one per machine.
+4. The transition table as data, built from the parsed rows, each row carrying the
+   machine that owns its From and To states.
+5. Invariant checks driven by the document's own expressions, honouring each
+   invariant's scope.
+6. The key: every machine's state plus every term any rule names, all computed.
+7. The breadth-first traversal over that one aggregate, plus the probes for each
+   finding's reachability claim.
 8. The export that emits the computed result for the diagram to consume.
 9. Iterate until `check` passes, every probe agrees with its finding, and the traversal
    exhausts its frontier.

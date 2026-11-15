@@ -259,9 +259,9 @@ Include forbidden or unspecified transitions in a separate section rather than s
 #### 3.5.1 The expression language
 
 Expressions are written over the **expression vocabulary** declared in the glossary
-section (§3.1): every term the document uses as a data name, with its type. No other
-identifier may appear in an expression — a name that is not in the vocabulary is an
-unresolvable expression, and it must be reported, not guessed.
+section (§3, in its own subsection): every term the document uses as a data name, with
+its type. No other identifier may appear in an expression — a name that is not in the
+vocabulary is an unresolvable expression, and it must be reported, not guessed.
 
 **Terms** — a term name, optionally with an accessor:
 
@@ -275,6 +275,13 @@ unresolvable expression, and it must be reported, not guessed.
 | `input` | the value the command carried with it — the text the actor typed, or the map of field/value pairs an edit command carried |
 
 **Operators** — `&&`, `||`, `!`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `=>` (implication), parentheses.
+
+**An accessor must match its term's type.** `count` and `contains` are set operations;
+`empty` works on any type. Writing `business unit.count == 1` when `business unit` is
+a `text` term is not evaluable as written, and no verifier can invent the reading that
+would fix it — so the document must not do it. Either type the term as a set, or write
+the condition the type supports (`business unit != ''` for a text term). The
+document's own §3.1 vocabulary is the authority on which is correct.
 
 **Effects** — a `;`-separated list of assignments:
 
@@ -314,10 +321,24 @@ Declare the vocabulary in the glossary section, as a table under §3:
 
 | Term | Type | Domain / Values | Notes |
 |---|---|---|---|
-
 Types are `flag`, `text`, `set`, `number`. A term whose domain the source spec leaves open
 takes the literal `—` for its values. Terms come from the source document's own field
 names — never invented for the model.
+
+**Give the vocabulary its own subsection number, and make it unique within §3.** The
+glossary section already carries subsections of its own — the overloaded terms, the
+undefined terms — and the vocabulary is a third one. Two subsections under §3 that
+both read `### 3.1` put two different tables in the same slot: a reader looking for
+the vocabulary finds one of them by luck, and a parser that keys on the subsection
+number reads whichever it reached first. Number the subsections in the order they
+appear, and check before writing that no two headings under the same section carry
+the same number.
+
+**A parser must be able to find the vocabulary by its COLUMNS** — `Term`, `Type`,
+`Domain / Values` — and not by the subsection number alone. The number is for the
+reader; the columns are for the tooling. A checker that keys on the number reads the
+wrong table the moment the document renumbers its subsections, and then reports every
+expression in a sound document as unresolvable.
 
 #### 3.5.3 What "not expressible" has to say
 
@@ -336,6 +357,19 @@ A marking with no reason is indistinguishable from a marking nobody got to, and 
 verifier's coverage figure becomes hollow: a document may mark half its invariants
 unexpressive and still pass every check. The reason is what lets a reader tell
 "the specification does not model this" from "the analysis did not reach this".
+
+**The reason must be prose, not another expression.** A conjunct beside the marking is
+not a justification — it says nothing about what would have to be modelled. So
+`divisions.count > 0 && not expressible` is not one unevaluable condition: it is a
+checkable conjunct beside an unevaluable one, and it needs a reason for the second
+part in words.
+
+**Prefer splitting the cell over mixing the marking in.** An invariant with a
+checkable part and an unevaluable part is best written as two conjuncts, each
+labelled, so the verifier can check what it can and report the rest as unchecked.
+An evaluator that cannot evaluate a conjunct does not thereby declare the whole
+invariant broken — it reports it as unchecked, and the difference between "checked and
+violated" and "not checked" is the difference between a finding and a gap.
 
 ### 3.6 State invariants
 
@@ -367,6 +401,15 @@ For each invariant, document:
   that names neither a state nor a transition does not say which machine owns the
   invariant, and is a defect in the document.
 - Applicable transitions.
+
+**The applicable-states cell is load-bearing, not a label.** It says where the
+invariant is IN FORCE, and a verifier checks the invariant exactly there and nowhere
+else. `Draft → submit` scopes the invariant to the submit from Draft — a precondition
+of that one transition — and checking it in every state of the machine manufactures a
+violation in every state the scope excludes. Write the scope so it names what the
+invariant constrains: a state or state name when it holds throughout that state, a
+transition when it is a precondition of that transition, and **All states** when it
+holds always.
 - Enforcement responsibility.
 - Consequences of violation.
 - Evidence and explicitness classification.

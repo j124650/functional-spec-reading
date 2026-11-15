@@ -313,10 +313,70 @@ transitions carry a **guard expression and an effect expression**, §15's invari
 **formal expression**, and §3.1 declares the **vocabulary** those expressions draw on.
 Build the model after the document, against the rules the document already states.
 
+**The instrument must hold no entity of the document it verifies.** The test is whether it
+runs against a *second* document with no code change. An aggregate with a property per
+entity, a key struct per machine, a context table listing which fields each machine
+reads, a rule layer whose predicates name this document's fields — each of those fails
+that test, and each of them works perfectly on the one document in front of you. When the
+document lacks a field the model needs, **fix the format** — the generation rules, then
+the document — not the engine: a workaround in the engine is invisible in the document,
+so the next reader cannot tell which rules came from the specification and which from
+the author of the model. And when you notice such a leak in your own work, say so at
+the moment you find it; a silent defect presented as a finished result is worse than the
+defect.
+
+**A per-spec constant is a leak, and so is a per-spec *file*.** Hardcoding one
+document's state ids, term names, or entity names into the engine fails the same test,
+and it usually arrives disguised: a `const` class of one document's state ids, a
+helper that builds one document's initial aggregate, a table of one document's
+machines. A file whose name says which document it serves is the loudest signal of
+all — if the engine cannot be pointed at a second document, the file named after the
+first one is the proof. **Delete the per-spec file rather than generalising it in
+place**, because generalising it in place is how a file named after one document comes
+to contain the rules of another.
+
+**Decide abstract-vs-concrete BEFORE writing the engine, and never drift.** The
+question "is this verifier abstract or concrete?" has one answer, and it is decided by
+whether the engine names any entity of the document. If it does, the fix is to remove
+the names — not to rename the offending variables and call the result universal. An
+engine that has been through a refactor and still mentions one document's terms is
+concrete with better manners, and every renaming round reintroduces the leak in a form
+that is harder to see. When a rewrite is requested, the acceptance test is the second
+document, not the first one's results.
+
+**State the decision you made and why, in one line, at the moment you make it.** The
+reader asked "is the verifier abstract or concrete?" and the answer had to be
+reconstructed from the diff. When a load-bearing choice has two defensible answers —
+transcribed model or document-driven, an expression column or a hand-written rule
+layer — say which one you took and what it costs, before building. Then do not reopen
+it mid-task: re-deriving an agreed decision is the loop the reader is paying for, and
+switching modes after the engine is half-written is what produces a file that is
+concrete in the parts you forgot to generalise.
+
+**The shape of the model is a decision too, and it is made once.** How many state
+spaces the traversal runs over, what a state key holds, where an invariant is checked
+— each has one right answer for a given document, and each is a change that ripples
+through the parser, the key, the checker and the export. Settle them from the
+document before writing the traversal, and when the reader has already ruled on one,
+take that ruling as settled: re-deriving it mid-build is the churn that leaves the
+engine half-migrated across two incompatible shapes, with neither of them building.
+When a shape turns out to be wrong, change it in one pass across every file that
+depends on it — a key, a checker and an explorer that disagree about the state space
+produce numbers that are individually plausible and jointly meaningless.
+
 **Run the model's own check before trusting anything it says.** It resolves every
-expression in the document against the document's vocabulary. A failure means an
+expression in the document against the document's own vocabulary. A failure means an
 expression names a term the document does not define — a defect in the document, fixed
 in the document.
+
+**Build the model over ONE aggregate, not one traversal per machine.** The document's
+machines are dimensions of a single aggregate, so the traversal runs once over it and
+the report groups the result per machine afterwards. A per-machine traversal starves
+every machine whose guard reads a term another machine's transition sets — it reports
+one reachable state and an exhausted frontier, which looks like a healthy result. And
+the obvious repair, walking the source machine's transitions inside the target's
+traversal, makes the coupling closure the whole document and the frontier stops
+closing. `references/executable-spec-model.md` has the shape and the reasons.
 
 The distinction is load-bearing. A model that visits hand-built states and prints a count
 has **asserted** reachability; a model that starts from one initial state and applies
@@ -615,6 +675,11 @@ there once and in full; the rules below are the ones that reach past the explore
   for the source format duplicates a source of truth and is work the task never asked
   for. Reach for the file you have, then for the extract you already made, and only
   then consider parsing the original.
+- **Read the region you are about to change; do not survey the file to re-derive what
+  you already know.** When the artifact's format is fixed by rules you have read, a
+  grep that re-establishes what the file contains returns nothing and costs a turn.
+  Read the lines the next edit touches — `read_file` with an offset — or the whole file
+  once when it is small, then act on what you read.
 - **A definition is not a verification.** Reading a term's definition once proves nothing;
   the term's other occurrences are where it changes meaning. Check them.
 - **Cite the doc's own sections as the anchor.** `§` numbers are what the author wrote and
@@ -650,6 +715,15 @@ there once and in full; the rules below are the ones that reach past the explore
   appends without limit makes the traversal hit its cap, and a truncated frontier is an
   asserted result wearing a computed result's clothes. Enforce the spec's own
   cardinality rules in the effect, and report whether the frontier was exhausted.
+- **A violation count is not a finding count.** The bound that keeps the frontier
+  closing also shapes WHICH states the traversal reaches: it edits one field at a
+  time, so the reachable set includes half-filled forms. An invariant about a
+  completed form — "the customer type is one of the ERP list values" — then fails in
+  every one of those states, and the count is a property of the BOUND, not of the
+  specification. Say in the report which violations the bound accounts for and which
+  survive in a state where the bound could have reached further: a reader who cannot
+  tell a bound artifact from a genuine defect inherits the doubt on every number in
+  the report. `references/executable-spec-model.md` has the diagnostic.
 - **Do not leave the deliverable half-migrated.** A layout rewrite that changes the
   markup but not the scripts that read it leaves a broken page. When the structure
   changes, change the markup and the code that drives it in the same pass and re-verify
@@ -659,12 +733,51 @@ there once and in full; the rules below are the ones that reach past the explore
   When the reader asks "what are we developing?", answer that; do not start writing
   scaffolding. When they ask how to invoke this in a fresh session, give the invocation
   and stop.
+- **Execute the agreed plan instead of re-deriving it.** Once the reader has approved a
+  plan, the remaining turns are that plan's steps — not a fresh analysis of whether it
+  is still the right plan. Restating it, asking which step comes first, or announcing
+  what the next step will be reads as looping and spends the budget the execution
+  needs. When the budget is tight, spend what is left on the fix and its verification:
+  a summary describing an unexecuted plan is worth less than one line of state.
+- **One task at a time, and finish the one you were given.** When the reader narrows
+  the ask — "one task at a time", "fix the verifier", "verifier first, then the UI" —
+  that narrowing is the plan. Do not start the next task while the current one is
+  unfinished, and do not widen the current one to include it. A half-finished
+  verifier plus a half-built page is two broken things instead of one finished one,
+  and the reader has to re-establish which of them is actually in progress.
+- **A blocked task is a blocker to name, not a reason to re-plan.** When the current
+  task cannot proceed, say what blocks it and what would unblock it, and stop. Do not
+  start a neighbouring task, re-derive the architecture, or widen the scope to fill
+  the gap — each reads as derailing, and the reader asked for one task because the
+  budget only covers one.
+- **Stop the background work when the reader says stop.** A dispatched reviewer,
+  corrector, or helper keeps running and keeps spending budget after the reader has
+  said to stop or to narrow the task. Stop what is running, and say what you stopped.
+  A subagent that completes after the task was narrowed returns a result nobody
+  asked for, and folding it in re-opens settled ground.
+- **Do not report a fact you have not verified, and do not dress a guess as a
+  finding.** A claim that a document's cell is truncated, that an expression is
+  malformed, that a state count is too low — each needs the mechanism shown. When a
+  diagnostic tool reports a discrepancy, check the tool before you believe it: a
+  splitter that treats every `|` as a cell boundary will "prove" a healthy row is
+  corrupt, and reporting that costs the reader a rewrite of a correct document. Say
+  what you checked and what it showed. **Verify the tool's own output before
+  concluding the tool is wrong too**: a naive cell splitter reports a row as
+  truncated when the row simply contains the language's `||`, and believing it sends
+  you to repair a correct document. Dump the raw bytes of the suspect cell and read
+  them before naming a defect.
 - **Do not report a defect you already know how to fix.** Finish the fix and re-verify
   it, then report. A report that names a known defect and hands it back to the reader
   is a delivery in name only, and it reads as "the work stopped here" — the reader
   then has to ask for the rest. If a defect genuinely needs a decision the user has
   not made, say so and ask; but a defect whose fix you are already holding is yours
-  to finish before you summarise.
+  to finish before you summarise. And say it the moment you find it: a defect you
+  noticed and stayed silent about is a defect you chose to ship.
+- **A summary that says "X is still wrong" is an unfinished task, not a report.** When
+  you know the next command and the next file, the work is not done — the reader is
+  paying for the fix, not for a map of it. End the turn with the change landed and
+  verified. When the budget genuinely runs out mid-fix, name the one command that
+  continues it, so the next turn starts from the fix rather than from the diagnosis.
 - **A layout assertion must be shown to fail.** A check that passes against the
   broken build is measuring the wrong thing — the headless default window is small
   enough that the overflow cannot happen. Set a desktop viewport in the harness, then
@@ -718,7 +831,9 @@ there once and in full; the rules below are the ones that reach past the explore
   and what is left. A silent stop reads as "done" and hides a broken artifact the user
   cannot see — they will find it themselves and stop trusting the rest of the report.
   When a rework lands halfway, say plainly which parts are wired up and which are not,
-  and say if the artifact is currently broken.
+  and say if the artifact is currently broken. **End with the next command, not with a
+  summary of the plan** — "here is what is broken" without "here is the command that
+  fixes it" still leaves the reader choosing, and a restated plan reads as a stop.
 - **Verify each artifact the moment you write it.** A defect introduced in the last
   twenty minutes of a long session is invisible to a summary written from memory, and
   a summary that claims more than was checked is worse than one that admits the gap.
@@ -727,7 +842,20 @@ there once and in full; the rules below are the ones that reach past the explore
   Compare timestamps and the figures themselves before reporting that the deliverable
   reflects the latest analysis — the question "is this based on the most recent data?"
   deserves a real check, not an assurance.
-
+- **A tool that writes must never be able to write over the file it reads.** An export
+  command whose first argument is BOTH the input document and the output path replaces
+  the deliverable with its own output on the first run — and nothing recovers it, because
+  the deliverable was hand-built, unique, and not under version control. Take the input
+  and the output as separate arguments and refuse when they resolve to the same file.
+  Before any instrument runs against the deliverable, put the deliverable under version
+  control: a hand-built document with no copy and no history is one typo from gone, and
+  the recovery is reconstruction rather than restoration.
+- **The skill's own rules live in a repository; commit them there.** When a skill's
+  references, templates or scripts are changed, the change belongs in the skill's
+  repository, committed and pushed — not only in the local profile directory, where a
+  reinstall or a curator pass discards it and no diff survives. Check the repository
+  before concluding that a skill is unversioned: a local `git` probe that finds no
+  repository says nothing about a remote that holds it.
 ## Verification
 
 Before delivering:
@@ -769,6 +897,12 @@ deliverable is fine.
     produced, and the probe for that finding agrees with it. Every defect test is
     labelled *contradiction* or *gap*, and the deliverable's summary counts match the
     tests that exist. `references/executable-spec-model.md` has the harness's rules.
+11. **The document's expressions resolve against the document's own vocabulary.**
+    `node scripts/check-model-expressions.js <document.md>` checks every transition's
+    guard and effect, every invariant's formal expression, every `not expressible`
+    that carries no reason, and every invariant that names no state — and exits
+    non-zero naming each disagreement. Run it before the model, so a format defect is
+    found in the document rather than worked around in the engine.
 
 *If you built an explorer page:*
 
