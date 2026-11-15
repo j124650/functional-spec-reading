@@ -19,11 +19,16 @@
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.resolve(__dirname, "..");
+/* The CONTRACT is format-level: it ships with the skill, and every project
+   in this format obeys it. The PAGE is the project's — it is the thing
+   being checked. So the contract is looked for beside this script, and
+   the page in the working directory. */
+const SKILL = path.resolve(__dirname, "..");
+const PROJECT = process.cwd();
 const contractPath = path.resolve(
-  process.argv[2] || path.join(ROOT, "explorer", "export.contract.json"));
+  process.argv[2] || path.join(SKILL, "explorer", "export.contract.json"));
 const pagePath = path.resolve(
-  process.argv[3] || path.join(ROOT, "explorer", "explorer.template.html"));
+  process.argv[3] || path.join(PROJECT, "explorer", "explorer.template.html"));
 
 if (!fs.existsSync(contractPath) || !fs.existsSync(pagePath)) {
   console.error("usage: node check-contract-vs-page.js [contract.json] [page.html]");

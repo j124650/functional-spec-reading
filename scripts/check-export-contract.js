@@ -25,10 +25,12 @@
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.resolve(__dirname, "..");
+/* The CONTRACT is format-level and ships with the skill; the EXPORT is the
+   project's, so it is named on the command line. */
+const SKILL = path.resolve(__dirname, "..");
 const exportPath = path.resolve(process.argv[2] || "");
 const contractPath = path.resolve(
-  process.argv[3] || path.join(ROOT, "explorer", "export.contract.json"));
+  process.argv[3] || path.join(SKILL, "explorer", "export.contract.json"));
 
 if (!exportPath || !fs.existsSync(exportPath)) {
   console.error("usage: node check-export-contract.js <export.json> [contract.json]");

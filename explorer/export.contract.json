@@ -1,0 +1,2390 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specreader.local/schemas/explorer-export.json",
+  "schemaVersion": 1,
+  "title": "Explorer export contract",
+  "description": "The seam between the verifier's exporter and the explorer page. The exporter writes `data`; this file describes what `data` must contain, what it means, and how the page renders it. Both sides are bound by it: the build refuses to embed an export that does not conform, and the page refuses to render one that does not. CONVENTIONS. `description` states the MEANING, and only where the meaning is not self-evident from the name and type — a field called `states` needs no gloss, a field called `violating` does. `x-view` names the page that consumes the field, or `machine-only` when the page does not render it; every field carries one, so a field the page ignores is a declared decision rather than an accident. `x-presentation` says how the field reaches the reader. `x-role` marks the field of a record that is its name, its detail, its evidence or its code. `x-idSeries` is the format's identifier namespace: both sides must agree on it, so it is stated here rather than written into either. `x-views` is the page set: the page has these pages and knows how to draw them, so a view naming a renderer the page does not have must be reported, not silently skipped. WIDENING. Adding a field to `data` does not require changing this file's `required` list, and does not require changing the page: the page renders the views it knows and reports the ones it does not.",
+  "type": "object",
+  "required": [
+    "document",
+    "generated",
+    "modelOf",
+    "counts",
+    "statesVisited",
+    "statesViolating",
+    "frontierExhausted",
+    "trace",
+    "machines",
+    "states",
+    "transitions",
+    "invariants",
+    "findings",
+    "questions",
+    "violations",
+    "uncheckedInvariants",
+    "probes",
+    "byMachine",
+    "byState",
+    "couplings",
+    "contexts",
+    "glossary",
+    "vocabulary",
+    "roles",
+    "commands",
+    "events",
+    "policies",
+    "entities",
+    "valueObjects",
+    "catalogue",
+    "catalogueAggregates",
+    "catalogueScenarios",
+    "catalogueNamedRules",
+    "catalogueStates",
+    "catalogueTransitions",
+    "catalogueInvariants",
+    "catalogueFindings",
+    "catalogueQuestions",
+    "hierarchy",
+    "idSeries",
+    "divergences",
+    "divergenceCount",
+    "gaps",
+    "samples"
+  ],
+  "properties": {
+    "document": {
+      "type": "string",
+      "description": "The file name of the document this export describes.",
+      "x-view": "header",
+      "x-presentation": "text"
+    },
+    "generated": {
+      "type": "string",
+      "description": "ISO-8601 timestamp of when the export was produced. The page shows it so a reader can tell an old page from a current one.",
+      "x-view": "header",
+      "x-presentation": "text"
+    },
+    "modelOf": {
+      "type": "string",
+      "description": "What the export is a model OF — the specification, not an implementation. The page states it verbatim.",
+      "x-view": "header",
+      "x-presentation": "text"
+    },
+    "counts": {
+      "type": "object",
+      "description": "How much of each kind the model holds. The page shows these in the header; they are the model's own tallies, never recomputed by the page.",
+      "x-view": "header",
+      "x-presentation": "stats",
+      "required": [
+        "machines",
+        "states",
+        "transitions",
+        "invariants",
+        "findings",
+        "questions",
+        "couplings",
+        "vocabulary"
+      ],
+      "properties": {
+        "machines": {
+          "type": "number"
+        },
+        "states": {
+          "type": "number"
+        },
+        "transitions": {
+          "type": "number"
+        },
+        "invariants": {
+          "type": "number"
+        },
+        "findings": {
+          "type": "number"
+        },
+        "questions": {
+          "type": "number"
+        },
+        "couplings": {
+          "type": "number"
+        },
+        "vocabulary": {
+          "type": "number"
+        }
+      }
+    },
+    "statesVisited": {
+      "type": "number",
+      "description": "How many aggregate states the exploration enumerated. Bounded by the state cap; see `trace`.",
+      "x-view": "reach",
+      "x-presentation": "stat"
+    },
+    "statesViolating": {
+      "type": "number",
+      "description": "How many of the enumerated states carry at least one violated invariant.",
+      "x-view": "reach",
+      "x-presentation": "stat"
+    },
+    "frontierExhausted": {
+      "type": "boolean",
+      "description": "TRUE if and only if the exploration enumerated EVERY reachable state. FALSE when the traversal stopped at the state cap — which it did on this model, and the page must then say so rather than claiming completeness. The constraint: this must be FALSE whenever `trace` reports that the cap was reached.",
+      "x-view": "reach",
+      "x-presentation": "stat"
+    },
+    "trace": {
+      "type": "array",
+      "description": "The engine's own account of what it did, in its own words. The page renders it verbatim. A reader weighs the silence of the model against these lines.",
+      "x-view": "reach",
+      "x-presentation": "text",
+      "items": {
+        "type": "string"
+      }
+    },
+    "divergences": {
+      "type": "array",
+      "description": "Places where two readings of the document give different results for the same aggregate. Each carries both readings and the path that produced them. Empty means the model found none — the page must still say so, not omit the section.",
+      "x-view": "reach",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "group",
+          "readingA",
+          "readingB",
+          "keyA",
+          "keyB",
+          "sourcePath"
+        ],
+        "properties": {
+          "group": {
+            "type": "string"
+          },
+          "readingA": {
+            "type": "string"
+          },
+          "readingB": {
+            "type": "string"
+          },
+          "keyA": {
+            "type": "string"
+          },
+          "keyB": {
+            "type": "string"
+          },
+          "sourcePath": {
+            "type": "string",
+            "description": "The path through the aggregate where the two readings part."
+          }
+        }
+      }
+    },
+    "divergenceCount": {
+      "type": "number",
+      "description": "How many divergences were found. Equals divergences.length; the page uses it so it need not count.",
+      "x-view": "reach",
+      "x-presentation": "stat"
+    },
+    "gaps": {
+      "type": "array",
+      "description": "Transitions the engine could not execute, and why. A gap is NOT a violation: it is where the model could not look. Empty means none.",
+      "x-view": "reach",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "transition",
+          "machine",
+          "reason",
+          "detail"
+        ],
+        "properties": {
+          "transition": {
+            "type": "string"
+          },
+          "machine": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "samples": {
+      "type": "array",
+      "description": "Worked example paths for the violations — the path that reaches a state where the rule fails. The page shows them beside the violation counts, so a count is not an assertion without a witness.",
+      "x-view": "findings",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "machineStates",
+          "violations",
+          "path"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "machineStates": {
+            "type": "object"
+          },
+          "violations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "machines": {
+      "type": "array",
+      "description": "The state machines the document defines.",
+      "x-view": "machines",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "concept",
+          "dimensions",
+          "classification",
+          "initialState",
+          "terminalStates",
+          "confidence",
+          "states"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The machine's identifier, SM-nnn."
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "concept": {
+            "type": "string"
+          },
+          "dimensions": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "initialState": {
+            "type": "string"
+          },
+          "terminalStates": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "string"
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The ids of the states in this machine, in document order."
+          }
+        }
+      }
+    },
+    "states": {
+      "type": "array",
+      "description": "Every state the document names.",
+      "x-view": "machines",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "machine",
+          "name",
+          "meaning",
+          "kind",
+          "invariants",
+          "source",
+          "reachable"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The state's identifier, ST-nnn."
+          },
+          "machine": {
+            "type": "string",
+            "description": "The id of the machine this state belongs to."
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "meaning": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "invariants": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "Where the document states this state."
+          },
+          "reachable": {
+            "type": "boolean",
+            "description": "Whether the exploration reached this state at all."
+          }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "description": "Every transition the document names, with the guard and effect it was built from and the states it resolves to.",
+      "x-view": "transitions",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "machine",
+          "from",
+          "to",
+          "fromStates",
+          "toStates",
+          "fromIsInitial",
+          "toUnstated",
+          "trigger",
+          "guard",
+          "guardExpression",
+          "effectExpression",
+          "actor",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The transition's identifier, TR-nnn."
+          },
+          "machine": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string",
+            "description": "The document's own From cell, verbatim — it may name several states."
+          },
+          "to": {
+            "type": "string",
+            "description": "The document's own To cell, verbatim."
+          },
+          "fromStates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The state ids the From cell resolves to. RESOLVED by the engine; the page never re-parses the cell."
+          },
+          "toStates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The state ids the To cell resolves to."
+          },
+          "fromIsInitial": {
+            "type": "boolean",
+            "description": "The transition leaves the initial state rather than a named one."
+          },
+          "toUnstated": {
+            "type": "boolean",
+            "description": "The document names no destination for this transition; the diagram draws a synthetic node."
+          },
+          "trigger": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "guard": {
+            "type": "string",
+            "description": "The guard in the document's words."
+          },
+          "guardExpression": {
+            "type": "string",
+            "description": "The guard as a formal expression over the expression vocabulary. The page reads it in words with its own live decypherer; the reading is the PAGE's business, not the export's, so it is not part of this contract."
+          },
+          "effectExpression": {
+            "type": "string",
+            "description": "The effect as a formal expression. Read in words by the page, as above."
+          },
+          "actor": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "description": "Every invariant the document states, with the scope it binds to and whether it could be checked.",
+      "x-view": "invariants",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "category",
+          "scope",
+          "states",
+          "expression",
+          "checkable",
+          "reason",
+          "register",
+          "evidence",
+          "machine"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The invariant's identifier, INV-nnn."
+          },
+          "text": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "category": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string",
+            "description": "What the invariant binds to — an aggregate, a machine, a state or a transition."
+          },
+          "states": {
+            "type": "string",
+            "description": "The document's own 'States / Transitions' column, verbatim."
+          },
+          "expression": {
+            "type": "string",
+            "description": "The formal expression the invariant was checked against."
+          },
+          "checkable": {
+            "type": "boolean",
+            "description": "Whether the invariant could be checked at all. An unchecked invariant is NOT a satisfied one; the page reports it apart from the violations."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why it could not be checked. Null when it could."
+          },
+          "register": {
+            "type": "string",
+            "description": "How the document registers the invariant — stated, derived, or broken by construction."
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "machine": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "What the analysis concluded is wrong or missing in the document.",
+      "x-view": "findings",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "evidence",
+          "impact",
+          "clarification",
+          "probe"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The finding's identifier, F-nn."
+          },
+          "title": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "'Confirmed defect' or 'Spec gap'."
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "clarification": {
+            "type": "string"
+          },
+          "probe": {
+            "type": "string",
+            "description": "The id of the probe that tested this finding — F-nn, matching the probes array."
+          }
+        }
+      }
+    },
+    "probes": {
+      "type": "array",
+      "description": "The reachability probes. Each carries its VERDICT and the predicate that produced it. The page shows the verdict; it never asserts a reachability claim the engine did not make.",
+      "x-view": "findings",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "status",
+          "predicate",
+          "detail",
+          "statesMatching",
+          "examplePath"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "REPRODUCED, NOT REPRODUCED, or NOT PROBED."
+          },
+          "predicate": {
+            "type": "string",
+            "description": "The aggregate predicate the probe tested."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Why the probe reached that verdict."
+          },
+          "statesMatching": {
+            "type": "number"
+          },
+          "examplePath": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "description": "The open questions for the domain experts.",
+      "x-view": "open",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "priority",
+          "blocks",
+          "related"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The question's identifier, Q-nn."
+          },
+          "question": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "blocks": {
+            "type": "string"
+          },
+          "related": {
+            "type": "string",
+            "description": "The findings this question bears on, by id."
+          }
+        }
+      }
+    },
+    "violations": {
+      "type": "array",
+      "description": "Each invariant that was violated: how many states fail it, why, where the document says so, and one worked example path. NOT folded together with the unchecked invariants — they are different claims.",
+      "x-view": "reach",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "machine",
+          "states",
+          "detail",
+          "evidence",
+          "examplePath"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The invariant's id."
+          },
+          "text": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "machine": {
+            "type": "string"
+          },
+          "states": {
+            "type": "number",
+            "description": "How many of the enumerated states fail this invariant."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Which conjunct of the expression fails, and how."
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "examplePath": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "uncheckedInvariants": {
+      "type": "array",
+      "description": "The invariants the engine could not check, and why. Kept apart from the violations: a page that merges them says the specification breaks rules it never states.",
+      "x-view": "open",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "machine",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "machine": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Whether the specification does not model it, or the analysis did not reach it."
+          }
+        }
+      }
+    },
+    "byMachine": {
+      "type": "array",
+      "description": "Coverage per machine: how many states were reached, how many violate, and how many of the machine's invariants were checked. The per-machine grouping a reader weighs first.",
+      "x-view": "reach",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "machine",
+          "name",
+          "concept",
+          "classification",
+          "initialState",
+          "terminalStates",
+          "total",
+          "violating",
+          "invariantsChecked",
+          "invariantsTotal"
+        ],
+        "properties": {
+          "machine": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "concept": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "initialState": {
+            "type": "string"
+          },
+          "terminalStates": {
+            "type": "string"
+          },
+          "total": {
+            "type": "number"
+          },
+          "violating": {
+            "type": "number"
+          },
+          "invariantsChecked": {
+            "type": "number"
+          },
+          "invariantsTotal": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "byState": {
+      "type": "array",
+      "description": "Coverage per machine state — 'of the states where the application is in Draft, how many break a rule'. The grouping a reviewer actually reads.",
+      "x-view": "reach",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "machine",
+          "state",
+          "name",
+          "total",
+          "violating"
+        ],
+        "properties": {
+          "machine": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "total": {
+            "type": "number"
+          },
+          "violating": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "couplings": {
+      "type": "array",
+      "description": "The dependencies between machines the document states.",
+      "x-view": "couplings",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "source",
+          "target",
+          "trigger",
+          "effect",
+          "ordering",
+          "synchronous",
+          "evidence"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "The upstream machine, by id."
+          },
+          "target": {
+            "type": "string",
+            "description": "The downstream machine, by id."
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "ordering": {
+            "type": "string"
+          },
+          "synchronous": {
+            "type": "boolean"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "contexts": {
+      "type": "array",
+      "description": "The context map: each pair of contexts, the candidate relationship, and the evidence for and against it.",
+      "x-view": "couplings",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "pair",
+          "relationship",
+          "evidenceFor",
+          "evidenceAgainst",
+          "whatWouldSettle"
+        ],
+        "properties": {
+          "pair": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "relationship": {
+            "type": "string"
+          },
+          "evidenceFor": {
+            "type": "string"
+          },
+          "evidenceAgainst": {
+            "type": "string"
+          },
+          "whatWouldSettle": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "glossary": {
+      "type": "array",
+      "description": "The ubiquitous language: every term, what it means, where it is used, and whether the document settles it. `status` is the document's own sentence and may carry a note after an em dash.",
+      "x-view": "glossary",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "term",
+          "definition",
+          "context",
+          "evidence",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The term's identifier, TERM-nnn."
+          },
+          "term": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "The document's own status sentence, e.g. 'Defined (partial) — start point Conflicting, see F-03'. The page splits it at the first em dash: the status word in the chip, the note after it, with the ids in the note linked."
+          }
+        }
+      }
+    },
+    "vocabulary": {
+      "type": "array",
+      "description": "The expression vocabulary: every term a guard or effect may use, and the domain it belongs to. The order is the document's, never alphabetical.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "term",
+          "type",
+          "domain"
+        ],
+        "properties": {
+          "term": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "type": {
+            "type": "string",
+            "description": "'text' or 'set' — a set term admits .count and .contains, a text term does not."
+          },
+          "domain": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "roles": {
+      "type": "array",
+      "description": "The roles the document names, and what each may do.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "mayDo",
+          "instances",
+          "source"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "mayDo": {
+            "type": "string"
+          },
+          "instances": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "description": "The commands the document names.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "actor",
+          "guards",
+          "effects",
+          "rejection",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "guards": {
+            "type": "string"
+          },
+          "effects": {
+            "type": "string"
+          },
+          "rejection": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "description": "The domain events the document names.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "meaning",
+          "trigger",
+          "affects",
+          "consequences",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "meaning": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "affects": {
+            "type": "string"
+          },
+          "consequences": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "policies": {
+      "type": "array",
+      "description": "The policies the document names.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "trigger",
+          "condition",
+          "action",
+          "scope",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "description": "The entities the document names.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "identity",
+          "purpose",
+          "lifecycle",
+          "relationships",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "identity": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "type": "string"
+          },
+          "relationships": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "valueObjects": {
+      "type": "array",
+      "description": "The value objects the document names.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "meaning",
+          "attributes",
+          "constraints",
+          "equality",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "meaning": {
+            "type": "string"
+          },
+          "attributes": {
+            "type": "string"
+          },
+          "constraints": {
+            "type": "string"
+          },
+          "equality": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "catalogue": {
+      "type": "array",
+      "description": "Every identifier the document issues, flattened: one record per id, with the name it stands for. The page's link index is built from this, and the Catalogue page lists it. FLAT on purpose, so every page's table is over one uniform shape.",
+      "x-view": "catalogue",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "series",
+          "kind",
+          "id",
+          "name",
+          "detail",
+          "extra",
+          "evidence"
+        ],
+        "properties": {
+          "series": {
+            "type": "string",
+            "description": "The namespace the id belongs to — ENT, VO, TERM, SRC, AGG, BC, CMD, EVT, POL, SCN, N."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What the series means — 'Entity', 'Value object', 'Glossary term', and so on."
+          },
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "detail": {
+            "type": "string",
+            "description": "What the document says the thing IS."
+          },
+          "extra": {
+            "type": "string",
+            "description": "A second dimension the document gives it — constraints, a root, an overload note."
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "catalogueAggregates": {
+      "type": "array",
+      "description": "The aggregate candidates, each with its aspects as the document lays them out.",
+      "x-view": "catalogue",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "root",
+          "confidence",
+          "evidence",
+          "aspects"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "root": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "aspects": {
+            "type": "array",
+            "description": "The aggregate's aspects, each with the document's own evidence.",
+            "items": {
+              "type": "object",
+              "required": [
+                "aspect",
+                "content",
+                "evidence"
+              ],
+              "properties": {
+                "aspect": {
+                  "type": "string",
+                  "x-role": "name"
+                },
+                "content": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "catalogueScenarios": {
+      "type": "array",
+      "description": "The scenario reconstructions, each with the labelled parts the document gives them.",
+      "x-view": "catalogue",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "evidence",
+          "parts"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "label",
+                "text"
+              ],
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "x-role": "name"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "catalogueNamedRules": {
+      "type": "array",
+      "description": "The rules the document states about a person, rewritten around a role.",
+      "x-view": "catalogue",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "role",
+          "rewritten",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "role": {
+            "type": "string"
+          },
+          "rewritten": {
+            "type": "string",
+            "description": "The same rule, stated about the role rather than the person."
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "catalogueStates": {
+      "type": "array",
+      "description": "The states, flattened for the catalogue.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "machine",
+          "detail",
+          "kind",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "machine": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "catalogueTransitions": {
+      "type": "array",
+      "description": "The transitions, flattened for the catalogue.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "machine",
+          "detail",
+          "from",
+          "to",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "machine": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "catalogueInvariants": {
+      "type": "array",
+      "description": "The invariants, flattened for the catalogue.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "machine",
+          "detail",
+          "scope",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "machine": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "catalogueFindings": {
+      "type": "array",
+      "description": "The findings, flattened for the catalogue.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "detail",
+          "impact",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "catalogueQuestions": {
+      "type": "array",
+      "description": "The questions, flattened for the catalogue.",
+      "x-view": "machine-only",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "priority",
+          "detail",
+          "related"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "x-role": "code"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "related": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "hierarchy": {
+      "type": "array",
+      "description": "The RESOLVED hierarchy: for each machine, its states and the transitions entering and leaving each one. The page draws the diagram from this and never from the document's cells.",
+      "x-view": "machines",
+      "x-presentation": "graph",
+      "items": {
+        "type": "object",
+        "required": [
+          "machine",
+          "name",
+          "states"
+        ],
+        "properties": {
+          "machine": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-role": "name"
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "outgoing",
+                "incoming"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "x-role": "name"
+                },
+                "outgoing": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "incoming": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "idSeries": {
+      "type": "array",
+      "description": "The identifier namespaces the format issues, with the name each id stands for. THE FORMAT'S NAMESPACE, stated once, here. The page derives its link pattern from this and never hardcodes prefixes; the exporter derives the list from the collections it parsed.",
+      "x-view": "catalogue",
+      "x-presentation": "records",
+      "items": {
+        "type": "object",
+        "required": [
+          "prefix",
+          "kind",
+          "property",
+          "count"
+        ],
+        "properties": {
+          "prefix": {
+            "type": "string",
+            "description": "The namespace prefix, e.g. ENT."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What the series is — 'Entity', 'Value object', 'State machine', and so on."
+          },
+          "property": {
+            "type": "string",
+            "description": "The export property that carries this series' records."
+          },
+          "count": {
+            "type": "number",
+            "description": "How many ids the series holds."
+          }
+        }
+      }
+    }
+  },
+  "x-idSeries": [
+    {
+      "prefix": "SRC",
+      "kind": "Source",
+      "property": "catalogue",
+      "count": 8
+    },
+    {
+      "prefix": "TERM",
+      "kind": "Glossary term",
+      "property": "glossary",
+      "count": 76
+    },
+    {
+      "prefix": "ENT",
+      "kind": "Entity",
+      "property": "entities",
+      "count": 7
+    },
+    {
+      "prefix": "VO",
+      "kind": "Value object",
+      "property": "valueObjects",
+      "count": 12
+    },
+    {
+      "prefix": "AGG",
+      "kind": "Aggregate candidate",
+      "property": "catalogueAggregates",
+      "count": 3
+    },
+    {
+      "prefix": "BC",
+      "kind": "Bounded context",
+      "property": "catalogue",
+      "count": 5
+    },
+    {
+      "prefix": "CMD",
+      "kind": "Command",
+      "property": "commands",
+      "count": 40
+    },
+    {
+      "prefix": "EVT",
+      "kind": "Domain event",
+      "property": "events",
+      "count": 32
+    },
+    {
+      "prefix": "POL",
+      "kind": "Policy",
+      "property": "policies",
+      "count": 32
+    },
+    {
+      "prefix": "SCN",
+      "kind": "Scenario",
+      "property": "catalogueScenarios",
+      "count": 7
+    },
+    {
+      "prefix": "N",
+      "kind": "Role-rewritten rule",
+      "property": "catalogueNamedRules",
+      "count": 7
+    },
+    {
+      "prefix": "SM",
+      "kind": "State machine",
+      "property": "machines",
+      "count": 7
+    },
+    {
+      "prefix": "ST",
+      "kind": "State",
+      "property": "states",
+      "count": 40
+    },
+    {
+      "prefix": "TR",
+      "kind": "Transition",
+      "property": "transitions",
+      "count": 65
+    },
+    {
+      "prefix": "INV",
+      "kind": "Invariant",
+      "property": "invariants",
+      "count": 48
+    },
+    {
+      "prefix": "F",
+      "kind": "Finding",
+      "property": "findings",
+      "count": 27
+    },
+    {
+      "prefix": "Q",
+      "kind": "Question",
+      "property": "questions",
+      "count": 30
+    }
+  ],
+  "x-views": [
+    {
+      "id": "machines",
+      "label": "State machines",
+      "renderer": "diagram",
+      "data": [
+        "machines",
+        "hierarchy",
+        "transitions",
+        "states",
+        "byState"
+      ],
+      "diagram": {
+        "machines": "machines",
+        "nodes": "hierarchy",
+        "edges": "transitions",
+        "nodeId": "id",
+        "nodeLabel": "name",
+        "edgeId": "id",
+        "edgeLabel": "id",
+        "edgeFrom": "fromStates",
+        "edgeTo": "toStates",
+        "syntheticNodeFor": "toUnstated"
+      },
+      "tables": [],
+      "controls": [
+        "mach"
+      ]
+    },
+    {
+      "id": "transitions",
+      "label": "Transitions",
+      "renderer": "table",
+      "data": "transitions",
+      "columns": [
+        {
+          "key": "id",
+          "label": "ID",
+          "role": "code",
+          "width": "4%"
+        },
+        {
+          "key": "machine",
+          "label": "Machine",
+          "width": "10%"
+        },
+        {
+          "key": "trigger",
+          "label": "Trigger",
+          "role": "name",
+          "width": "11%"
+        },
+        {
+          "key": "from",
+          "label": "From",
+          "width": "8%"
+        },
+        {
+          "key": "to",
+          "label": "To",
+          "width": "8%"
+        },
+        {
+          "key": "guard",
+          "label": "Guard",
+          "width": "12%"
+        },
+        {
+          "key": "actor",
+          "label": "Actor",
+          "width": "8%"
+        },
+        {
+          "key": "guardExpression",
+          "label": "Guard expression",
+          "width": "15%"
+        },
+        {
+          "key": "evidence",
+          "label": "Evidence",
+          "width": "24%"
+        }
+      ],
+      "filters": [
+        {
+          "key": "machine",
+          "label": "Machine",
+          "source": "machines",
+          "kind": "radio"
+        }
+      ],
+      "tables": [
+        "tTrans"
+      ],
+      "controls": [
+        "transm"
+      ]
+    },
+    {
+      "id": "invariants",
+      "label": "Invariants",
+      "renderer": "table",
+      "data": "invariants",
+      "columns": [
+        {
+          "key": "id",
+          "label": "ID",
+          "role": "code",
+          "width": "5%"
+        },
+        {
+          "key": "text",
+          "label": "Invariant",
+          "role": "name",
+          "width": "22%"
+        },
+        {
+          "key": "scope",
+          "label": "Scope",
+          "width": "12%"
+        },
+        {
+          "key": "states",
+          "label": "States / Transitions",
+          "width": "13%"
+        },
+        {
+          "key": "expression",
+          "label": "Formal expression",
+          "width": "12%"
+        },
+        {
+          "key": "machine",
+          "label": "Machine",
+          "width": "8%"
+        },
+        {
+          "key": "violating",
+          "label": "Violated in",
+          "width": "6%",
+          "derived": "violationsById",
+          "description": "How many of the enumerated states fail this invariant. DERIVED by the page from the violations list — it is not a field of the record."
+        },
+        {
+          "key": "register",
+          "label": "Register",
+          "width": "16%"
+        },
+        {
+          "key": "checkable",
+          "label": "Checked",
+          "width": "7%"
+        }
+      ],
+      "filters": [
+        {
+          "key": "checkable",
+          "label": "Checked",
+          "kind": "radio",
+          "values": [
+            {
+              "value": "all",
+              "label": "All"
+            },
+            {
+              "value": "true",
+              "label": "Checked"
+            },
+            {
+              "value": "false",
+              "label": "Unchecked"
+            }
+          ]
+        }
+      ],
+      "tables": [
+        "tInv"
+      ],
+      "controls": [
+        "invk"
+      ]
+    },
+    {
+      "id": "reach",
+      "label": "Reachability",
+      "renderer": "table",
+      "data": "byState",
+      "companion": [
+        "byMachine",
+        "violations",
+        "uncheckedInvariants",
+        "divergences",
+        "gaps",
+        "trace"
+      ],
+      "columns": [
+        {
+          "key": "machine",
+          "label": "Machine",
+          "role": "code",
+          "width": "13%"
+        },
+        {
+          "key": "state",
+          "label": "State",
+          "role": "code",
+          "width": "13%"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "width": "44%"
+        },
+        {
+          "key": "total",
+          "label": "Reachable",
+          "width": "10%"
+        },
+        {
+          "key": "violating",
+          "label": "Violating",
+          "width": "10%"
+        },
+        {
+          "key": "pct",
+          "label": "%",
+          "width": "10%"
+        }
+      ],
+      "filters": [
+        {
+          "key": "machine",
+          "label": "Machine",
+          "source": "machines",
+          "kind": "radio"
+        }
+      ],
+      "tables": [
+        "tReach"
+      ],
+      "controls": [
+        "reach"
+      ]
+    },
+    {
+      "id": "couplings",
+      "label": "Dependencies",
+      "renderer": "pair",
+      "left": {
+        "title": "Cross-machine dependencies (§16)",
+        "data": "couplings",
+        "columns": [
+          {
+            "key": "source",
+            "label": "Source machine",
+            "role": "code",
+            "width": "14%"
+          },
+          {
+            "key": "trigger",
+            "label": "Trigger",
+            "width": "13%"
+          },
+          {
+            "key": "target",
+            "label": "Target machine",
+            "role": "code",
+            "width": "14%"
+          },
+          {
+            "key": "effect",
+            "label": "Expected effect",
+            "width": "25%"
+          },
+          {
+            "key": "ordering",
+            "label": "Ordering",
+            "width": "26%"
+          },
+          {
+            "key": "synchronous",
+            "label": "Sync",
+            "width": "8%"
+          }
+        ]
+      },
+      "right": {
+        "title": "Context map (§6.1)",
+        "data": "contexts",
+        "columns": [
+          {
+            "key": "pair",
+            "label": "Upstream → Downstream",
+            "role": "name",
+            "width": "18%"
+          },
+          {
+            "key": "relationship",
+            "label": "Candidate relationship",
+            "width": "18%"
+          },
+          {
+            "key": "evidenceFor",
+            "label": "Evidence for",
+            "width": "20%"
+          },
+          {
+            "key": "evidenceAgainst",
+            "label": "Evidence against",
+            "width": "20%"
+          },
+          {
+            "key": "whatWouldSettle",
+            "label": "What would settle it",
+            "width": "24%"
+          }
+        ]
+      },
+      "tables": [
+        "tCoup",
+        "tCtx"
+      ],
+      "controls": []
+    },
+    {
+      "id": "findings",
+      "label": "Findings",
+      "renderer": "table",
+      "data": "findings",
+      "companion": [
+        "probes",
+        "samples"
+      ],
+      "columns": [
+        {
+          "key": "id",
+          "label": "ID",
+          "role": "code",
+          "width": "5%"
+        },
+        {
+          "key": "title",
+          "label": "Finding",
+          "role": "name",
+          "width": "18%"
+        },
+        {
+          "key": "kind",
+          "label": "Kind",
+          "width": "9%"
+        },
+        {
+          "key": "probe",
+          "label": "Probe",
+          "width": "10%"
+        },
+        {
+          "key": "detail",
+          "label": "Detail",
+          "width": "22%"
+        },
+        {
+          "key": "evidence",
+          "label": "Evidence",
+          "width": "18%"
+        },
+        {
+          "key": "impact",
+          "label": "Impact",
+          "width": "18%"
+        }
+      ],
+      "filters": [
+        {
+          "key": "kind",
+          "label": "Kind",
+          "kind": "radio",
+          "values": [
+            {
+              "value": "all",
+              "label": "All"
+            },
+            {
+              "value": "def",
+              "label": "Confirmed defect"
+            },
+            {
+              "value": "gap",
+              "label": "Spec gap"
+            }
+          ]
+        },
+        {
+          "key": "probeStatus",
+          "label": "Reachability probe",
+          "kind": "radio",
+          "values": [
+            {
+              "value": "all",
+              "label": "All"
+            },
+            {
+              "value": "REPRODUCED",
+              "label": "Reproduced"
+            },
+            {
+              "value": "NOT REPRODUCED",
+              "label": "Not reproduced"
+            },
+            {
+              "value": "NOT PROBED",
+              "label": "Not probed"
+            }
+          ]
+        }
+      ],
+      "tables": [
+        "tFind"
+      ],
+      "controls": [
+        "fk",
+        "fp"
+      ]
+    },
+    {
+      "id": "open",
+      "label": "Open work",
+      "renderer": "pair",
+      "left": {
+        "title": "Open questions & gaps",
+        "data": "questions",
+        "columns": [
+          {
+            "key": "id",
+            "label": "ID",
+            "role": "code",
+            "width": "7%"
+          },
+          {
+            "key": "question",
+            "label": "Open question",
+            "role": "name",
+            "width": "44%"
+          },
+          {
+            "key": "priority",
+            "label": "Priority",
+            "width": "10%"
+          },
+          {
+            "key": "blocks",
+            "label": "What it blocks",
+            "width": "20%"
+          },
+          {
+            "key": "related",
+            "label": "Related findings",
+            "width": "19%"
+          }
+        ]
+      },
+      "right": {
+        "title": "Coverage",
+        "data": "uncheckedInvariants",
+        "columns": [
+          {
+            "key": "id",
+            "label": "ID",
+            "role": "code",
+            "width": "10%"
+          },
+          {
+            "key": "text",
+            "label": "Invariant",
+            "role": "name",
+            "width": "42%"
+          },
+          {
+            "key": "machine",
+            "label": "Machine",
+            "role": "code",
+            "width": "12%"
+          },
+          {
+            "key": "reason",
+            "label": "Why not checked",
+            "width": "36%"
+          }
+        ]
+      },
+      "filters": [
+        {
+          "key": "priority",
+          "label": "Priority",
+          "kind": "radio",
+          "source": "questions"
+        }
+      ],
+      "tables": [
+        "tOpen",
+        "tCov"
+      ],
+      "controls": [
+        "opk"
+      ]
+    },
+    {
+      "id": "glossary",
+      "label": "Glossary",
+      "renderer": "table",
+      "data": "glossary",
+      "columns": [
+        {
+          "key": "term",
+          "label": "Term",
+          "role": "name",
+          "width": "12%"
+        },
+        {
+          "key": "definition",
+          "label": "Definition",
+          "width": "24%"
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "width": "20%"
+        },
+        {
+          "key": "context",
+          "label": "Context",
+          "width": "15%"
+        },
+        {
+          "key": "id",
+          "label": "ID",
+          "role": "code",
+          "width": "6%"
+        },
+        {
+          "key": "evidence",
+          "label": "Evidence",
+          "width": "23%"
+        }
+      ],
+      "filters": [
+        {
+          "key": "status",
+          "label": "Status",
+          "kind": "radio",
+          "source": "glossary",
+          "derive": "statusKind"
+        }
+      ],
+      "tables": [
+        "tGlos"
+      ],
+      "controls": [
+        "glk"
+      ]
+    },
+    {
+      "id": "catalogue",
+      "label": "Catalogue",
+      "renderer": "table",
+      "data": "catalogue",
+      "companion": [
+        "catalogueAggregates",
+        "catalogueScenarios",
+        "catalogueNamedRules"
+      ],
+      "columns": [
+        {
+          "key": "id",
+          "label": "ID",
+          "role": "code",
+          "width": "7%"
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "role": "name",
+          "width": "16%"
+        },
+        {
+          "key": "kind",
+          "label": "Kind",
+          "width": "11%"
+        },
+        {
+          "key": "detail",
+          "label": "Definition",
+          "width": "26%"
+        },
+        {
+          "key": "extra",
+          "label": "Also",
+          "width": "20%"
+        },
+        {
+          "key": "evidence",
+          "label": "Evidence",
+          "width": "20%"
+        }
+      ],
+      "filters": [
+        {
+          "key": "series",
+          "label": "Series",
+          "kind": "radio",
+          "source": "idSeries"
+        }
+      ],
+      "tables": [
+        "tCat"
+      ],
+      "controls": [
+        "catk"
+      ]
+    }
+  ]
+}
