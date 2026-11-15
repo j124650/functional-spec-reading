@@ -262,15 +262,16 @@
       "items": {
         "type": "object",
         "required": [
-          "id",
-          "name",
-          "concept",
-          "dimensions",
           "classification",
-          "initialState",
-          "terminalStates",
+          "classificationReason",
+          "concept",
           "confidence",
-          "states"
+          "dimensions",
+          "id",
+          "initialState",
+          "name",
+          "states",
+          "terminalStates"
         ],
         "properties": {
           "id": {
@@ -288,7 +289,10 @@
             "type": "string"
           },
           "classification": {
-            "type": "string"
+            "type": "string",
+            "description": "How this machine came to be, as the document states it: Explicit (the document names these states outright), Implicit (assembled by the analysis from prose that never claimed to be a state machine), Partially specified, or Candidate. The page says it in the radio chips and in the detail panel, so a reader knows which diagram is the document and which is the analysis.",
+            "x-view": "machines",
+            "x-presentation": "badge"
           },
           "initialState": {
             "type": "string"
@@ -305,6 +309,12 @@
               "type": "string"
             },
             "description": "The ids of the states in this machine, in document order."
+          },
+          "classificationReason": {
+            "type": "string",
+            "description": "Why the machine has that classification — the document's own reason, read apart from the classification itself by the engine. Empty when the document gives no reason.",
+            "x-view": "machines",
+            "x-presentation": "detail"
           }
         }
       }
