@@ -377,20 +377,21 @@
       "items": {
         "type": "object",
         "required": [
-          "id",
-          "machine",
+          "actor",
+          "actors",
+          "effectExpression",
+          "evidence",
           "from",
-          "to",
-          "fromStates",
-          "toStates",
           "fromIsInitial",
-          "toUnstated",
-          "trigger",
+          "fromStates",
           "guard",
           "guardExpression",
-          "effectExpression",
-          "actor",
-          "evidence"
+          "id",
+          "machine",
+          "to",
+          "toStates",
+          "toUnstated",
+          "trigger"
         ],
         "properties": {
           "id": {
@@ -447,10 +448,44 @@
             "description": "The effect as a formal expression. Read in words by the page, as above."
           },
           "actor": {
-            "type": "string"
+            "type": "string",
+            "description": "The actor cell, verbatim. The exporter also RESOLVES it against the document's roles — see actors, which is what a consumer should read."
           },
           "evidence": {
             "type": "string"
+          },
+          "actors": {
+            "type": "array",
+            "description": "The actor cell, RESOLVED against the document's own list of roles. The cell is prose — 'Sales, or Customer (if a link was sent)' — and a consumer should not have to parse it. Each entry is one actor the cell named, in the order the document wrote it, with the name the document defines that role by and the qualifier that rode along with it. An entry whose resolved is FALSE named something the document does not define as a role — the system, a process — and is carried rather than dropped, so the reader sees that the cell said more than a role.",
+            "x-view": "machines",
+            "x-presentation": "records",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "asNamed",
+                "condition",
+                "resolved"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The actor's name, as the cell wrote it."
+                },
+                "asNamed": {
+                  "type": "string",
+                  "description": "The name the document gives this role where it defines it — 'Sales (Submitter)'. Equal to the name when the cell named it in full."
+                },
+                "condition": {
+                  "type": "string",
+                  "description": "The qualifier the cell carried — 'if a link was sent'. Null when it carried none."
+                },
+                "resolved": {
+                  "type": "boolean",
+                  "description": "False when the cell named something the document does not define as a role."
+                }
+              }
+            }
           }
         }
       }
