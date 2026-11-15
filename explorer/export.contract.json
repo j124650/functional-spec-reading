@@ -581,42 +581,27 @@
           },
           "appliesTo": {
             "type": "object",
-            "description": "WHERE the rule holds, resolved. §15's column mixes two things that mean different things — a rule that holds in a state, and a rule that guards a move — so the export says which it is, and names the ids. The resolution is the CHECKER's own: the same scope the invariant was judged by. A consumer never has to read the cell to know whether it names states or transitions.",
+            "description": "WHERE the rule holds, as the ids it names. §15's column mixes two things that mean different things - a rule that holds in a state, and a rule that guards a move - so the export ships the ids of each. A consumer lists them; it never has to read the cell to know which kind of scope this is, because the cell is not shipped at all.",
             "x-view": "invariants",
             "x-presentation": "scope",
             "required": [
-              "kind",
               "states",
-              "transitions",
-              "raw"
+              "transitions"
             ],
             "properties": {
-              "kind": {
-                "type": "string",
-                "description": "What the scope names: 'all' — the rule holds wherever the aggregate is; 'states' — it holds in the named states; 'transition' — it is a precondition of the named transitions, and is checked when the transition fires, not in a state.",
-                "enum": [
-                  "all",
-                  "states",
-                  "transition"
-                ]
-              },
               "states": {
                 "type": "array",
-                "description": "The state ids the scope names. Empty when the scope is not a state scope.",
+                "description": "The state ids the rule holds in. A scope of 'All states' is written out as the states it holds in, so the list is never empty by accident.",
                 "items": {
                   "type": "string"
                 }
               },
               "transitions": {
                 "type": "array",
-                "description": "The transition ids the scope names. Empty when the scope is not a transition scope.",
+                "description": "The transition ids the rule guards - it is a precondition of those transitions, checked when the transition fires, not in a state. Empty when the rule holds in states instead.",
                 "items": {
                   "type": "string"
                 }
-              },
-              "raw": {
-                "type": "string",
-                "description": "The document's own 'States / Transitions' cell, verbatim — what it wrote, for the reader who wants the source."
               }
             }
           }
@@ -2057,7 +2042,7 @@
           "key": "appliesTo",
           "label": "Holds in",
           "width": "13%",
-          "description": "Where the rule holds, as the export resolved it: the kind of scope and the ids it names. The document's own cell is in the hint."
+          "description": "Where the rule holds: the state ids it holds in, and the transition ids it guards."
         },
         {
           "key": "expression",
