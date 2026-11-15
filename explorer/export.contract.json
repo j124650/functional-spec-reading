@@ -1673,104 +1673,87 @@
     {
       "prefix": "SRC",
       "kind": "Source",
-      "property": "catalogue",
-      "count": 8
+      "property": "catalogue"
     },
     {
       "prefix": "TERM",
       "kind": "Glossary term",
-      "property": "glossary",
-      "count": 76
+      "property": "glossary"
     },
     {
       "prefix": "ENT",
       "kind": "Entity",
-      "property": "entities",
-      "count": 7
+      "property": "entities"
     },
     {
       "prefix": "VO",
       "kind": "Value object",
-      "property": "valueObjects",
-      "count": 12
+      "property": "valueObjects"
     },
     {
       "prefix": "AGG",
       "kind": "Aggregate candidate",
-      "property": "catalogueAggregates",
-      "count": 3
+      "property": "catalogueAggregates"
     },
     {
       "prefix": "BC",
       "kind": "Bounded context",
-      "property": "catalogue",
-      "count": 5
+      "property": "catalogue"
     },
     {
       "prefix": "CMD",
       "kind": "Command",
-      "property": "commands",
-      "count": 40
+      "property": "commands"
     },
     {
       "prefix": "EVT",
       "kind": "Domain event",
-      "property": "events",
-      "count": 32
+      "property": "events"
     },
     {
       "prefix": "POL",
       "kind": "Policy",
-      "property": "policies",
-      "count": 32
+      "property": "policies"
     },
     {
       "prefix": "SCN",
       "kind": "Scenario",
-      "property": "catalogueScenarios",
-      "count": 7
+      "property": "catalogueScenarios"
     },
     {
       "prefix": "N",
       "kind": "Role-rewritten rule",
-      "property": "catalogueNamedRules",
-      "count": 7
+      "property": "catalogueNamedRules"
     },
     {
       "prefix": "SM",
       "kind": "State machine",
-      "property": "machines",
-      "count": 7
+      "property": "machines"
     },
     {
       "prefix": "ST",
       "kind": "State",
-      "property": "states",
-      "count": 40
+      "property": "states"
     },
     {
       "prefix": "TR",
       "kind": "Transition",
-      "property": "transitions",
-      "count": 65
+      "property": "transitions"
     },
     {
       "prefix": "INV",
       "kind": "Invariant",
-      "property": "invariants",
-      "count": 48
+      "property": "invariants"
     },
     {
       "prefix": "F",
       "kind": "Finding",
-      "property": "findings",
-      "count": 27
+      "property": "findings"
     },
     {
       "prefix": "Q",
       "kind": "Question",
-      "property": "questions",
-      "count": 30
+      "property": "questions"
     }
   ],
   "x-views": [

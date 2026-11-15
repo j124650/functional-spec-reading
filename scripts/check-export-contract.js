@@ -83,17 +83,53 @@ for (const [name, spec] of Object.entries(props)) {
   }
 }
 
-/* --- the counts the contract states -------------------------------------- */
-for (const s of contract["x-idSeries"] || []) {
+/* --- the identifier namespace --------------------------------------------
+ *
+ * The contract states the NAMESPACE: the prefixes the format issues, what
+ * each stands for, and the property that carries it. The counts are the
+ * DOCUMENT's, so they live in the export — and are checked here against
+ * the export's own data.
+ *
+ * Both directions matter. A prefix the contract names and the export does
+ * not is a namespace the page will link but nothing will decode. A prefix
+ * the export carries and the contract does not name is a namespace the
+ * format has grown and the contract has not heard of.
+ */
+const contractSeries = contract["x-idSeries"] || [];
+const exportSeries = data.idSeries || [];
+
+for (const s of contractSeries) {
+  const carried = exportSeries.find(x => x.prefix === s.prefix);
+  if (!carried) {
+    bad.push("the namespace names " + s.prefix + ", the export does not carry it");
+    continue;
+  }
+  if (carried.kind !== s.kind)
+    bad.push("idSeries " + s.prefix + ": the contract calls it '" + s.kind +
+      "', the export calls it '" + carried.kind + "'");
+  if (carried.property !== s.property)
+    bad.push("idSeries " + s.prefix + ": the contract puts it in '" + s.property +
+      "', the export in '" + carried.property + "'");
+}
+for (const s of exportSeries) {
+  if (!contractSeries.some(x => x.prefix === s.prefix))
+    bad.push("the export carries the " + s.prefix + " series, the contract does not name it");
+}
+
+/* The export's own counts must agree with the export's own data. */
+for (const s of exportSeries) {
   const records = data[s.property];
-  if (!Array.isArray(records)) continue;
+  if (!Array.isArray(records)) {
+    bad.push("idSeries " + s.prefix + ": the property '" + s.property + "' is not an array");
+    continue;
+  }
   /* A property may hold several series — the flat catalogue does — so the
      count is of the records that BELONG to this series. */
   const owned = records.filter(r =>
     r && typeof r === "object" && "series" in r ? r.series === s.prefix : true);
   if (owned.length !== s.count) {
-    bad.push("idSeries " + s.prefix + ": the contract says " + s.count +
-      ", the export carries " + owned.length + " (" + s.property + ")");
+    bad.push("idSeries " + s.prefix + ": the export says " + s.count +
+      ", the data holds " + owned.length + " (" + s.property + ")");
   }
 }
 

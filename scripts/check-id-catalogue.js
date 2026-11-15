@@ -66,15 +66,18 @@ if (!catalogue) {
   process.exit(2);
 }
 
-/* series -> Map(id -> name) */
+/* series -> Map(id -> name). The catalogue is FLAT: one record per
+   identifier, each carrying the series it belongs to. A nested catalogue
+   made the page flatten it before it could render, and two flattenings
+   can disagree. */
 const cat = new Map();
-for (const s of catalogue) {
-  const series = String(s.series || "").replace(/-$/, "");
-  const m = new Map();
-  for (const e of (s.entries || [])) {
-    if (e && e.id) m.set(String(e.id).trim(), String(e.name == null ? "" : e.name).trim());
-  }
-  cat.set(series, m);
+for (const e of catalogue) {
+  if (!e) continue;
+  const series = String(e.series || "").replace(/-$/, "");
+  if (!series) continue;
+  if (!cat.has(series)) cat.set(series, new Map());
+  const m = cat.get(series);
+  if (e.id) m.set(String(e.id).trim(), String(e.name == null ? "" : e.name).trim());
 }
 
 /* The page's id index covers more than the catalogue: a state, a

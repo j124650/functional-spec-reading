@@ -32,9 +32,15 @@ if (!pagePath || docPaths.length === 0) {
 /* ---- the page's embedded JSON ---- */
 
 const html = fs.readFileSync(pagePath, "utf8");
-const m = html.match(/<script[^>]*id=["']explorerData["'][^>]*>([\s\S]*?)<\/script>/);
+/* The data block's id is not fixed — the skill's own example calls it
+   reachData, other pages call it explorerData — so either will do. What
+   matters is that the data is EMBEDDED as JSON, not typed into the
+   script: a page that fetches it renders empty when opened from disk,
+   and the failure is quiet. */
+let m = html.match(/<script[^>]*id=["']reachData["'][^>]*>([\s\S]*?)<\/script>/)
+     || html.match(/<script[^>]*id=["']explorerData["'][^>]*>([\s\S]*?)<\/script>/);
 if (!m) {
-  console.error("no <script id=\"explorerData\"> block in " + pagePath);
+  console.error("no embedded data block in " + pagePath);
   console.error("the page must embed its data as JSON, not as literals in the script");
   process.exit(2);
 }
