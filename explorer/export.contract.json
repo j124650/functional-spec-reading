@@ -567,8 +567,8 @@
     },
     "probes": {
       "type": "array",
-      "description": "The reachability probes. Each carries its VERDICT and the predicate that produced it. The page shows the verdict; it never asserts a reachability claim the engine did not make.",
-      "x-view": "findings",
+      "description": "The reachability probes. Each carries its VERDICT and the predicate that produced it. The page shows the verdict beside the finding, and the predicate in the catalogue's detail panel, so a reader can see what was tested and not only what the engine concluded. It never asserts a reachability claim the engine did not make.",
+      "x-view": "findings, catalogue",
       "x-presentation": "records",
       "items": {
         "type": "object",
@@ -599,7 +599,9 @@
           },
           "predicate": {
             "type": "string",
-            "description": "The aggregate predicate the probe tested."
+            "description": "The aggregate predicate the probe tested. The page reads it in words, with the source expression in the hint, so the reader can see the claim the verdict was made about.",
+            "x-view": "catalogue",
+            "x-presentation": "detail"
           },
           "detail": {
             "type": "string",
@@ -996,8 +998,8 @@
     },
     "commands": {
       "type": "array",
-      "description": "The commands the document names.",
-      "x-view": "machine-only",
+      "description": "The commands the document names. The catalogue's detail panel shows each command's PRECONDITION - what the document requires before the command may run - because the flat catalogue record has two free-text slots and spent them on the actor and the effect.",
+      "x-view": "catalogue",
       "x-presentation": "records",
       "items": {
         "type": "object",
@@ -1022,7 +1024,10 @@
             "type": "string"
           },
           "guards": {
-            "type": "string"
+            "type": "string",
+            "x-view": "catalogue",
+            "x-presentation": "detail",
+            "description": "The precondition the document states for this command, in the document's words."
           },
           "effects": {
             "type": "string"
@@ -1080,8 +1085,8 @@
     },
     "policies": {
       "type": "array",
-      "description": "The policies the document names.",
-      "x-view": "machine-only",
+      "description": "The policies the document names. The catalogue's detail panel shows each policy's CONDITION, for the same reason the commands show their precondition.",
+      "x-view": "catalogue",
       "x-presentation": "records",
       "items": {
         "type": "object",
@@ -1106,7 +1111,10 @@
             "type": "string"
           },
           "condition": {
-            "type": "string"
+            "type": "string",
+            "x-view": "catalogue",
+            "x-presentation": "detail",
+            "description": "The condition the document states for this policy, in the document's words."
           },
           "action": {
             "type": "string"
