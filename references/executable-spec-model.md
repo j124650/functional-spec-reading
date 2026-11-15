@@ -149,6 +149,91 @@ ordinary text: `||` is the language's "or", and in a Markdown table cell an unes
 `|` ends the cell, so the table parser must rejoin a pipe pair before the expression is
 read.
 
+**A parser must find a table by its COLUMNS, not by its section number.** One section
+of the document carries several tables — the glossary's terms, its overloaded terms, its
+undefined terms, the expression vocabulary — and two of them must not be told apart by
+a subsection number they share. A parser that keys on the number alone reads whichever
+table it reached first, so the vocabulary it finds may be the wrong table entirely, and
+the expressions then resolve against terms that are not there. Give the vocabulary its
+own subsection number, keep that number unique within its section, and have the parser
+recognise the table by the column names it actually needs — `Term`, `Type`,
+`Domain / Values` — so renumbering a subsection cannot silently change what the engine
+reads.
+
+**The same section's tables may spell the same column differently.** One section
+holds a table per machine, and the machines are not uniform: the custody machine lists
+its states in a `Value` column where the others use `Name`. A parser that asks for one
+header name reads a missing column, and every cell in that table comes back empty —
+the machine renders as blank boxes while the others are fine. Accept the alternatives
+and take whichever the table has:
+
+```csharp
+var name = r.Cell(t.Col("Name", "Value"));
+```
+
+**A heading that carries an id is not a numbered subsection heading.** A parser that
+dispatches on `### N.N` reads `### 7.1 AGG-001 — …` and skips `### SCN-001 — …`,
+because the second has no section number — and the skip is silent: the heading is
+neither matched nor reported, so the series it defines simply comes back empty, and
+an empty series reads as "the document has no scenarios" rather than "the parser
+never looked". Match each heading shape on its own, and give the id-bearing shape
+its own branch:
+
+```csharp
+var agg = Regex.Match(line, @"^###\s+(?:\d+(?:\.\d+)*\s+)?(AGG-\d+)\s*(?:—|-)\s*(.*)$");
+var scn = Regex.Match(line, @"^###\s+(SCN-\d+)\s*(?:—|-)\s*(.*)$");
+```
+
+**When a series comes back empty, look at the LINE that carries it, not at the
+count.** Grep the document for the id prefix and read the shape of the line that
+holds it. The defect is nearly always that the document's shape is not the shape the
+parser expects — a heading that is not a numbered subsection, a table whose columns
+are spelled differently, a body that is a list rather than a table.
+
+**One section can hold two tables of DIFFERENT shapes, and the section number cannot
+tell them apart.** One section holds the roles table and the rules written around a
+person's name; another holds the bounded-context table and the context map.
+Dispatch on the row's own id prefix — `N-`, `BC-` — and let the section number choose
+the neighbourhood, not the record.
+
+**A section's body can be a table or a list, and both carry structure.** An aggregate
+is a heading plus an Aspect/Content/Evidence table; a scenario is a heading plus
+labelled bullets (Initial conditions, Actor, Commands, Guards, Result). Parse the
+structure into the record — `IReadOnlyList<(string Aspect, string Content, string
+Evidence)>` — rather than joining the lines into one string: a joined string cannot be
+rendered as the breakdown the document actually gives, and the page then shows a
+paragraph where the reader expects a table.
+
+**A separator row is not data.** A table's header is followed by a `|---|---|` row. If
+the document is edited and a second separator is left behind — a header replaced
+without the old separator removed — a parser that skips only the row it expects reads
+the stray separator as a record, and the record's ID is a row of dashes. Skip every row
+whose cells are all separators, wherever it appears:
+
+```csharp
+if (cells.All(c => c.Trim().Length == 0 || c.Trim().All(ch => ch == '-' || ch == ':')))
+    continue;
+```
+
+**Unwrap the code fence BEFORE comparing against a sentinel.** An expression written
+`not expressible` in the document keeps its backticks in the cell, so a check that
+compares the raw cell against the bare word never matches — every such invariant is
+then reported as checkable, and the coverage claim is wrong in the direction that
+inflates it. Unwrap first, then compare:
+
+```csharp
+var expression = Expressions.Unwrap(invariant.Expression);
+if (expression.Equals("not expressible", StringComparison.OrdinalIgnoreCase)) return false;
+```
+
+**Resolve a row's endpoints against the states of the machine the row belongs to.**
+A transition's `From` and `To` name states, and a name can be ambiguous across the
+document: a custody transition says "Owner", and two machines have a state whose name
+begins that way. Resolve by id where the cell gives an id, otherwise by matching a
+state of THIS machine, and require exactly one match — zero matches and several
+matches are both "unstated", and both belong in the unstated list rather than in a
+guessed edge.
+
 **`not expressible` must be justified, or the coverage claim is hollow.** A condition
 the document does not model as data — a person's role, an external system's answer, a
 stored history — cannot be written over the vocabulary, and it is marked
@@ -159,9 +244,15 @@ distinguishes "the specification does not model this" from "the analysis did not
 this" — and a document that marks half its invariants unexpressive without saying why
 is not ready to be verified.
 
-**A document that says "All states" means every machine.** When an invariant binds to no
-particular machine, its "States / Transitions" column says "All states", and it is
-checked against every machine's states. A cell that names neither a state nor a
+**A document that says "All states" binds the invariant to every machine — and the
+invariant is checked ONCE per aggregate state, not once per machine.** When an
+invariant binds to no particular machine, its "States / Transitions" column says "All
+states": the rule holds wherever the aggregate is, so it is judged against the
+aggregate. Checking it once per machine multiplies every violation by the machine
+count, and reports several hundred checks over a few hundred states as several hundred
+violations of several different rules — a number the reader cannot weigh and cannot
+tell from a defect. The BINDING decides which states the rule covers; the CHECK
+FREQUENCY is decided by the scope's shape. A cell that names neither a state nor a
 transition is a defect in the document, not a licence to guess which machine owns the
 invariant.
 
@@ -549,6 +640,15 @@ identical to every clone that kept it, right up to the line that dereferences it
 output; a reader who sees only a state count cannot tell a closed frontier from a
 truncated one.
 
+**A flag must be a boolean on the object that knows, never a word-match on a message.**
+The traversal knows whether it exhausted the frontier; the trace only describes it in
+prose. Deriving the flag from the prose — `frontierExhausted = trace.Any(t =>
+t.Contains("exhausted"))` — is wrong twice over, because the message that says the
+frontier is NOT exhausted still contains the word "exhausted". The flag is then always
+true, the export claims the analysis was complete, and the page repeats that claim in
+its header to the reader who is judging coverage. Expose the boolean, and write the
+trace from it, never the other way round.
+
 **Report what the model could NOT execute.** A transition whose guard or effect is
 `not expressible`, or that names a term the document does not define, cannot be
 evaluated — so it is reported as an executable gap, with the reason, and never silently
@@ -632,6 +732,14 @@ file. A harness whose first argument serves both roles replaces the deliverable 
 its own output on the first run — and a hand-built document with no copy and no
 version control is gone, recoverable only by reconstruction from a session log.
 
+**Read the output path by SCANNING the arguments, not by a fixed position.** A flag
+between two positional arguments — `export <document> slim <output>` — moves the
+output to the third argument, so a harness that reads it as the second silently writes
+to its default path instead, and the run appears to succeed. Take the argument that is
+neither the document nor a flag, and refuse when it resolves to the document. A
+sibling argument order that quietly redirects the write is worse than no check at all,
+because the file that should have been written is simply absent afterwards.
+
 **So version-control the deliverable before the instrument runs against it.** The
 document is hours of work and exists nowhere else; `git init` and one commit cost a
 minute and turn an unrecoverable loss into a checkout. Do it before the first export,
@@ -652,6 +760,17 @@ to be embedded into the page as a JSON script block (see
 `references/interactive-diagrams.md`). Make that a second, explicit step and say how
 to redo both in one command — otherwise the file on disk and the copy inside the HTML
 drift, and the page serves stale figures with no error to notice.
+
+**The export carries a CATALOGUE of every id the document issues, with the name each
+one carries.** A document that numbers its sources, entities, value objects,
+aggregates, bounded contexts, commands, events, policies and scenarios gives the
+reader a handle for each — and a handle is worth nothing until the reader can see
+what it points at. So the export carries, for every series, the id, the name, and
+enough of the record to render it. **A series the export omits is a series the page
+can only show as a bare token** — `VO-004` sitting in a scope cell with nothing to
+decode it into, which the reader cannot distinguish from an identifier the analysis
+skipped. Cover every series the document issues, not the ones the page happens to
+count.
 
 ## What the model can and cannot prove
 
@@ -683,6 +802,21 @@ dotnet run -- export <path>/explorer-data.json slim   # the data the diagram rea
 **Run `check` first, and treat its failure as a defect in the document.** It resolves every
 expression against the document's own vocabulary. A failure means an expression names a
 term the document does not define — the fix is to the document, not to the engine.
+
+**The export command must be reproducible, and it must run against a FRESH build.** Two
+ways it goes wrong, both silently:
+
+- **`dotnet run --no-build` exports the previous binary.** The engine source changed, the
+  build did not, and the export comes from the old code — so the artifact is rebuilt
+  from stale data with no error anywhere. Build first, or drop the flag.
+- **A parameter the numbers depend on is left to an environment variable the caller
+  does not set.** A traversal cap read from `MODEL_MAX_STATES` with a default of
+  200,000, and a page exported at 4,000, means the same command produces different
+  numbers for the reader than the one in the repository. Set every parameter the
+  artifact's numbers depend on in the command that builds it, and record the cap in
+  the export so the page can show the bound it was produced under.
+
+Then the build is one command, and running it twice changes nothing.
 
 **Run `explore` and report the frontier.** Report the actual counts in the deliverable.
 "14 defects reproduce mechanically" is a different claim from "14 defects were found", and

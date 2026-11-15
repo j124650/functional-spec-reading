@@ -397,10 +397,19 @@ For each invariant, document:
   (§3.5.3); do not paraphrase it into prose and call the invariant formal.
 - Scope.
 - Applicable states. Name them as state identifiers or state names, or write
-  **All states** — which means the invariant holds in every machine's states. A cell
-  that names neither a state nor a transition does not say which machine owns the
-  invariant, and is a defect in the document.
+  **All states** — which means the invariant holds in every machine's states, so it
+  binds to every machine. A cell that names neither a state nor a transition does not
+  say which machine owns the invariant, and is a defect in the document.
 - Applicable transitions.
+
+**"All states" says which machines the rule binds to; it does not say how many times
+to check it.** A verifier that checks such an invariant once per machine multiplies
+every violation by the machine count and reports several hundred checks over a few
+hundred states as several hundred violations of several different rules — a number a
+reader can neither weigh nor distinguish from a defect. The rule holds wherever the
+aggregate is, so it is checked ONCE against the aggregate. A state-scoped invariant is
+checked in the states it names, on the machine those states belong to, and a
+transition-scoped one is checked when that transition fires.
 
 **The applicable-states cell is load-bearing, not a label.** It says where the
 invariant is IN FORCE, and a verifier checks the invariant exactly there and nowhere
@@ -570,8 +579,61 @@ Use consistent identifiers throughout the document, for example:
 - `POL-001`: Policy
 - `SCN-001`: Scenario
 - `Q-001`: Domain Expert Question
+- `SRC-001`: Source reference
+- `TERM-001`: Ubiquitous-language term
+- `N-01`: Rule written around a person, rewritten around a role
+
+Padding within a series is the document's own choice but must be consistent — `N-01`
+and `N-02`, not `N-01` and `N-002`. The series are what a parser matches on; the
+numbers within one are what a reader cites.
 
 Cross-reference these identifiers throughout the document.
+
+### 8.1 The shape of each record
+
+Several record kinds do not fit a table of the section's own rows: an aggregate is a
+named thing with a breakdown under it, a scenario is a named path with stages, and a
+rule written around a person is a pair of sentences. Give each of them a shape a
+parser can find without ambiguity.
+
+**A heading that carries a record's id IS the record.** Put the id in the heading,
+in its own series' format, and let the heading's text carry the title:
+
+```
+### 7.1 AGG-001 — Application (candidate root: ENT-001)
+### SCN-001 — New customer, terms and a discount, the full path
+```
+
+A parser matches the id pattern, not the section number — and the two are not the
+same. One heading form is numbered (`### 7.1 AGG-001 — …`) and another is not
+(`### SCN-001 — …`), because the scenarios belong to no subsection of their own. A
+parser whose heading rule requires a digit-led number collects the aggregates and
+silently loses the scenarios, and the series comes back empty with no error anywhere.
+Give every heading-based record its id in the heading, whatever the heading's shape.
+
+**An aggregate is a heading and an aspect table.** Under the heading, one table with
+the columns `Aspect | Content | Evidence`, carrying these aspects: Root · Members ·
+Commands it handles · Events it produces · Invariants it enforces · Consistency
+rationale · References (held by id only) · Consistency expectations · Confidence.
+
+**A scenario is a heading and labelled bullets.** Under the heading, one bullet per
+stage, each with its label in bold: Initial conditions · Actor · Commands · Guards ·
+State transitions · Events · Result · Exceptions · Invariants in force · Evidence.
+
+**Keep the breakdown as structure, not as prose.** An aggregate's aspects and a
+scenario's stages are separate fields. Flattened into one paragraph each, the page
+that reads the document shows "Content" instead of the root, the members, the
+consistency expectation and the invariant list — and the reader loses exactly the
+breakdown they came for.
+
+**A section may hold two different tables.** Bounded contexts and the context map
+share a section; roles and the role-rewritten rules share a section. Distinguish
+them by what a ROW contains — a cell holding an id of the series being collected —
+and not by which section the row is in.
+
+**Tables whose columns carry ids.** Sources: `ID | Document | Version | Sections |
+Authority`. Bounded contexts: `ID | Context | Responsibility | Language boundary |
+Evidence`. Role-rewritten rules: `# | As written | Rewritten as the role | Section`.
 
 ## 9. Quality assurance
 
