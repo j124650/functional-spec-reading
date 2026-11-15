@@ -97,7 +97,12 @@ for (const t of tableCalls(page)) {
   if (!owner) { bad.push("the page has a table '" + t.id + "' no view claims"); continue; }
 
   let want = owner.columns;
-  if (owner.left && owner.right) {
+  /* A view may declare a table's columns by name, for the views whose
+     tables are alternatives rather than side by side - a detail panel's
+     tabs, say, where left and right would be a lie. */
+  if (owner.tableColumns && owner.tableColumns[t.id]) {
+    want = owner.tableColumns[t.id];
+  } else if (owner.left && owner.right) {
     want = (owner.tables || []).indexOf(t.id) === 0 ? owner.left.columns : owner.right.columns;
   }
   if (!want || !want.length) { notes.push(t.id + ": the contract declares no columns for it"); continue; }

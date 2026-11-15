@@ -1800,10 +1800,63 @@
         "edgeTo": "toStates",
         "syntheticNodeFor": "toUnstated"
       },
-      "tables": [],
+      "tables": [
+        "tStateList",
+        "tStateInv"
+      ],
       "controls": [
         "mach"
-      ]
+      ],
+      "tableColumns": {
+        "tStateList": [
+          {
+            "key": "id",
+            "label": "Transition",
+            "role": "code",
+            "width": "14%"
+          },
+          {
+            "key": "trigger",
+            "label": "Trigger",
+            "role": "name",
+            "width": "30%"
+          },
+          {
+            "key": "actor",
+            "label": "Actor",
+            "width": "16%"
+          },
+          {
+            "key": "guard",
+            "label": "Guard",
+            "width": "40%"
+          }
+        ],
+        "tStateInv": [
+          {
+            "key": "id",
+            "label": "ID",
+            "role": "code",
+            "width": "16%"
+          },
+          {
+            "key": "inv",
+            "label": "Invariant",
+            "role": "name",
+            "width": "50%"
+          },
+          {
+            "key": "checked",
+            "label": "Checked",
+            "width": "16%"
+          },
+          {
+            "key": "viol",
+            "label": "Violated in",
+            "width": "18%"
+          }
+        ]
+      }
     },
     {
       "id": "transitions",
