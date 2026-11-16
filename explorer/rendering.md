@@ -35,24 +35,24 @@ to be missing from it.
 
 | series | kind | family | glyph | codepoint | code shown |
 |---|---|---|---|---|---|
-| SM | State machine | model | ▣ | U+25A3 | yes |
-| ST | State | model | □ | U+25A1 | yes |
-| TR | Transition | model | → | U+2192 | yes |
-| INV | Invariant | model | ✓ | U+2713 | yes |
-| SRC | Source | definitions | § | U+00A7 | no |
-| TERM | Glossary term | definitions | ▤ | U+25A4 | no |
-| ENT | Entity | definitions | ● | U+25CF | no |
-| VO | Value object | definitions | ○ | U+25CB | no |
-| AGG | Aggregate candidate | definitions | ◆ | U+25C6 | no |
-| BC | Bounded context | definitions | ⊞ | U+229E | no |
-| SCN | Scenario | definitions | ≡ | U+2261 | no |
-| N | Role-rewritten rule | definitions | ✎ | U+270E | no |
-| P | Paragraph of the specification | definitions | ¶ | U+00B6 | no |
-| CMD | Command | behaviour | ▶ | U+25B6 | yes |
-| EVT | Domain event | behaviour | ★ | U+2605 | yes |
-| POL | Policy | behaviour | ⊘ | U+2298 | yes |
-| F | Finding | work | ✕ | U+2715 | no |
-| Q | Question | work | ? | U+003F | no |
+| SM | State machine | model | ▣ | U+25A3 | always |
+| ST | State | model | □ | U+25A1 | always |
+| TR | Transition | model | → | U+2192 | always |
+| INV | Invariant | model | ✓ | U+2713 | always |
+| SRC | Source | definitions | § | U+00A7 | always |
+| TERM | Glossary term | definitions | ▤ | U+25A4 | always |
+| ENT | Entity | definitions | ● | U+25CF | always |
+| VO | Value object | definitions | ○ | U+25CB | always |
+| AGG | Aggregate candidate | definitions | ◆ | U+25C6 | always |
+| BC | Bounded context | definitions | ⊞ | U+229E | always |
+| SCN | Scenario | definitions | ≡ | U+2261 | always |
+| N | Role-rewritten rule | definitions | ✎ | U+270E | always |
+| P | Paragraph of the specification | definitions | ¶ | U+00B6 | always |
+| CMD | Command | behaviour | ▶ | U+25B6 | always |
+| EVT | Domain event | behaviour | ★ | U+2605 | always |
+| POL | Policy | behaviour | ⊘ | U+2298 | always |
+| F | Finding | work | ✕ | U+2715 | always |
+| Q | Question | work | ? | U+003F | always |
 
 **No fancy marks.** Every glyph is plain text from the common blocks —
 Geometric Shapes, Mathematical Operators, General Punctuation — and each
@@ -92,9 +92,9 @@ colour".
 names, codes or ids — not to find an id, not to split a name, not to strip
 a code off a label.
 
-- The **icon** comes from the series, and the series is known by the loop
-  that indexed the ids — never parsed out of an id string. The index holds
-  the spec for each id: `{glyph, family, code}`.
+- The **icon** comes from the series table — the one table that says what
+  each series is — and the series is known by the loop that indexed the
+  ids, never parsed out of an id string.
 - The **name** comes from the index.
 - The **code** is its own field. It is rendered in its own element and is
   never part of the name.
@@ -108,17 +108,16 @@ the data, always.
 recognises an id inside a sentence so it can link it. That links nothing
 but the id it recognised, and it never decides what anything *means*.
 
-## Densities
+## One chip
 
-| variant | when | what it shows |
-|---|---|---|
-| **chip** | the reference *is* the cell's content | the mark, the name, the id |
-| **quiet** | the reference is one of several in a cell | the same rectangle, without the border |
+There is only ONE chip. Whether a cell holds one reference or eight,
+the reference is drawn the same way: the same rectangle, the same mark,
+the same id.
 
-A cell that lists eight states must not show eight bordered rectangles:
-it is a list, so it is quiet. A cell whose whole content is one state is
-a chip. Both carry the id — a reader must never have to go looking for
-which thing is meant.
+Two looks for one thing is a lie about the thing. A reader seeing a
+bare name in one tab and a boxed chip in another cannot tell whether
+those are the same kind of object — and the quiet chip that caused it
+was there for a table's sake, not the reader's.
 
 ## The legend
 
