@@ -128,17 +128,25 @@ was there for a table's sake, not the reader's.
   mark  name      id
 ```
 
-- **mark** — 11px, in the family's colour, inside the chip's own rectangle
-- **name** — 10px, the family's colour. The chip is at most 150px wide;
-  when the name does not fit, **it** is what gives way — an ellipsis —
-  while the mark and the id stay, so the chip still says what kind of
-  thing this is and which one. The hint carries the whole name.
-- **id** — 9px, dim grey, in its own element; or, where the cell already
-  names the thing, in the chip's hint instead
+- **mark** — 0.6875rem (11px), in the family's colour, inside the chip's
+  own rectangle
+- **name** — 0.625rem (10px), the family's colour. The chip is at most
+  9.375rem (150px) wide; when the name does not fit, **it** is what gives
+  way — an ellipsis — while the mark and the id stay, so the chip still
+  says what kind of thing this is and which one. The hint carries the
+  whole name.
+- **id** — 0.5625rem (9px), dim grey, in its own element; or, where the
+  cell already names the thing, in the chip's hint instead
 - **chip** — one rectangle: a tinted background, a hairline border of the
   same hue (0.1px — the tint carries the shape, the border only closes
   it), radius 5px, line-height 1.2, `inline-block` so it never breaks
   mid-name
+
+The chip's sizes are in **rem**, and they are in rem together: a chip
+whose width scales with the reader's font size but whose text does not
+is a chip that drifts out of its own shape. The page sets no root
+font-size, so rem is the reader's browser setting — and the chip scales
+as one piece with it.
 
 ## The legend
 
