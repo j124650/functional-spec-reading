@@ -82,7 +82,7 @@ The pipeline has eight passes, and the order matters — later passes depend on 
 | File | What it holds |
 |---|---|
 | `SKILL.md` | The procedure, the evidence discipline, and the pitfalls. Start here. |
-| `references/spec-processing-prompt.md` | **The output contract** — the 21 sections, the identifier scheme, the evidence classes. |
+| `references/spec-processing-prompt.md` | **The output contract** — the 31 top-level keys, every record's fields, the identifier scheme, the evidence classes. |
 | `references/ddd-vocabulary.md` | The DDD Reference definitions and 45 patterns — the authority for what the output *means*. |
 | `references/ddd-modeling-guidelines.md` | Domain model vs data model, entity vs value object, when something is a bounded context. |
 | `references/aggregate-design-guidelines.md` | Deriving an aggregate boundary from invariants, not proximity. |

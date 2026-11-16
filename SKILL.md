@@ -443,7 +443,7 @@ a spec gap. Do not defend a path the model has already refused.
 
 **The executable model is an optional instrument, not a stage of the pipeline.** It
 lives in its own project, in its own language, with its own build. The deliverable is
-the Markdown. Never make the model a prerequisite for producing one, and never let the
+the JSON file. Never make the model a prerequisite for producing one, and never let the
 model's numbers stand in for the analysis — they answer a different question.
 
 ### 8. Pass 6 — defect triage and grouped fixes
@@ -698,6 +698,9 @@ there once and in full; the rules below are the ones that reach past the explore
   are decoration, and a comparison made against the raw cell misses them, so every
   unexpressible condition is reported as evaluable and the whole unchecked set
   silently becomes a checked one. Strip the decoration first, then compare, then
+  read. This is a rule about the SOURCE's cells: the deliverable states the kind
+  outright — `expression.kind` is `notExpressible` — so nothing in it carries
+  decoration to unwrap.
   parse; the order is the difference between an honest coverage report and a wrong
   one.
   **The reader on the page side has the same defect, and it is quieter.** The
