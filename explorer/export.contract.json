@@ -361,8 +361,29 @@
             "type": "string"
           },
           "source": {
-            "type": "string",
-            "description": "Where the document states this state."
+            "type": "array",
+            "description": "Where the document states this state. It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "reachable": {
             "type": "boolean",
@@ -466,7 +487,29 @@
             "description": "The actor cell, verbatim. The exporter also RESOLVES it against the document's roles — see actors, which is what a consumer should read."
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "actors": {
             "type": "array",
@@ -598,7 +641,29 @@
             "description": "How the document registers the invariant — stated, derived, or broken by construction."
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "machine": {
             "type": "string"
@@ -668,7 +733,29 @@
             "description": "'Confirmed defect' or 'Spec gap'."
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "impact": {
             "type": "string"
@@ -810,7 +897,29 @@
             "description": "Which conjunct of the expression fails, and how."
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "examplePath": {
             "type": "array",
@@ -978,7 +1087,29 @@
             "type": "boolean"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1006,10 +1137,54 @@
             "type": "string"
           },
           "evidenceFor": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "evidenceAgainst": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "whatWouldSettle": {
             "type": "string"
@@ -1048,7 +1223,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "status": {
             "type": "string",
@@ -1109,7 +1306,29 @@
             "type": "string"
           },
           "source": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1154,7 +1373,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1196,7 +1437,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1241,7 +1504,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1283,7 +1568,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1325,7 +1632,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1372,7 +1701,29 @@
             "description": "A second dimension the document gives it — constraints, a root, an overload note."
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1408,7 +1759,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "aspects": {
             "type": "array",
@@ -1429,7 +1802,29 @@
                   "type": "string"
                 },
                 "evidence": {
-                  "type": "string"
+                  "type": "array",
+                  "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "string",
+                        "description": "The words of this piece. Empty when the piece is a reference."
+                      },
+                      "id": {
+                        "type": "string",
+                        "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                      },
+                      "prefix": {
+                        "type": "string",
+                        "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                      },
+                      "label": {
+                        "type": "string",
+                        "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1460,7 +1855,29 @@
             "x-role": "name"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           },
           "parts": {
             "type": "array",
@@ -1515,7 +1932,29 @@
             "description": "The same rule, stated about the role rather than the person."
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1554,7 +1993,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1597,7 +2058,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1636,7 +2119,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1675,7 +2180,29 @@
             "type": "string"
           },
           "evidence": {
-            "type": "string"
+            "type": "array",
+            "description": "It is a CUT: the document's own words, and the paragraphs it cites - a section number the exporter could not resolve stays as the words it was written with.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece. Empty when the piece is a reference."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to - S... for the source specification, P... for the analysis. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the paragraph belongs to - S or P. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with - §6.3. Empty when the piece is words."
+                }
+              }
+            }
           }
         }
       }
@@ -1844,6 +2371,90 @@
           "heading": {
             "type": "string",
             "description": "The heading s own text, when the paragraph is a heading."
+          },
+          "parts": {
+            "type": "array",
+            "description": "The paragraph, cut where it refers to another paragraph - so the page never has to look for a reference in a sentence.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece."
+                },
+                "reference": {
+                  "type": "string",
+                  "description": "The id of the paragraph this piece refers to. Empty when the piece is words."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The words the reference was written with."
+                }
+              }
+            }
+          },
+          "refs": {
+            "type": "array",
+            "description": "The paragraphs it refers to, resolved to their ids.",
+            "items": {
+              "type": "object",
+              "required": [
+                "text",
+                "id"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words the reference was written with."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The paragraph it means."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sourceSpec": {
+      "type": "array",
+      "description": "The source specification - the document the analysis was read from - cut into paragraphs of its own (S001...). The evidence columns cite it, so its sections are what a citation resolves to, and its paragraphs are what a citation chip leads to. It is a separate document with its own ids: a paragraph id means one paragraph in one document.",
+      "x-view": "spec",
+      "x-presentation": "paragraphs",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "section",
+          "heading",
+          "parts",
+          "refs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The paragraph's handle - S001 - and nothing else."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What the paragraph is: a heading, text, a list, a table or code.",
+            "enum": [
+              "heading",
+              "text",
+              "list",
+              "table",
+              "code"
+            ]
+          },
+          "section": {
+            "type": "string",
+            "description": "The section the paragraph sits under, e.g. 6.2."
+          },
+          "heading": {
+            "type": "string",
+            "description": "The heading's own text, when the paragraph is a heading."
           },
           "parts": {
             "type": "array",
