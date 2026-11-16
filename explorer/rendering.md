@@ -24,8 +24,8 @@ at; nothing else in the cell has to be parsed to find out.
    hues apart, a screenshot in greyscale.
 2. **The colour says the family.** Four families, four colours. The colour
    is secondary: it groups, the icon specifies.
-3. **The code is optional**, and appears only where the name alone does
-   not say which thing is meant.
+3. **The code rides along.** Every chip carries its id: a reader must
+   never have to go looking for which thing is meant.
 
 ## The spec table
 
@@ -118,6 +118,22 @@ Two looks for one thing is a lie about the thing. A reader seeing a
 bare name in one tab and a boxed chip in another cannot tell whether
 those are the same kind of object — and the quiet chip that caused it
 was there for a table's sake, not the reader's.
+
+```
+┌───────────────────────────────┐
+│ □  Draft   ST-001             │
+└───────────────────────────────┘
+   ↑    ↑        ↑
+  mark  name      id
+```
+
+- **mark** — 11px, in the family's colour, inside the chip's own rectangle
+- **name** — 10px, the family's colour
+- **id** — 9px, dim grey, in its own element
+- **chip** — one rectangle: a tinted background, a hairline border of the
+  same hue (0.1px — the tint carries the shape, the border only closes
+  it), radius 5px, line-height 1.2, `inline-block` so it never breaks
+  mid-name
 
 ## The legend
 
