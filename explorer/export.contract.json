@@ -2413,87 +2413,490 @@
                 }
               }
             }
+          },
+          "rows": {
+            "type": "array",
+            "description": "A table's rows, cell by cell, when the paragraph is a table. Empty otherwise. The row of dashes that marks the header is not a row of the table.",
+            "items": {
+              "type": "array",
+              "description": "One row: its cells, left to right.",
+              "items": {
+                "type": "string",
+                "description": "The cell's own text."
+              }
+            }
           }
         }
       }
     },
     "sourceSpec": {
-      "type": "array",
-      "description": "The source specification - the document the analysis was read from - cut into paragraphs of its own (S001...). The evidence columns cite it, so its sections are what a citation resolves to, and its paragraphs are what a citation chip leads to. It is a separate document with its own ids: a paragraph id means one paragraph in one document.",
+      "type": "object",
+      "description": "The SOURCE specification - the document the analysis was read from - as a TREE: its sections, each with its own content and its subsections. The evidence columns cite it, so its sections are what a citation resolves to, and a section is addressed by the source id and its number path - SRC-001/6.3. The structure is the document's, not a list's: a consumer that holds a reference to this spec can walk to the section it names without re-deriving the shape.",
       "x-view": "spec",
       "x-presentation": "paragraphs",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "kind",
-          "section",
-          "heading",
-          "parts",
-          "refs"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The paragraph's handle - S001 - and nothing else."
-          },
-          "kind": {
-            "type": "string",
-            "description": "What the paragraph is: a heading, text, a list, a table or code.",
-            "enum": [
-              "heading",
-              "text",
-              "list",
-              "table",
-              "code"
-            ]
-          },
-          "section": {
-            "type": "string",
-            "description": "The section the paragraph sits under, e.g. 6.2."
-          },
-          "heading": {
-            "type": "string",
-            "description": "The heading's own text, when the paragraph is a heading."
-          },
-          "parts": {
-            "type": "array",
-            "description": "The paragraph, cut where it refers to another paragraph - so the page never has to look for a reference in a sentence.",
-            "items": {
-              "type": "object",
-              "properties": {
-                "text": {
-                  "type": "string",
-                  "description": "The words of this piece."
-                },
-                "reference": {
-                  "type": "string",
-                  "description": "The id of the paragraph this piece refers to. Empty when the piece is words."
-                },
-                "label": {
-                  "type": "string",
-                  "description": "The words the reference was written with."
+      "required": [
+        "id",
+        "number",
+        "title",
+        "level",
+        "paragraphs",
+        "sections"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The section's address: the source id and the section's number path - SRC-001/6.3. A reference to this document from anywhere is this address."
+        },
+        "number": {
+          "type": "string",
+          "description": "The section's own number - 6.3. Empty when the document does not number it."
+        },
+        "title": {
+          "type": "string",
+          "description": "The section's own title."
+        },
+        "level": {
+          "type": "integer",
+          "description": "How deep the section sits: 1 for a top-level section, 2 for one under it."
+        },
+        "paragraphs": {
+          "type": "array",
+          "description": "The content of the section, before its subsections.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "parts",
+              "refs",
+              "rows"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The paragraph's handle - the address of the section it belongs to, and its own place in it: SRC-001/6.3/p2."
+              },
+              "kind": {
+                "type": "string",
+                "description": "What the paragraph is: text, a list, a table or code.",
+                "enum": [
+                  "text",
+                  "list",
+                  "table",
+                  "code"
+                ]
+              },
+              "parts": {
+                "type": "array",
+                "description": "The paragraph, cut where it refers to another section - so the page never has to look for a reference in a sentence.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "The words of this piece."
+                    },
+                    "reference": {
+                      "type": "string",
+                      "description": "The address of the section this piece refers to. Empty when the piece is words."
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "The words the reference was written with."
+                    }
+                  }
+                }
+              },
+              "refs": {
+                "type": "array",
+                "description": "The sections it refers to, resolved to their addresses.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "text",
+                    "id"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "The words the reference was written with."
+                    },
+                    "id": {
+                      "type": "string",
+                      "description": "The address of the section it means."
+                    }
+                  }
+                }
+              },
+              "rows": {
+                "type": "array",
+                "description": "A table's rows, cell by cell, when the paragraph is a table. Empty otherwise. The row of dashes that marks the header is not a row of the table.",
+                "items": {
+                  "type": "array",
+                  "description": "One row: its cells, left to right.",
+                  "items": {
+                    "type": "string",
+                    "description": "The cell's own text."
+                  }
                 }
               }
             }
-          },
-          "refs": {
-            "type": "array",
-            "description": "The paragraphs it refers to, resolved to their ids.",
-            "items": {
-              "type": "object",
-              "required": [
-                "text",
-                "id"
-              ],
-              "properties": {
-                "text": {
-                  "type": "string",
-                  "description": "The words the reference was written with."
-                },
-                "id": {
-                  "type": "string",
-                  "description": "The paragraph it means."
+          }
+        },
+        "sections": {
+          "type": "array",
+          "description": "The subsections, in the document's own order.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "number",
+              "title",
+              "level",
+              "paragraphs",
+              "sections"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The section's address: the source id and the section's number path - SRC-001/6.3. A reference to this document from anywhere is this address."
+              },
+              "number": {
+                "type": "string",
+                "description": "The section's own number - 6.3. Empty when the document does not number it."
+              },
+              "title": {
+                "type": "string",
+                "description": "The section's own title."
+              },
+              "level": {
+                "type": "integer",
+                "description": "How deep the section sits: 1 for a top-level section, 2 for one under it."
+              },
+              "paragraphs": {
+                "type": "array",
+                "description": "The content of the section, before its subsections.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "kind",
+                    "parts",
+                    "refs",
+                    "rows"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The paragraph's handle - the address of the section it belongs to, and its own place in it: SRC-001/6.3/p2."
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "What the paragraph is: text, a list, a table or code.",
+                      "enum": [
+                        "text",
+                        "list",
+                        "table",
+                        "code"
+                      ]
+                    },
+                    "parts": {
+                      "type": "array",
+                      "description": "The paragraph, cut where it refers to another section - so the page never has to look for a reference in a sentence.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "The words of this piece."
+                          },
+                          "reference": {
+                            "type": "string",
+                            "description": "The address of the section this piece refers to. Empty when the piece is words."
+                          },
+                          "label": {
+                            "type": "string",
+                            "description": "The words the reference was written with."
+                          }
+                        }
+                      }
+                    },
+                    "refs": {
+                      "type": "array",
+                      "description": "The sections it refers to, resolved to their addresses.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "text",
+                          "id"
+                        ],
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "The words the reference was written with."
+                          },
+                          "id": {
+                            "type": "string",
+                            "description": "The address of the section it means."
+                          }
+                        }
+                      }
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "A table's rows, cell by cell, when the paragraph is a table. Empty otherwise. The row of dashes that marks the header is not a row of the table.",
+                      "items": {
+                        "type": "array",
+                        "description": "One row: its cells, left to right.",
+                        "items": {
+                          "type": "string",
+                          "description": "The cell's own text."
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "sections": {
+                "type": "array",
+                "description": "The subsections, in the document's own order.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "number",
+                    "title",
+                    "level",
+                    "paragraphs",
+                    "sections"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The section's address: the source id and the section's number path - SRC-001/6.3. A reference to this document from anywhere is this address."
+                    },
+                    "number": {
+                      "type": "string",
+                      "description": "The section's own number - 6.3. Empty when the document does not number it."
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "The section's own title."
+                    },
+                    "level": {
+                      "type": "integer",
+                      "description": "How deep the section sits: 1 for a top-level section, 2 for one under it."
+                    },
+                    "paragraphs": {
+                      "type": "array",
+                      "description": "The content of the section, before its subsections.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "kind",
+                          "parts",
+                          "refs",
+                          "rows"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The paragraph's handle - the address of the section it belongs to, and its own place in it: SRC-001/6.3/p2."
+                          },
+                          "kind": {
+                            "type": "string",
+                            "description": "What the paragraph is: text, a list, a table or code.",
+                            "enum": [
+                              "text",
+                              "list",
+                              "table",
+                              "code"
+                            ]
+                          },
+                          "parts": {
+                            "type": "array",
+                            "description": "The paragraph, cut where it refers to another section - so the page never has to look for a reference in a sentence.",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The words of this piece."
+                                },
+                                "reference": {
+                                  "type": "string",
+                                  "description": "The address of the section this piece refers to. Empty when the piece is words."
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "description": "The words the reference was written with."
+                                }
+                              }
+                            }
+                          },
+                          "refs": {
+                            "type": "array",
+                            "description": "The sections it refers to, resolved to their addresses.",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "text",
+                                "id"
+                              ],
+                              "properties": {
+                                "text": {
+                                  "type": "string",
+                                  "description": "The words the reference was written with."
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "description": "The address of the section it means."
+                                }
+                              }
+                            }
+                          },
+                          "rows": {
+                            "type": "array",
+                            "description": "A table's rows, cell by cell, when the paragraph is a table. Empty otherwise. The row of dashes that marks the header is not a row of the table.",
+                            "items": {
+                              "type": "array",
+                              "description": "One row: its cells, left to right.",
+                              "items": {
+                                "type": "string",
+                                "description": "The cell's own text."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "sections": {
+                      "type": "array",
+                      "description": "The subsections, in the document's own order.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "number",
+                          "title",
+                          "level",
+                          "paragraphs",
+                          "sections"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The section's address: the source id and the section's number path - SRC-001/6.3. A reference to this document from anywhere is this address."
+                          },
+                          "number": {
+                            "type": "string",
+                            "description": "The section's own number - 6.3. Empty when the document does not number it."
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "The section's own title."
+                          },
+                          "level": {
+                            "type": "integer",
+                            "description": "How deep the section sits: 1 for a top-level section, 2 for one under it."
+                          },
+                          "paragraphs": {
+                            "type": "array",
+                            "description": "The content of the section, before its subsections.",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "kind",
+                                "parts",
+                                "refs",
+                                "rows"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "The paragraph's handle - the address of the section it belongs to, and its own place in it: SRC-001/6.3/p2."
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "description": "What the paragraph is: text, a list, a table or code.",
+                                  "enum": [
+                                    "text",
+                                    "list",
+                                    "table",
+                                    "code"
+                                  ]
+                                },
+                                "parts": {
+                                  "type": "array",
+                                  "description": "The paragraph, cut where it refers to another section - so the page never has to look for a reference in a sentence.",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "text": {
+                                        "type": "string",
+                                        "description": "The words of this piece."
+                                      },
+                                      "reference": {
+                                        "type": "string",
+                                        "description": "The address of the section this piece refers to. Empty when the piece is words."
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "description": "The words the reference was written with."
+                                      }
+                                    }
+                                  }
+                                },
+                                "refs": {
+                                  "type": "array",
+                                  "description": "The sections it refers to, resolved to their addresses.",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "text",
+                                      "id"
+                                    ],
+                                    "properties": {
+                                      "text": {
+                                        "type": "string",
+                                        "description": "The words the reference was written with."
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "description": "The address of the section it means."
+                                      }
+                                    }
+                                  }
+                                },
+                                "rows": {
+                                  "type": "array",
+                                  "description": "A table's rows, cell by cell, when the paragraph is a table. Empty otherwise. The row of dashes that marks the header is not a row of the table.",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "One row: its cells, left to right.",
+                                    "items": {
+                                      "type": "string",
+                                      "description": "The cell's own text."
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "sections": {
+                            "type": "array",
+                            "description": "The subsections, in the document's own order.",
+                            "items": {
+                              "type": "object",
+                              "description": "A subsection. The shape follows the node above it."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -3267,7 +3670,10 @@
       "id": "spec",
       "label": "Specification",
       "renderer": "outline",
-      "data": "spec",
+      "data": [
+        "sourceSpec",
+        "spec"
+      ],
       "tables": [],
       "controls": []
     }
