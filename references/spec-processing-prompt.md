@@ -18,10 +18,57 @@ Discover and reconstruct the underlying business domain, including its explicit 
 4. Distinguish business rules from technical requirements, UI behavior, and infrastructure constraints.
 5. Identify both explicit and implicit domain knowledge.
 6. Never silently convert assumptions into facts.
-7. Every extracted rule, state, transition, and invariant must have a traceable source reference or an explicit inference justification.
+7. Every extracted rule, state, transition, and invariant must have a traceable source reference — written as §1.1 sets out — or an explicit inference justification.
 8. Identify contradictions, ambiguities, missing requirements, and underspecified behavior.
 9. Do not assume that a field called `status`, `type`, or `flag` necessarily represents a state machine.
 10. Do not assume that every state machine belongs to an aggregate. Discover candidate consistency boundaries from the business rules.
+
+### 1.1 How a reference names where it comes from
+
+**Every reference to the specification names the document it comes from.**
+
+```
+SRC-001 §6.3
+SRC-001 §3, SRC-001 §12.1
+```
+
+`SRC-001` is the id you gave the document in the §2 source inventory — the
+specification itself is `SRC-001`.
+
+**A bare `§6.3` is not a reference.** This analysis has its own sections
+(§1–§21) and the specification has its own (§1–§14), and the two overlap:
+a reader — or any tool that reads the file — cannot tell which document a
+bare section number names. Name the document and the question never arises.
+
+And the document named is the specification. The evidence for a claim is
+what the specification says, not what this analysis concluded from it — an
+Evidence cell that points at the analysis points at the analysis.
+
+**Every citation is grounded in the specification.** An Evidence cell says
+where the specification says the thing — never where this analysis says
+it. A reference to a section of the analysis itself is not evidence, and
+it does not belong in an Evidence cell: name the thing the analysis
+issued an id for (SM-003, INV-004) instead, and the reader can find it.
+
+**The rules.**
+
+1. Every citation carries a document id — `SRC-00N` — and then a section
+   number. No exceptions, no bare `§N`, in any cell of the document.
+2. The source id is one you issued in the §2 source inventory. Do not invent
+   an id, and do not cite a document you did not list there.
+3. Cite the section of the document you actually read. A claim you inferred
+   belongs to the section it was inferred *from*, with the classification
+   saying it was inferred.
+4. List the citations in the order the evidence appears, separated by `; `.
+5. Quote after the citations, in double quotes: `SRC-001 §6.3 "Owner =
+   default owner in Settings (Blanca)"`.
+
+**Use it in every column that asks where a thing came from** — an Evidence
+cell, a Source references field, a classification's evidence, the Section
+column of a role-rewritten rule, the Relevant Sections of a source
+inventory row. A document that cites by id in one column and by number in
+another has two kinds of citation, and only the one that names its document
+can be resolved.
 
 ## 2. Extract the DDD domain model
 
@@ -163,7 +210,7 @@ Classify every discovered state machine as one of:
 - Partially specified: some states or transitions are explicit, but the complete lifecycle is not.
 - Candidate: plausible interpretation requiring domain expert confirmation.
 
-Provide the evidence supporting the classification.
+Provide the evidence supporting the classification, cited as §1.1 sets out.
 
 ### 3.2 State machine identification
 
@@ -201,7 +248,7 @@ For EVERY state, document:
 - Events that can lead into this state.
 - Events that can lead out of this state.
 - Whether it is initial, intermediate, terminal, or exceptional.
-- Source references.
+- Source references, cited as §1.1 sets out.
 - Explicitness classification.
 
 A state must represent a meaningful business condition, not merely an arbitrary value of a technical field.
@@ -421,7 +468,7 @@ transition when it is a precondition of that transition, and **All states** when
 holds always.
 - Enforcement responsibility.
 - Consequences of violation.
-- Evidence and explicitness classification.
+- Evidence, cited as §1.1 sets out, and the explicitness classification.
 
 Distinguish invariants that must always hold from preconditions that only apply to particular operations.
 
@@ -489,7 +536,7 @@ Identify scenarios that cannot be completed because the specification is incompl
 
 ## 6. Traceability and evidence
 
-Every extracted domain concept, state, transition, invariant, and business rule must have a source reference.
+Every extracted domain concept, state, transition, invariant, and business rule must have a source reference, written as §1.1 sets out.
 
 Use the following classifications:
 
@@ -499,8 +546,8 @@ Use the following classifications:
 - CONFLICTING: contradicts another statement.
 - UNSPECIFIED: necessary information is absent.
 
-Where possible, reference:
-- Section number.
+Where possible, reference — a section is cited as §1.1 sets out:
+- Section number, with the document's id: `SRC-001 §6.3`.
 - Heading.
 - Requirement identifier.
 - Paragraph or table.
@@ -510,46 +557,25 @@ For inferred knowledge, explain the reasoning chain.
 
 Never present an inferred business rule as an explicit requirement.
 
-### Cite the source by its id, not by a bare section number
+### The evidence cell names its document
 
-**Every citation in an Evidence cell names the document it comes from.**
-
-```
-SRC-001 §6.3
-SRC-001 §3, SRC-001 §12.1
-```
-
-The source id is the one you gave the document in the §2 source inventory —
-`SRC-001` is the specification itself. A bare `§6.3` names a section of *no
-particular document*: the section numbers of this analysis (its own §1–§21)
-and of the source spec (its own §1–§14) overlap, so a reader cannot tell
-which one a cell means, and neither can any tool that reads the file.
-
-Where a cell cites **this analysis's own section** — a state machine, a set of
-transitions, a question — name it with the analysis's own prefix:
+An Evidence cell carries the citations and the words they support, and the
+citations are written as §1.1 sets out — a document id and a section:
 
 ```
-DM §14.3
-DM §18.5
+| Evidence |
+|---|
+| SRC-001 §6.3 "Owner = default owner in Settings (Blanca)" |
+| SRC-001 §7.5, SRC-001 §8.2 |
 ```
 
-`DM` is the analysis document itself. It is not a source: it is where the model
-put something, not where the specification said it.
+A cell that says `§6.3` and nothing else has said less than half of what
+it must: the analysis and the specification both number their sections, and
+the numbers overlap. §1.1 is the one place the format is stated, and it is
+stated there because the rules below are about how to fill a cell, not about
+what a citation looks like.
 
-**Rules for an Evidence cell:**
-
-1. Every citation carries a document id — `SRC-00N` for a source, `DM` for this
-   analysis — and then a section number. No exceptions, no bare `§N`.
-2. The source id is one you issued in the §2 source inventory. Do not invent an
-   id, and do not cite a document you did not list there.
-3. Cite the section of the document you actually read. A claim you inferred
-   belongs to the section it was inferred *from*, with the classification
-   saying it was inferred.
-4. List the citations in the order the evidence appears, separated by `; `.
-5. Quote after the citations, in double quotes: `SRC-001 §6.3 "Owner = default
-   owner in Settings (Blanca)"`.
-
-This is the same convention the §21 traceability matrix already uses
+**This is the convention the §21 traceability matrix already uses**
 (`SRC-001 §6.3`). Carry it into every Evidence cell, and a citation can be
 resolved by an id rather than guessed at from the number.
 
@@ -678,6 +704,12 @@ and not by which section the row is in.
 Authority`. Bounded contexts: `ID | Context | Responsibility | Language boundary |
 Evidence`. Role-rewritten rules: `# | As written | Rewritten as the role | Section`.
 
+**The Sources table lists the sections of the source it is about.** Its `Sections`
+column names the sections of THAT source, and it writes them as §1.1 sets out —
+`SRC-001 §1–§14`. A column that lists a source’s sections as bare numbers cannot
+be told apart from a column listing some other source’s, and the table is the one
+place where several documents’ section numbers sit side by side.
+
 ## 9. Quality assurance
 
 Before finalizing the document, perform a second analytical pass.
@@ -696,6 +728,7 @@ Check:
 - Have cross-aggregate processes been identified?
 - Are inferred rules clearly labeled?
 - Is every important conclusion traceable to the specification?
+- Does every source reference name the document it comes from, as §1.1 sets out?
 - Have ambiguities and contradictions been exposed rather than hidden?
 - Are the state machines internally consistent?
 - Do reconstructed business scenarios agree with the documented state machines?

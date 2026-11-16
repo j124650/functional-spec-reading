@@ -118,18 +118,28 @@ copy of the document's vocabulary, and it drifts from the Markdown the moment th
 spec is re-converted. Search the Markdown directly; the section number you already
 have is the better key.
 
-**Cite the document too, not only its section.** A section number on its own
-names a section of no particular document — the analysis you are writing has its
-own sections, and they overlap the source's. Write the source id from your source
-inventory with the section:
+**Cite the document too, not only its section — always, in every cell.** A section
+number on its own names a section of no particular document: the analysis you are
+writing has its own sections, and they overlap the source's. Write the source id
+from your source inventory with the section:
 
 ```
 SRC-001 §6.3
 ```
 
-and, for a section of the analysis you are writing, the analysis's own prefix
-(`DM §14.3`). A citation that names its document can be resolved by that id; a
-bare `§6.3` can only be guessed at.
+A citation that names its document can be resolved by that id; a bare `§6.3`
+can only be guessed at.
+
+**The document named is the specification.** The evidence for a claim is what
+the specification says — never what the analysis concluded from it. If a cell
+would point at the analysis itself, it is not evidence: name the thing the
+analysis issued an id for instead.
+
+**The format is not a preference.** The prompt states it once, in §1.1, and every
+column that asks where a thing came from — an Evidence cell, a Source references
+field, the Section column of a role-rewritten rule — uses it. A document that
+cites by id in one column and by number in another has two kinds of citation, and
+the half that names no document is the half nobody can resolve.
 
 ## 4. Quote exactly, and never wider than the text
 

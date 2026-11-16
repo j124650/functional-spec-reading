@@ -1,5 +1,20 @@
 # Domain Model and State Machines
 
+<!-- HOW THIS DOCUMENT CITES. Every cell that says where a thing came from —
+     an Evidence column, a Source references field, a classification's
+     evidence, the Section column of a role-rewritten rule, the Relevant
+     Sections of a source inventory row — cites a DOCUMENT ID and a section:
+
+         SRC-001 §6.3
+         SRC-001 §3, SRC-001 §12.1
+
+     SRC-001 is the specification itself, from the source inventory below.
+     Never a bare §N: this analysis and the specification both number their
+     sections, and the numbers overlap, so a bare number names no document
+     and cannot be resolved. The evidence is grounded in the specification: an
+     Evidence cell points at what the specification says, never at what this
+     analysis concluded from it. -->
+
 ## 1. Executive Summary
 
 - Domain purpose:
@@ -16,12 +31,6 @@
 ## 3. Ubiquitous Language Glossary
 
 | Term ID | Business Term | Definition | Synonyms | Context | Evidence | Classification |
-<!-- Evidence cells cite a source id and a section: SRC-001 §6.3 — or, for a
-     section of this analysis, DM §14.3. Never a bare §N: the two sets of
-     section numbers overlap, and a bare number names no document. -->
-<!-- Evidence cells cite a source id and a section: SRC-001 §6.3 — or, for a
-     section of this analysis, DM §14.3. Never a bare §N: the two sets of
-     section numbers overlap, and a bare number names no document. -->
 |---|---|---|---|---|---|---|
 
 ### 3.1 Expression vocabulary
