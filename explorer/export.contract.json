@@ -390,6 +390,7 @@
         "required": [
           "actor",
           "actors",
+          "commands",
           "effectExpression",
           "evidence",
           "from",
@@ -511,6 +512,15 @@
             "description": "True when the document put a MARKER where the guard's expression would be. The page asks this rather than recognising the marker by its wording.",
             "x-view": "machines",
             "x-presentation": "flag"
+          },
+          "commands": {
+            "type": "array",
+            "description": "The COMMANDS the trigger names, resolved. The trigger cell is prose - 'CMD-006/CMD-007 Submit' - and the page draws the commands as commands, not as a sentence. Empty when the trigger names no command: some transitions are fired by an event rather than by a command, and those keep the document's own words.",
+            "x-view": "machines",
+            "x-presentation": "records",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }
