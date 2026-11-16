@@ -1,10 +1,19 @@
 # The executable spec model
 
 **This is an optional instrument, not a stage of the pipeline.** The deliverable is the
-consolidated Markdown document. Reach for this file only when the reader asks for a
-computed reachability result, or when the state space is too large to argue by hand —
-and even then, build the model *after* the document, against the rules the document
-already states.
+consolidated JSON file. Reach for this file only when the reader asks for a computed
+reachability result, or when the state space is too large to argue by hand — and even
+then, build the model *after* the document, against the rules the document already
+states.
+
+**The model reads the file, and the file is already data.** The document's
+`stateMachines`, `states`, `transitions`, `invariants` and `expressionVocabulary` arrays
+are JSON, so the model parses them with a JSON parser and takes the guard and effect
+expressions from `guard.expression.value` and `effect.value`. A guard whose
+`expression.kind` is `notExpressible` is not an expression to evaluate — it is a
+condition the aggregate cannot answer, and the model reports it as unevaluable rather
+than skipping it. A guard whose `expression.kind` is `alternatives` is two or more
+readings, and the model evaluates each.
 
 When a spec has no implementation behind it in the workspace, "which invalid states can
 the code actually reach" cannot be answered against code. It **can** be answered against a

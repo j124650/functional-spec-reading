@@ -2,9 +2,16 @@
 
 **The seam between the verifier's exporter and the explorer page.**
 
-The exporter analyses a specification document and writes an export. The explorer page reads
-that export and shows it. Between them sits one file — the **contract** — that says what the
-export carries, what each field *means*, and how the page renders it.
+The exporter analyses the deliverable — the consolidated JSON file — and writes an export.
+The explorer page reads that export and shows it. Between them sits one file — the
+**contract** — that says what the export carries, what each field *means*, and how the
+page renders it.
+
+The deliverable is already data: the document's `stateMachines`, `states`, `transitions`,
+`invariants` and `expressionVocabulary` arrays are read with a JSON parser, and a guard
+expression is the plain text in `guard.expression.value`. So the exporter no longer
+parses tables and no longer resolves a cell's text to learn what it holds — it reads
+fields.
 
 Three sides, each with an obligation:
 
@@ -152,12 +159,15 @@ the export, and the checker compares the export's own counts against the contrac
 
 ### A field that carries two shapes gets one list per shape
 
-A document column often means more than one thing. §15's "States / Transitions" column
-holds both the states a rule holds in and the transitions it guards — and the two mean
-different things, so a consumer that reads the cell's text has to work out which it is,
-which is the interpretation the export exists to remove.
+The document format already keeps the two shapes apart: an invariant record has a
+`states` array and a `transitions` array, and a transition record has a `commands`
+array beside its `trigger` string. So the exporter reads two lists, and there is no
+cell whose text a consumer must interpret to learn which shape it holds.
 
-So a cell with more than one shape becomes an OBJECT with one list per shape:
+The rule below still stands for the export's OWN fields, and for any field the
+document format does not split — because the failure it prevents is not about the
+document's format, it is about a consumer having to guess. A field with more than one
+shape becomes an OBJECT with one list per shape:
 
 ```json
 "appliesTo": {
@@ -171,10 +181,10 @@ that wants the transitions reads `transitions`; the page composes the cell's con
 the lists — the states first, then the transitions. A `kind` beside them is a third copy
 of what the lists already say, and it is the copy that can go stale.
 
-**Ship the document's own cell only when the page must SHOW the document's words.** When
-the cell's content is composed from the resolved ids, the raw cell is dead weight — and a
-raw the page can fall back to quoting is a cell the reader has to re-interpret by eye,
-which puts the interpretation back into the page one level up.
+**Ship the document's own words only when the page must SHOW them.** When the content
+is composed from the resolved ids, the raw text is dead weight — and a raw the page can
+fall back to quoting is something the reader has to re-interpret by eye, which puts the
+interpretation back into the page one level up.
 
 **A scope that covers EVERYTHING is written out as the list it covers.** With the lists
 alone, an empty list is ambiguous between "none" and "all" — so "All states" ships the
@@ -189,16 +199,17 @@ lies — it is called `states` while holding transitions half the time. Replace 
 the export, drop it from `properties` AND from `required`, and point the view's column
 at the new data key.
 
-**The resolution is the ENGINE's.** Where the engine already read that cell — the scope
-a rule holds in, the states a transition leaves — the export carries the engine's own
-result rather than resolving the cell a second time. Two resolutions of one cell agree
+**The resolution is the ENGINE's.** Where the engine already read the document — the
+scope a rule holds in, the states a transition leaves — the export carries the engine's
+own result rather than resolving it a second time. Two resolutions of one thing agree
 until one of them is changed, and the export is what the page trusts. A scope resolved
 by the checker is the scope the rule was *judged by*; a scope resolved again for the
 export can disagree with the judgement and nobody would see it.
 
 **An empty list is a finding, not a null.** A scope that names something the resolver
-cannot match ships an empty list, and the empty list is the honest report — a cell that
-resolved to nothing used to hide inside a prose string that read like it had resolved.
+cannot match ships an empty list, and the empty list is the honest report — a scope
+that resolved to nothing used to hide inside a prose string that read like it had
+resolved.
 A resolution that cannot match is often a word-boundary artefact ("submit" does not
 match "Resubmit"), and the reader needs to see the miss.
 
@@ -244,17 +255,19 @@ place the name appears:
    cell, the export carries the engine's own result. A scope, a range, a set of names — each
    is resolved once, by the code that owns it, and the export reads it. Re-resolving a cell
    for the export's benefit puts the document's structure in two places, and they drift.
-7. **A cell the page draws as objects is resolved into those objects.** A trigger cell is
-   prose — "CMD-006/CMD-007 Submit" — and the page draws the COMMANDS it names, as command
-   chips. The export ships the command ids the trigger names. A trigger that names none is
-   fired by an event rather than by a command: it ships an empty list, and the page keeps
-   the document's own words, because there is no object to draw.
-8. **The document itself travels as paragraphs.** A page that shows the specification cuts
-   it into paragraphs — heading, text, list, table, code — and resolves every reference the
-   document makes to itself ("§6.2") to the paragraph it means. The paragraph arrives
-   ALREADY CUT where it refers to another, so the page never looks for a reference in a
-   sentence, and every link it draws goes to a paragraph that exists. A reference to a
-   section the document does not have stays as the words it was written with.
+7. **A field the page draws as objects is resolved into those objects.** The document
+   already splits a trigger: `trigger` holds the prose — "Submit" — and `commands` holds
+   the ids it names — `["CMD-006", "CMD-007"]`. The page draws those ids as command chips.
+   A trigger whose `commands` array is empty is fired by an event rather than by a
+   command: it ships an empty list, and the page keeps the document's own words, because
+   there is no object to draw.
+8. **The source specification travels as paragraphs.** The deliverable is the analysis,
+   not the source, so a page that shows the specification cuts IT into paragraphs —
+   heading, text, list, table, code — and resolves every reference the specification
+   makes to itself ("§6.2") to the paragraph it means. The paragraph arrives ALREADY CUT
+   where it refers to another, so the page never looks for a reference in a sentence, and
+   every link it draws goes to a paragraph that exists. A reference to a section the
+   specification does not have stays as the words it was written with.
 9. **The export's field names follow ONE convention.** A record type serialised directly
    emits its property names as they are written — `Id`, `Kind`, `Refs` — while every other
    field in the export is lower case, and the page and the contract read one convention.

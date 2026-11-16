@@ -4,6 +4,12 @@ The deliverable is one JSON file. Every record in it carries an `evidence` array
 every record that is not directly stated carries a `classification` and a `rationale`.
 This file states what those fields mean and what they must contain.
 
+**Every record with a `classification` has a `rationale` beside it.** The rationale is
+the reasoning, in prose: the source facts used, the reasoning connecting them, and the
+conclusion. It is `null` only when the classification is `EXPLICIT` and there is
+nothing to explain. A record classified `INFERRED` with an empty rationale asserts an
+inference it never shows.
+
 ## Classification vocabulary
 
 The `classification` field of a record is one of these five values, and no other:
@@ -16,9 +22,11 @@ The `classification` field of a record is one of these five values, and no other
 | `CONFLICTING` | Evidence disagrees | Cite each conflicting source separately and show the impact |
 | `UNSPECIFIED` | Needed information is absent | State which sources/areas were reviewed; do not fill the gap by assumption |
 
-A machine's `classification` is an object with `states` and `transitions`, each one of
-the five values — a machine's state set and its transitions are often established to
-different degrees.
+A machine's `classification` is a DIFFERENT vocabulary, and a different question: it
+says how much the source establishes about the machine, and is one of `EXPLICIT`,
+`IMPLICIT`, `PARTIALLY_SPECIFIED`, `CANDIDATE`. How well each individual state and
+transition is evidenced is answered by the `classification` on those records, in the
+five values above. The two never share a field.
 
 ## Mandatory source IDs — no exceptions
 
@@ -110,8 +118,8 @@ A conflict:
 
 ```json
 {
-  "id": "TR-001",
-  "type": "invariant",
+  "id": "F-001",
+  "type": "issue",
   "summary": "the owner is set on first submission",
   "classification": "INFERRED",
   "sourceIds": ["SRC-001"],
@@ -121,6 +129,11 @@ A conflict:
 ```
 
 `sourceIds` holds registered IDs and nothing else — never a locator, never a name.
+
+The `id` of a traceability row is the id of the RECORD it traces — an `F-###`, an
+`INV-###`, a `TR-###`, whatever that record's own id is — and `type` names the series
+it belongs to. It is not a new id of its own: a traceability row that carried an id
+nothing else carried would issue a second series that resolves to nothing.
 
 ## Inference discipline
 

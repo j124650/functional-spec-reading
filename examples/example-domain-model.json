@@ -1,0 +1,387 @@
+{
+  "document": {
+    "title": "Illustrative Example — Library Loan",
+    "purpose": "A fictional teaching example, not a reusable assumption about every library.",
+    "capabilities": [
+      "loan an item to a borrower",
+      "record the return of an item",
+      "flag a loan as overdue"
+    ],
+    "keyConcepts": [
+      "ENT-001 Library Item: a copy that can be loaned.",
+      "ENT-002 Loan: a record of a borrowing agreement.",
+      "VO-001 Due Date: the date by which an item should be returned.",
+      "AGG-001 Loan: candidate aggregate rooted at Loan."
+    ],
+    "uncertainties": [
+      "Q-001: whether a borrower may renew a loan — the source does not say."
+    ],
+    "scope": "The supplied loan specification only.",
+    "assumptions": []
+  },
+  "sources": [
+    {
+      "id": "SRC-001",
+      "document": "Library Loan — Functional Spec",
+      "version": "illustrative",
+      "sections": ["§1", "§2", "§3"],
+      "authority": "the library's own specification",
+      "notes": "the only supplied source"
+    }
+  ],
+  "referencedButNotSupplied": [],
+  "sourceLocatorRegister": [],
+  "glossary": [
+    {
+      "id": "TERM-001",
+      "term": "loan",
+      "definition": "a record of a borrowing agreement between a library and a borrower",
+      "synonyms": [],
+      "context": "library lending",
+      "status": "Defined",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": []
+    }
+  ],
+  "overloadedTerms": [],
+  "undefinedTerms": [],
+  "expressionVocabulary": [
+    { "term": "item eligible", "type": "flag", "domain": null, "notes": "the item may be loaned" },
+    { "term": "item returned", "type": "flag", "domain": null, "notes": "the item has come back" },
+    { "term": "due date", "type": "text", "domain": null, "notes": "VO-001; the date by which the item should be returned" },
+    { "term": "borrower may renew", "type": "flag", "domain": null, "notes": "whether the borrower may renew; the source does not say" }
+  ],
+  "roleRewrittenRules": [],
+  "domainConcepts": [],
+  "entities": [
+    {
+      "id": "ENT-001",
+      "name": "Library Item",
+      "identity": "the copy's catalogue number",
+      "purpose": "a copy that can be loaned",
+      "attributes": [],
+      "behaviours": [],
+      "lifecycle": "",
+      "relationships": [],
+      "rules": [],
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": []
+    },
+    {
+      "id": "ENT-002",
+      "name": "Loan",
+      "identity": "the agreement record",
+      "purpose": "a record of a borrowing agreement",
+      "attributes": [],
+      "behaviours": [],
+      "lifecycle": "SM-001",
+      "relationships": [],
+      "rules": [],
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": []
+    }
+  ],
+  "valueObjects": [
+    {
+      "id": "VO-001",
+      "name": "Due Date",
+      "meaning": "the date by which an item should be returned",
+      "attributes": [],
+      "values": "",
+      "validation": [],
+      "equalitySemantics": null,
+      "immutability": null,
+      "constraints": [],
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": []
+    }
+  ],
+  "boundedContexts": [],
+  "contextMap": [],
+  "aggregates": [
+    {
+      "id": "AGG-001",
+      "name": "Loan",
+      "candidateRoot": "ENT-002",
+      "responsibilities": [],
+      "members": [],
+      "commands": [],
+      "events": [],
+      "invariants": ["INV-001", "INV-002", "INV-003"],
+      "consistencyRationale": "",
+      "consistencyExpectations": [],
+      "references": [],
+      "confidence": "Medium",
+      "confidenceNote": null,
+      "classification": "CANDIDATE",
+      "rationale": "",
+      "evidence": []
+    }
+  ],
+  "nonAggregateCandidates": [],
+  "commands": [],
+  "domainEvents": [],
+  "policies": [],
+  "stateMachines": [
+    {
+      "id": "SM-001",
+      "name": "Loan lifecycle",
+      "modeledConcept": "ENT-002",
+      "aggregate": "AGG-001",
+      "boundedContext": "",
+      "purpose": "to say where the loan stands and what may happen to it next",
+      "classification": "EXPLICIT",
+      "rationale": "the states and the moves are stated directly in this illustrative example",
+      "dimensions": ["loan status"],
+      "finite": true,
+      "orthogonalDimensions": false,
+      "initialState": "ST-001",
+      "terminalStates": ["ST-002"],
+      "stateIds": ["ST-001", "ST-002", "ST-003"],
+      "transitionIds": ["TR-001", "TR-002", "TR-003", "TR-004"],
+      "completeness": {
+        "initialStateIdentified": true,
+        "reachability": "every state is reachable from ST-001",
+        "unreachableStates": [],
+        "deadEnds": [],
+        "terminalSemantics": "a returned loan is complete",
+        "missingTransitions": [],
+        "guardOverlap": "",
+        "contradictions": [],
+        "recoveryGaps": [],
+        "questions": []
+      },
+      "mermaid": null,
+      "evidence": []
+    }
+  ],
+  "states": [
+    {
+      "id": "ST-001",
+      "machine": "SM-001",
+      "name": "Open",
+      "category": "Initial",
+      "reopenable": false,
+      "meaning": "The loan has been created and the item has not yet been returned.",
+      "entryConditions": "",
+      "exitConditions": "",
+      "permittedOperations": [],
+      "forbiddenOperations": [],
+      "invariants": ["INV-001", "INV-002", "INV-003"],
+      "incomingTransitions": ["TR-001"],
+      "outgoingTransitions": ["TR-002", "TR-003"],
+      "businessConsequences": "",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": []
+    },
+    {
+      "id": "ST-002",
+      "machine": "SM-001",
+      "name": "Returned",
+      "category": "Terminal",
+      "reopenable": false,
+      "meaning": "The item has been returned and the loan is complete.",
+      "entryConditions": "",
+      "exitConditions": "",
+      "permittedOperations": [],
+      "forbiddenOperations": [],
+      "invariants": ["INV-001", "INV-002", "INV-003"],
+      "incomingTransitions": ["TR-003", "TR-004"],
+      "outgoingTransitions": [],
+      "businessConsequences": "",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": []
+    },
+    {
+      "id": "ST-003",
+      "machine": "SM-001",
+      "name": "Overdue",
+      "category": "Exceptional",
+      "reopenable": false,
+      "meaning": "The due date has passed while the item remains unreturned.",
+      "entryConditions": "",
+      "exitConditions": "",
+      "permittedOperations": [],
+      "forbiddenOperations": [],
+      "invariants": ["INV-001", "INV-002", "INV-003"],
+      "incomingTransitions": ["TR-002"],
+      "outgoingTransitions": ["TR-004"],
+      "businessConsequences": "",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": []
+    }
+  ],
+  "transitions": [
+    {
+      "id": "TR-001",
+      "machine": "SM-001",
+      "from": null,
+      "to": "ST-001",
+      "trigger": "Create loan",
+      "commands": [],
+      "requiredInputs": [],
+      "guard": {
+        "text": "Item is eligible for loan",
+        "expression": { "kind": "expression", "value": "item eligible" }
+      },
+      "validations": [],
+      "invariantsChecked": [],
+      "actor": [],
+      "effect": null,
+      "events": [],
+      "rejection": null,
+      "synchronous": true,
+      "disposition": "ALLOWED",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "notes": [],
+      "evidence": []
+    },
+    {
+      "id": "TR-002",
+      "machine": "SM-001",
+      "from": "ST-001",
+      "to": "ST-003",
+      "trigger": "Due date passes",
+      "commands": [],
+      "requiredInputs": [],
+      "guard": {
+        "text": "Item remains unreturned",
+        "expression": { "kind": "expression", "value": "!item returned" }
+      },
+      "validations": [],
+      "invariantsChecked": [],
+      "actor": [],
+      "effect": null,
+      "events": [],
+      "rejection": null,
+      "synchronous": true,
+      "disposition": "ALLOWED",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "notes": [],
+      "evidence": []
+    },
+    {
+      "id": "TR-003",
+      "machine": "SM-001",
+      "from": "ST-001",
+      "to": "ST-002",
+      "trigger": "Record return",
+      "commands": [],
+      "requiredInputs": [],
+      "guard": {
+        "text": "Item is returned",
+        "expression": { "kind": "expression", "value": "item returned" }
+      },
+      "validations": [],
+      "invariantsChecked": [],
+      "actor": [],
+      "effect": { "kind": "expression", "value": "set('item returned', true)" },
+      "events": [],
+      "rejection": null,
+      "synchronous": true,
+      "disposition": "ALLOWED",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "notes": [],
+      "evidence": []
+    },
+    {
+      "id": "TR-004",
+      "machine": "SM-001",
+      "from": "ST-003",
+      "to": "ST-002",
+      "trigger": "Record return",
+      "commands": [],
+      "requiredInputs": [],
+      "guard": {
+        "text": "Item is returned",
+        "expression": { "kind": "expression", "value": "item returned" }
+      },
+      "validations": [],
+      "invariantsChecked": [],
+      "actor": [],
+      "effect": { "kind": "expression", "value": "set('item returned', true)" },
+      "events": [],
+      "rejection": null,
+      "synchronous": true,
+      "disposition": "ALLOWED",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "notes": [],
+      "evidence": []
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "A returned loan is not an outstanding loan.",
+      "category": "State",
+      "scope": "",
+      "states": ["ST-001", "ST-002", "ST-003"],
+      "transitions": [],
+      "formalExpression": "state == 'ST-002' => item returned",
+      "enforcement": "",
+      "violationConsequence": "",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": []
+    },
+    {
+      "id": "INV-002",
+      "statement": "A loan has one due date.",
+      "category": "Aggregate",
+      "scope": "",
+      "states": ["ST-001", "ST-002", "ST-003"],
+      "transitions": [],
+      "formalExpression": "due date != ''",
+      "enforcement": "",
+      "violationConsequence": "",
+      "classification": "CANDIDATE",
+      "rationale": "exact semantics require source support",
+      "evidence": []
+    },
+    {
+      "id": "INV-003",
+      "statement": "Only a borrower may renew a loan.",
+      "category": "Authorization",
+      "scope": "",
+      "states": ["ST-001", "ST-002", "ST-003"],
+      "transitions": [],
+      "formalExpression": null,
+      "enforcement": "",
+      "violationConsequence": "",
+      "classification": "UNSPECIFIED",
+      "rationale": "the borrower's role is a permission over who the user is, not a condition on the loan's data; the document would have to model the role and the borrower to express it",
+      "evidence": []
+    }
+  ],
+  "crossMachineDependencies": [],
+  "scenarios": [],
+  "completenessFindings": [],
+  "issues": [],
+  "questions": [
+    {
+      "id": "Q-001",
+      "question": "May a borrower renew a loan, and under what conditions?",
+      "priority": "High",
+      "businessImpact": "renewal is a rule the vocabulary names but nothing states",
+      "architecturalImpact": "the borrower's permissions would need to be modelled",
+      "blocksModeling": false,
+      "evidence": []
+    }
+  ],
+  "traceability": [],
+  "idRegistry": [
+    { "series": "ST", "count": 3, "first": "ST-001", "last": "ST-003", "definedIn": "states", "crossReferencedFrom": ["stateMachines", "transitions", "invariants"] },
+    { "series": "TR", "count": 4, "first": "TR-001", "last": "TR-004", "definedIn": "transitions", "crossReferencedFrom": ["stateMachines", "states"] }
+  ]
+}

@@ -56,6 +56,12 @@ reader waits on tooling that may never produce the thing they asked for, and the
 deliverable ends up shaped by whatever the tooling happened to emit. Produce the
 document, then build an instrument against it if it adds anything.
 
+**The deliverable is JSON, so the analysis is written as records, not as prose that
+gets shaped afterwards.** Every finding, term, state and transition is a record with
+named fields from the moment it is written. A fact stated once, in one field, in one
+place, is a fact a parser can read; the same fact stated in prose AND in a table is two
+copies that drift, and the drift is invisible because the prose still reads true.
+
 **Do not inherit an artifact from a previous workflow.** Before you reach for an
 existing model, an existing extractor, or an existing findings document, check whether
 it answers *this* request or belongs to an earlier one. A tool that produced its numbers
@@ -225,10 +231,13 @@ and what the words mean.
   sees it, the vocabulary matcher, the parser's precedence, the effect reader, and
   the audit that finds every expression-bearing field the reader never reached.
 
-**The template and a worked example.** `templates/domain-model-template.json` is the
-skeleton of the deliverable — every key, every field, in order. Copy it and fill it
-from the source: a template's empty value is a question, not a fact, and a field you
-cannot fill is `null`, not a guess.
+**The template and the contract are two copies of one shape, and they must agree.**
+`templates/domain-model-template.json` is the skeleton of the deliverable — every key,
+every field, in order. The prompt's §8.1 states the same fields as an ordered list. A
+field the contract names and the template lacks is a defect; a field the template has and
+the contract does not name is a defect. Copy the template and fill it from the source: a
+template's empty value is a question, not a fact, and a field you cannot fill is `null`,
+not a guess.
 
 **Why the vocabulary is not optional.** A methodology without an authority cannot
 be checked: nothing says what "Conflicting" means versus "Overloaded", or what
@@ -611,29 +620,35 @@ reused consistently, so the traceability matrix can point at them instead of rep
 location string in every cell. The ID names the document, and the locator that follows
 names the place inside it.
 
-**A citation is mandatory, and it is bracketed.** Every reference to a source — in prose,
-in a table, in a state definition, a transition, an invariant, a scenario, a
-contradiction, a traceability row — carries the registered ID:
+**A citation is mandatory, and it is an object.** Every record that asserts something
+carries an `evidence` array, and every element of it names the source document and the
+place inside it:
 
-```
-[SRC-001]
-[SRC-001, §6.3]
-[SRC-001, §2.4, p. 17]
-[SRC-001, PAR-014]
-[SRC-001, §3.2; SRC-002, §5]
+```json
+{ "source": "SRC-001", "locator": "§6.3" }
+{ "source": "SRC-001", "locator": "PAR-014" }
+{ "source": "SRC-001", "locator": "§3.2" }
+{ "source": "SRC-002", "locator": "§5" }
 ```
 
 Never cite a filename, a document title, a section, a page, a requirement ID, a
-paragraph, a table or a row by itself — always prefix the locator with the registered
-ID. `§6.3` alone is not a citation, because it names no document. If no reliable locator
-is available, cite the ID alone: `[SRC-001]`. Never invent a locator.
+paragraph, a table or a row by itself — always carry the registered source id beside
+the locator. `§6.3` alone is not a citation, because it names no document. If no
+reliable locator is available, the locator is `null`: `{ "source": "SRC-001",
+"locator": null }`. Never invent a locator.
+
+**One citation object per place, and never a range.** `§§4–6` compresses several
+sections behind one id, so the reader cannot tell which document each cited section
+belongs to — and the locator carries exactly one place by construction. Cite each
+section separately, each in its own object.
 
 **A paragraph is located by `PAR-###`.** Paragraph locators use the identifier format
 `PAR-001`, `PAR-002`, …, assigned sequentially in reading order within each source
 document to the paragraphs used as evidence, and kept stable and scoped by the source ID.
-`[SRC-001, PAR-014]` is paragraph 14 of source `SRC-001`. **Never use the paragraph glyph
-as a locator**, alone or beside an ID — use `PAR-###`, and if a paragraph cannot be reliably
-identified, cite the source ID and another locator you can verify.
+`{ "source": "SRC-001", "locator": "PAR-014" }` is paragraph 14 of source `SRC-001`.
+**Never use the paragraph glyph as a locator**, alone or beside an id — use `PAR-###`,
+and if a paragraph cannot be reliably identified, cite the source ID and another
+locator you can verify.
 
 See `references/evidence-and-traceability.md` for the full convention and its validation
 gate.
@@ -1278,13 +1293,19 @@ Before delivering:
    the end. An artifact that survives unverified to the summary gets reported as
    delivered.
 9. A reviewer who has not seen the source can follow a finding from evidence to remedy.
-10. **Every source reference carries a registered `SRC-###` id inside brackets.** Scan
-    the whole document for source mentions: every one must be `[SRC-001]`, 
-    `[SRC-001, §6.3]` or `[SRC-001, PAR-014]`. A bare filename, a bare section number, 
-    a bare page number and a bare requirement id are not citations. Every id used must
-    exist in the source inventory and map to the right document; every `PAR-###` used as
-    a locator must be in the source/locator register; and the paragraph glyph must not
-    appear as a locator. Fix a failure before calling the deliverable complete.
+10. **Every source reference carries a registered `SRC-###` id.** Scan the whole file for
+    source mentions: every one must be a citation object with a registered `source` and a
+    `locator` — `{ "source": "SRC-001", "locator": "§6.3" }` or `{ "source": "SRC-001",
+    "locator": "PAR-014" }`. A bare filename, a bare section number, a bare page number
+    and a bare requirement id are not citations. Every id used must exist in the `sources`
+    array and map to the right document; every `PAR-###` used as a locator must be in the
+    `sourceLocatorRegister`; and the paragraph glyph must not appear as a locator. Fix a
+    failure before calling the deliverable complete.
+11. **The file matches the contract.** Every top-level key the prompt fixes is present
+    (even where its array is empty); every record carries the fields §8.1 lists for it, in
+    that order; every enumerated value is in its closed set; every id series is issued by
+    exactly one array; and every record with a `classification` has a `rationale` beside
+    it. The file parses as JSON with a standard parser and no repair.
 
 **The checks below apply only to an artifact you actually built.** The executable model
 and the explorer page are *optional instruments*; the deliverable is the document. Do not

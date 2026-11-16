@@ -110,6 +110,9 @@ For each candidate entity, identify:
 - Relationships with other entities.
 - Business rules governing its behavior.
 
+These are the `entities` record's fields: `name`, `purpose`, `identity`, `attributes`,
+`behaviours`, `lifecycle`, `relationships`, `rules`.
+
 Distinguish genuine entities from records, DTOs, reports, and other data representations.
 
 ### 2.3 Value objects
@@ -123,6 +126,10 @@ Document:
 - Equality semantics, where inferable.
 - Immutability expectations.
 - Business constraints.
+
+These are the `valueObjects` record's fields: `meaning`, `attributes`, `validation`,
+`equalitySemantics`, `immutability`, `constraints`. A semantic the source does not
+state is `null`, not a guess.
 
 ### 2.4 Aggregates and consistency boundaries
 
@@ -145,6 +152,11 @@ Do not group objects into aggregates merely because they are closely related in 
 
 Use business invariants and transactional consistency requirements as the primary evidence for aggregate boundaries.
 
+A candidate that was considered and ruled out is not an aggregate and does not go in
+`aggregates`. It goes in `nonAggregateCandidates`, with the reason it was ruled out —
+a thing the reader would otherwise ask about, because the specification's own nouns
+invite the question.
+
 ### 2.5 Domain events
 
 Extract all meaningful business events.
@@ -160,6 +172,9 @@ For each event, document:
 - Affected entities and aggregates.
 - Downstream consequences.
 - Whether it is explicit or inferred.
+
+These are the `domainEvents` record's fields: `name`, `meaning`, `trigger`,
+`preconditions`, `resultingFacts`, `affectedConcepts`, `consequences`, `classification`.
 
 Distinguish domain events from commands, notifications, UI events, and technical events.
 
@@ -177,6 +192,9 @@ For each command, document:
 - Expected state changes.
 - Resulting domain events.
 - Possible rejection conditions.
+
+These are the `commands` record's fields: `name`, `actor`, `target`, `requiredInput`,
+`preconditions`, `invariants`, `effects`, `events`, `rejectionConditions`.
 
 ### 2.7 Domain policies and processes
 
@@ -223,7 +241,15 @@ Classify every discovered state machine as one of:
 - Partially specified: some states or transitions are explicit, but the complete lifecycle is not.
 - Candidate: plausible interpretation requiring domain expert confirmation.
 
-Provide the evidence supporting the classification, cited as §1.1 sets out.
+This vocabulary is the MACHINE's, and it is not the evidence vocabulary of §6 — the two
+answer different questions. The machine's answer is the `classification` field of the
+`stateMachines` record, written `EXPLICIT`, `IMPLICIT`, `PARTIALLY_SPECIFIED` or
+`CANDIDATE`. How well each individual state and transition is evidenced is a separate
+question, and it is answered by the `classification` field on those records, written
+`EXPLICIT`, `INFERRED`, `CANDIDATE`, `CONFLICTING` or `UNSPECIFIED`.
+
+Provide the evidence supporting the classification, cited as §1.1 sets out — it is
+the `rationale` field of the machine record.
 
 ### 3.2 State machine identification
 
@@ -242,6 +268,12 @@ For each state machine, document:
 - Exceptional states.
 - Whether the machine is finite or potentially unbounded.
 - Whether it is a single state machine or a combination of orthogonal state dimensions.
+
+These are the `stateMachines` record's fields: `id`, `name`, `purpose`,
+`modeledConcept`, `boundedContext`, `aggregate`, `dimensions`, `initialState`,
+`terminalStates`, `finite`, `orthogonalDimensions`. The intermediate and exceptional
+states are the states of those categories, and they are named by the `states` array —
+not repeated here.
 
 Do not collapse independent state dimensions into one artificially large state machine.
 
@@ -264,7 +296,7 @@ For EVERY state, document:
 - Source references, cited as §1.1 sets out.
 - Explicitness classification.
 
-The state is one record of §13's `states[]` array, and §8.2 fixes its field names and
+The state is one record of the `states` array, and §8.1 fixes its field names and
 their types. A state must represent a meaningful business condition, not merely an
 arbitrary value of a technical field.
 
@@ -301,13 +333,18 @@ For each transition, document:
 - Source references.
 - Inference justification, if applicable.
 
-The transition is one record of §14's `transitions[]` array, and §8.2 fixes its field
-names and their types.
+These are the `transitions` record's fields: `id`, `machine`, `from`, `to`, `trigger`,
+`commands`, `requiredInputs`, `guard`, `validations`, `invariantsChecked`, `actor`,
+`effect`, `events`, `rejection`, `synchronous`, `disposition`, `classification`,
+`rationale`, `notes`, `evidence`.
+
+The transition is one record of the `transitions` array, and §8.1 fixes its field names
+and their types.
 
 #### 3.5 Transition records
 
-Every transition of every machine is one record in §14's `transitions[]` array — the
-fields are the list above, and §8.2 gives their names, types and allowed values.
+Every transition of every machine is one record in the `transitions` array — the
+fields are the list above, and §8.1 gives their names, types and allowed values.
 
 `guard.text` is the business reading, in prose. `guard.expression` is the SAME
 condition written in the expression language below — it is what a verifier evaluates,
@@ -562,6 +599,10 @@ Identify scenarios that cannot be completed because the specification is incompl
 
 Every extracted domain concept, state, transition, invariant, and business rule must have a source reference, written as §1.1 sets out.
 
+A document the source NAMES BUT DID NOT SUPPLY is not a source. It is never registered
+in `sources` and never cited as evidence; it goes in `referencedButNotSupplied`, and
+the rules that depend on it are `UNSPECIFIED` because of it.
+
 Use the following classifications:
 
 - EXPLICIT: directly stated in the specification.
@@ -645,6 +686,7 @@ The file must be self-contained and organised as follows:
 |---|---|
 | `document` | the summary, the scope, and the assumptions |
 | `sources` | the source inventory — one record per source document |
+| `referencedButNotSupplied` | artefacts the source names but did not supply, and what each would settle |
 | `sourceLocatorRegister` | every `PAR-###` locator, and where it sits |
 | `glossary` | the ubiquitous language |
 | `overloadedTerms` | one word carrying several meanings |
@@ -657,6 +699,7 @@ The file must be self-contained and organised as follows:
 | `boundedContexts` | the contexts and their responsibilities |
 | `contextMap` | how the contexts depend on each other |
 | `aggregates` | aggregate candidates and their consistency boundaries |
+| `nonAggregateCandidates` | candidates considered for aggregation and ruled out, with the reason |
 | `commands` | commands and business actions |
 | `domainEvents` | domain events |
 | `policies` | domain policies and business processes |
@@ -682,17 +725,20 @@ Use consistent identifiers throughout the file, for example:
 
 - `ENT-001`: Entity
 - `VO-001`: Value Object
+- `BC-001`: Bounded Context
+- `CON-001`: Domain Concept
 - `AGG-001`: Aggregate
 - `CMD-001`: Command
 - `EVT-001`: Domain Event
+- `POL-001`: Policy
 - `SM-001`: State Machine
 - `ST-001`: State
 - `TR-001`: Transition
 - `INV-001`: Invariant
-- `POL-001`: Policy
 - `SCN-001`: Scenario
 - `Q-001`: Domain Expert Question
-- `SRC-001`: Source document (registered in §2; every citation carries it)
+- `F-001`: Issue (ambiguity, contradiction, or missing requirement)
+- `SRC-001`: Source document (registered in `sources`; every citation carries it)
 - `PAR-001`: Paragraph of a source document, used as a locator
 - `TERM-001`: Ubiquitous-language term
 - `N-01`: Rule written around a person, rewritten around a role
@@ -710,109 +756,190 @@ Every record is a JSON object with named fields. A field's type is fixed by this
 section, and a consumer reads it without guessing. `id` is the record's own
 identifier, where the model gives it one.
 
-**`document`** — an object, not an array: `title` (string), `purpose` (string),
-`capabilities` (array of strings), `keyConcepts` (array of strings),
-`uncertainties` (array of strings), `scope` (string), `assumptions` (array of
-objects: `statement`, `rationale`, `evidence`).
+**Each record's fields are listed in a fixed order, and the list is the contract.**
+Where the fields are given as `fields \`a\`, \`b\`, \`c\``, that list is the record's
+shape — in that order, with those names, and no field added or omitted. The prose
+after the list says what each one holds.
 
-**`sources`** — `id`, `document`, `version`, `sections` (array of section numbers,
-one per element — never a range), `authority`, `notes`.
-
-**`sourceLocatorRegister`** — `source`, `locator`, `where` (an object: `section`,
-`openingWords`).
-
-**`glossary`** — `id`, `term`, `definition`, `synonyms` (array), `context`,
-`status`, `classification`, `evidence`.
-
-**`overloadedTerms`** — `word`, `meanings` (array of objects: `meaning`,
-`sections` — an array of section numbers), `evidence`.
-
-**`undefinedTerms`** — `term`, `whereUsed` (array), `decisionNeeded`, `evidence`.
-
-**`expressionVocabulary`** — `term`, `type`, `domain`, `notes`.
-
-**`roleRewrittenRules`** — `id`, `asWritten`, `rewrittenAsRole`, `section`,
+**`document`** — fields `title`, `purpose`, `capabilities`, `keyConcepts`,
+`uncertainties`, `scope`, `assumptions`.
+An object, not an array. `capabilities`, `keyConcepts` and `uncertainties` are arrays
+of strings. `assumptions` is an array of objects: `statement`, `rationale`,
 `evidence`.
 
-**`domainConcepts`** — `id`, `name`, `description`, `relationships` (array of
-objects: `type`, `target`), `evidence`.
+**`sources`** — fields `id`, `document`, `version`, `sections`, `authority`, `notes`.
+`sections` is an array of the sections of THAT source, one per element — never a
+range. A range is never one element: `["§1", "§2", "§3"]`, never `["§§1–§3"]`.
 
-**`entities`** — `id`, `name`, `identity`, `purpose`, `lifecycle`, `relationships`
-(array of strings), `classification`, `evidence`.
+**`referencedButNotSupplied`** — fields `artefact`, `referencedAt`, `wouldSettle`,
+`evidence`.
+`artefact` names the thing the source names but did not supply. `referencedAt` says
+where the source names it. `wouldSettle` says what it would settle. A document the
+source names but did not supply is not a source: it is never registered in `sources`
+and never cited as evidence, and the rules that depend on it are `UNSPECIFIED` because
+of it.
 
-**`valueObjects`** — `id`, `name`, `meaning`, `values`, `constraints`,
-`classification`, `evidence`.
+**`sourceLocatorRegister`** — fields `source`, `locator`, `where`.
+Every `PAR-###` used as a locator, and where it sits. `where` is an object:
+`section`, `openingWords`.
 
-**`boundedContexts`** — `id`, `name`, `responsibility`, `languageBoundary`,
-`confidence`, `classification`, `evidence`.
+**`glossary`** — fields `id`, `term`, `definition`, `synonyms`, `context`, `status`,
+`classification`, `rationale`, `evidence`.
+`id` is `TERM-###`. `synonyms` is an array of strings. `status` is one of `Defined`,
+`DefinedPartial`, `Overloaded`, `Pending`, `Undefined`.
 
-**`contextMap`** — `upstream`, `downstream`, `relationship`, `note`, `evidence`.
+**`overloadedTerms`** — fields `word`, `meanings`, `evidence`.
+`meanings` is an array of objects: `meaning`, `sections` — and `sections` is an array
+of section numbers, one per element.
+
+**`undefinedTerms`** — fields `term`, `whereUsed`, `decisionNeeded`, `evidence`.
+`whereUsed` is an array of strings.
+
+**`expressionVocabulary`** — fields `term`, `type`, `domain`, `notes`.
+`type` is one of `flag`, `text`, `set`, `number`. `domain` is an array of values, or
+null when the source leaves the domain open.
+
+**`roleRewrittenRules`** — fields `id`, `asWritten`, `rewrittenAsRole`, `section`,
+`evidence`.
+`id` is `N-01`.
+
+**`domainConcepts`** — fields `id`, `name`, `description`, `relationships`,
+`evidence`.
+`id` is `CON-###`. `relationships` is an array of objects: `type`, `target`.
+
+**`entities`** — fields `id`, `name`, `identity`, `purpose`, `attributes`,
+`behaviours`, `lifecycle`, `relationships`, `rules`, `classification`, `rationale`,
+`evidence`.
+`id` is `ENT-###`. `attributes`, `behaviours` and `rules` are arrays of strings.
+`relationships` is an array of strings.
+
+**`valueObjects`** — fields `id`, `name`, `meaning`, `attributes`, `values`,
+`validation`, `equalitySemantics`, `immutability`, `constraints`, `classification`,
+`rationale`, `evidence`.
+`id` is `VO-###`. `attributes`, `validation` and `constraints` are arrays of strings.
+`equalitySemantics` and `immutability` are strings, or null when the source does not
+say.
+
+**`boundedContexts`** — fields `id`, `name`, `responsibility`, `languageBoundary`,
+`confidence`, `confidenceNote`, `classification`, `rationale`, `evidence`.
+`id` is `BC-###`. `confidence` is one of `High`, `Medium`, `Low`. `confidenceNote` is
+the reason behind the confidence — a string, or null.
+
+**`contextMap`** — fields `upstream`, `downstream`, `relationship`, `note`,
+`evidence`.
 No `id`: the pair (upstream, downstream) is the key.
 
-**`aggregates`** — `id`, `name`, `candidateRoot`, `members` (array of ids),
-`commands` (array of ids), `events` (array of ids), `invariants` (array of ids),
-`consistencyRationale`, `consistencyExpectations` (array), `references` (array of
-ids, and nothing else — a reference holds an id, not a copy of the thing),
-`confidence`, `classification`, `evidence`.
+**`aggregates`** — fields `id`, `name`, `candidateRoot`, `responsibilities`, `members`,
+`commands`, `events`, `invariants`, `consistencyRationale`, `consistencyExpectations`,
+`references`, `confidence`, `confidenceNote`, `classification`, `rationale`,
+`evidence`.
+`id` is `AGG-###`. `responsibilities` and `consistencyExpectations` are arrays of
+strings. `members`, `commands`, `events`, `invariants` and `references` are arrays of
+ids — and a reference holds an id, not a copy of the thing. `confidence` is one of
+`High`, `Medium`, `Low`; `confidenceNote` is the reason behind it, or null.
 
-**`commands`** — `id`, `name`, `actor`, `target`, `preconditions` (array),
-`effects`, `events` (array of ids), `rejectionConditions` (array),
-`classification`, `evidence`.
+**`nonAggregateCandidates`** — fields `name`, `reason`, `evidence`.
+A candidate that was considered and ruled out. No `id`: the name is the key.
 
-**`domainEvents`** — `id`, `name`, `meaning`, `trigger`, `affectedConcepts`
-(array), `consequences`, `classification`, `evidence`.
+**`commands`** — fields `id`, `name`, `actor`, `target`, `requiredInput`,
+`preconditions`, `invariants`, `effects`, `events`, `rejectionConditions`,
+`classification`, `rationale`, `evidence`.
+`id` is `CMD-###`. `requiredInput`, `preconditions` and `rejectionConditions` are
+arrays of strings. `invariants` and `events` are arrays of ids.
 
-**`policies`** — `id`, `name`, `trigger`, `condition`, `action`, `scope`,
-`participants` (array), `classification`, `evidence`.
+**`domainEvents`** — fields `id`, `name`, `meaning`, `trigger`, `preconditions`,
+`resultingFacts`, `affectedConcepts`, `consequences`, `classification`, `rationale`,
+`evidence`.
+`id` is `EVT-###`. `preconditions`, `resultingFacts` and `affectedConcepts` are
+arrays of strings.
 
-**`stateMachines`** — `id`, `name`, `modeledConcept`, `aggregate`, `boundedContext`,
-`purpose`, `classification` (an object: `states` and `transitions`, each one of the
-five classes), `classificationRationale`, `dimensions` (array), `initialState`,
-`terminalStates` (array of ids), `stateIds` (array of ids), `transitionIds` (array
-of ids), `completeness` (an object: `initialStateIdentified` (boolean),
-`reachability`, `unreachableStates` (array), `deadEnds` (array), `terminalSemantics`,
+**`policies`** — fields `id`, `name`, `trigger`, `condition`, `action`, `scope`,
+`participants`, `classification`, `rationale`, `evidence`.
+`id` is `POL-###`. `participants` is an array of strings.
+
+**`stateMachines`** — fields `id`, `name`, `modeledConcept`, `aggregate`,
+`boundedContext`, `purpose`, `classification`, `rationale`, `dimensions`, `finite`,
+`orthogonalDimensions`, `initialState`, `terminalStates`, `stateIds`,
+`transitionIds`, `completeness`, `mermaid`, `evidence`.
+`id` is `SM-001`. `classification` is one of `EXPLICIT`, `IMPLICIT`,
+`PARTIALLY_SPECIFIED`, `CANDIDATE` — how much the source establishes about the
+MACHINE, which is a different question from how well each of its records is
+evidenced. `rationale` is the evidence that decided it. `dimensions` is an array of
+strings. `finite` is a boolean — false when the state set may grow without bound.
+`orthogonalDimensions` is a boolean — true when the machine is a combination of
+independently advancing dimensions rather than one. `terminalStates`, `stateIds` and
+`transitionIds` are arrays of ids. `mermaid` is the diagram source, or null.
+`completeness` is an object: `initialStateIdentified` (boolean), `reachability`,
+`unreachableStates` (array), `deadEnds` (array), `terminalSemantics`,
 `missingTransitions` (array), `guardOverlap`, `contradictions` (array),
-`recoveryGaps` (array), `questions` (array of ids)), `mermaid` (string), `evidence`.
+`recoveryGaps` (array), `questions` (array of ids).
 
-**`states`** — `id`, `machine`, `name`, `category`, `reopenable` (boolean),
-`meaning`, `entryConditions`, `exitConditions`, `permittedOperations` (array),
-`forbiddenOperations` (array), `invariants` (array of ids),
-`incomingTransitions` (array of ids), `outgoingTransitions` (array of ids),
-`businessConsequences`, `classification`, `evidence`.
+**`states`** — fields `id`, `machine`, `name`, `category`, `reopenable`, `meaning`,
+`entryConditions`, `exitConditions`, `permittedOperations`, `forbiddenOperations`,
+`invariants`, `incomingTransitions`, `outgoingTransitions`, `businessConsequences`,
+`classification`, `rationale`, `evidence`.
+`id` is `ST-###`. `machine` is a machine id. `category` is one of `Initial`,
+`Intermediate`, `Terminal`, `Exceptional`. `reopenable` is a boolean. The rest are
+strings, except `permittedOperations` and `forbiddenOperations` (arrays of strings)
+and `invariants`, `incomingTransitions` and `outgoingTransitions` (arrays of ids).
 
-**`transitions`** — `id`, `machine`, `from` (a state id, or null for a transition
-that starts a machine), `to` (a state id, or null when the source does not say),
-`trigger`, `commands` (array of ids), `guard` (an object: `text`, and `expression`
-— an object with `kind` and the value that kind carries), `actor` (array),
-`effect` (an object with `kind` and the value that kind carries, or null when the
-transition only moves the state), `events` (array of ids), `rejection` (string, or
-null), `disposition`, `classification`, `notes` (array of strings), `evidence`.
+**`transitions`** — fields `id`, `machine`, `from`, `to`, `trigger`, `commands`,
+`requiredInputs`, `guard`, `validations`, `invariantsChecked`, `actor`, `effect`,
+`events`, `rejection`, `synchronous`, `disposition`, `classification`, `rationale`,
+`notes`, `evidence`.
+`id` is `TR-###`. `machine` is a machine id. `from` is a state id, or null for a
+transition that starts a machine. `to` is a state id, or null when the source does not
+say. `commands`, `invariantsChecked` and `events` are arrays of ids.
+`requiredInputs` and `validations` are arrays of strings. `actor` is an array of
+strings. `guard` is an object: `text`, and `expression` — an object with `kind` and
+the value that kind carries. `effect` is an object with `kind` and the value that
+kind carries, or null when the transition only moves the state. `rejection` is a
+string, or null. `synchronous` is a boolean. `disposition` is one of `ALLOWED`,
+`EXPLICITLY_FORBIDDEN`, `UNSPECIFIED`, `AMBIGUOUS`, `CANDIDATE`. `notes` is an array
+of strings.
 
-**`invariants`** — `id`, `statement`, `category`, `scope`, `states` (array of ids),
-`transitions` (array of ids), `formalExpression` (string, or null),
-`enforcement`, `violationConsequence`, `classification`, `evidence`.
+**`invariants`** — fields `id`, `statement`, `category`, `scope`, `states`,
+`transitions`, `formalExpression`, `enforcement`, `violationConsequence`,
+`classification`, `rationale`, `evidence`.
+`id` is `INV-###`. `category` is one of `State`, `Transition`, `Aggregate`,
+`CrossAggregate`, `Temporal`, `Authorization`, `Uniqueness`, `Quantitative`. `states`
+and `transitions` are arrays of ids. `formalExpression` is a string, or null when the
+invariant is not expressible.
 
-**`crossMachineDependencies`** — `sourceMachine`, `trigger`, `targetMachine`,
+**`crossMachineDependencies`** — fields `sourceMachine`, `trigger`, `targetMachine`,
 `expectedEffect`, `ordering`, `evidence`.
 
-**`scenarios`** — `id`, `name`, `initialConditions`, `actor`, `commands` (array of
-ids), `guards` (array), `transitions` (array of ids), `events` (array of ids),
-`result`, `exceptions` (array), `invariants` (array of ids), `evidence`.
+**`scenarios`** — fields `id`, `name`, `initialConditions`, `actor`, `commands`,
+`guards`, `transitions`, `events`, `result`, `exceptions`, `invariants`, `evidence`.
+`id` is `SCN-###`. `commands`, `transitions`, `events` and `invariants` are arrays of
+ids. `guards` and `exceptions` are arrays of strings.
 
-**`completenessFindings`** — `machine`, `check`, `finding`, `severity`, `rationale`,
-`evidence`. No `id`: the pair (machine, check) is the key.
+**`completenessFindings`** — fields `machine`, `check`, `finding`, `severity`,
+`rationale`, `evidence`.
+No `id`: the pair (machine, check) is the key. `severity` is one of `Critical`,
+`High`, `Medium`, `Low`.
 
-**`issues`** — `id`, `statement`, `conflictingEvidence` (array), `impact`,
-`proposedClarification`, `classification`, `evidence`.
+**`issues`** — fields `id`, `statement`, `conflictingEvidence`, `impact`,
+`proposedClarification`, `classification`, `rationale`, `evidence`.
+`id` is `F-###`. `conflictingEvidence` is an array of strings.
 
-**`questions`** — `id`, `question`, `priority`, `businessImpact`,
-`architecturalImpact`, `blocksModeling` (boolean), `evidence`.
+**`questions`** — fields `id`, `question`, `priority`, `businessImpact`,
+`architecturalImpact`, `blocksModeling`, `evidence`.
+`id` is `Q-###`. `priority` is one of `Critical`, `High`, `Medium`, `Low`.
+`blocksModeling` is a boolean.
 
-**`traceability`** — `id`, `type`, `summary`, `classification`, `sourceIds` (array
-of source ids), `rationale`, `openQuestion`.
+**`traceability`** — fields `id`, `type`, `summary`, `classification`, `sourceIds`,
+`rationale`, `openQuestion`.
+`id` is the id of the RECORD this row traces — an `F-###`, an `INV-###`, a `TR-###`,
+whatever that record's own id is — and `type` names the series it belongs to. It is
+a reference, not a new id: a traceability row that carried an id nothing else
+carried would issue a second series that resolves to nothing. `sourceIds` is an array
+of source ids. `openQuestion` is a `Q-###`, or null.
 
-**`idRegistry`** — `series`, `count` (number), `first`, `last`, `definedIn` (the
-key the series is defined in), `crossReferencedFrom` (array of keys).
+**`idRegistry`** — fields `series`, `count`, `first`, `last`, `definedIn`,
+`crossReferencedFrom`.
+`count` is a number. `definedIn` is the key the series is defined in.
+`crossReferencedFrom` is an array of keys.
 
 ### 8.2 The rules that make the file parseable
 
@@ -824,13 +951,26 @@ second copy waiting to drift.
 `[]`. A key that is missing is a key the consumer must guess about, and a consumer
 that guesses is wrong somewhere.
 
+**Two classifications, two vocabularies, two fields.** A record's `classification`
+says how well THAT RECORD is evidenced, and is one of `EXPLICIT`, `INFERRED`,
+`CANDIDATE`, `CONFLICTING`, `UNSPECIFIED`. A machine's `classification` says how much
+the source establishes about the MACHINE, and is one of `EXPLICIT`, `IMPLICIT`,
+`PARTIALLY_SPECIFIED`, `CANDIDATE`. The two never share a field, so a consumer
+reading either one knows which question the answer answers.
+
+**A `rationale` wherever a `classification` is.** Every record that carries a
+`classification` also carries a `rationale` — the reasoning, in prose, for a record
+that is not directly stated. It is `null` only when the classification is `EXPLICIT`
+and there is nothing to explain. A record classified `INFERRED` with an empty
+rationale asserts an inference it never shows.
+
 **Enums are closed.** `category` is one of `Initial`, `Intermediate`, `Terminal`,
 `Exceptional` — `Terminal (reopenable)` is `Terminal` with `reopenable: true`.
-`classification` is one of `EXPLICIT`, `INFERRED`, `CANDIDATE`, `CONFLICTING`,
-`UNSPECIFIED`. `disposition` is one of `ALLOWED`, `EXPLICITLY_FORBIDDEN`,
-`UNSPECIFIED`, `AMBIGUOUS`. `severity` is one of `Critical`, `High`, `Medium`, `Low`.
-A machine's `classification.states` and `classification.transitions` are each one of
-the five classes.
+`disposition` is one of `ALLOWED`, `EXPLICITLY_FORBIDDEN`, `UNSPECIFIED`,
+`AMBIGUOUS`, `CANDIDATE`. `severity` and `priority` are one of `Critical`, `High`,
+`Medium`, `Low`. `confidence` is one of `High`, `Medium`, `Low`. `status` is one of
+`Defined`, `DefinedPartial`, `Overloaded`, `Pending`, `Undefined`. A fifth spelling
+is a defect in the file, not a new category.
 
 **An expression is a value, not decoration.** The guard and effect expressions are
 the plain text of the expression language (§3.5.1) — no backticks, no bold, no
@@ -856,8 +996,9 @@ multi-line by nature.
 two runs over the same source produce the same file and a diff shows what changed.
 
 **Every id resolves.** An id that appears in `references`, `stateIds`, `members`,
-`invariants` or any other reference field exists in the array it points at, and no
-id is issued twice.
+`invariants` or any other reference field exists in the array it points at. No id is
+issued twice in the array that issues it — and a `traceability` row's `id` is a
+reference to a record that exists, not a second issue of that id.
 
 **The file is JSON and nothing else.** No comments, no trailing commas, no
 unquoted keys, no `NaN`, no single-quoted strings, no `//` or `/* */`. A consumer

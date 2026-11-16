@@ -38,13 +38,19 @@ inside brackets, and then the locator inside that document:
 [SRC-001, §3.2; SRC-002, §5]
 ```
 
-One document, one id, allocated in the source inventory and stable across iterations. A
-paragraph of a source is located by `PAR-###`, assigned in reading order within that
-source; the paragraph glyph is not a locator. A bare `§6.3` names no document — this
-analysis and the specification both number their sections — so it is not a citation. If no
-reliable locator is available, cite the id alone: `[SRC-001]`. The evidence is grounded
-in the specification: an Evidence cell points at what the specification says, never at what
-this analysis concluded from it.
+One document, one id, allocated in `sources` and stable across iterations. A paragraph of
+a source is located by `PAR-###`, assigned in reading order within that source; the
+paragraph glyph is not a locator. A bare `§6.3` names no document — this analysis and the
+specification both number their sections — so it is not a citation. A citation is an
+object, one per source:
+
+```json
+{ "source": "SRC-001", "locator": "§6.3" }
+```
+
+If no reliable locator is available, the locator is `null`. The evidence is grounded in
+the specification: an `evidence` array points at what the specification says, never at
+what this analysis concluded from it.
 
 This is a hard requirement, not a style preference, and the skill ends with a validation
 gate that fails a document whose citations do not carry it.
@@ -86,8 +92,8 @@ The pipeline has eight passes, and the order matters — later passes depend on 
 | `references/executable-spec-model.md` | Building the traversal, the state key, and the probes. |
 | `references/interactive-diagrams.md` | The self-contained HTML explorer's rules and generator. |
 | `references/export-contract.md` | The contract between the exporter and the explorer, and the three obligations it binds. |
-| `templates/` | Skeletons for the domain model, state machine, and transition table. |
-| `examples/example-domain-model.md` | A worked example showing the format — and what must *not* be inferred. |
+| `templates/domain-model-template.json` | The skeleton of the deliverable — every key, every field, in order. |
+| `examples/example-domain-model.json` | A worked example showing the format — and what must *not* be inferred. |
 | `scripts/` | Node helpers: vocabulary build, explorer generation, and the explorer test harness. |
 
 ## Install
