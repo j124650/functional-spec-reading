@@ -2990,6 +2990,16 @@
       "prefix": "Q",
       "kind": "Question",
       "property": "questions"
+    },
+    {
+      "prefix": "CON",
+      "kind": "Domain concept",
+      "property": "catalogue"
+    },
+    {
+      "prefix": "PAR",
+      "kind": "Paragraph locator",
+      "property": "catalogue"
     }
   ],
   "x-views": [

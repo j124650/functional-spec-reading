@@ -275,11 +275,25 @@ for (const inv of (doc.invariants || [])) {
     exprOk++;
   }
 
-  // The invariant must say where it is in force.
+  // The invariant must say where it is in force. The scope is the KIND,
+  // and the kind says which of the two arrays carries the ids:
+  //   AllStates  the rule holds wherever the aggregate is — it names no
+  //              state, and the empty arrays are the whole of it;
+  //   States     the rule holds in the states it names;
+  //   Transition the rule guards the transitions it names.
+  const scope = typeof inv.scope === 'string' ? inv.scope : '';
   const states = Array.isArray(inv.states) ? inv.states : [];
   const scoped = Array.isArray(inv.transitions) ? inv.transitions : [];
-  if (!states.length && !scoped.length) {
-    problems.push(inv.id + ': its states and transitions arrays are both empty — say where it is in force');
+  if (scope === 'AllStates') {
+    // holds everywhere: nothing to name, and nothing named wrongly
+  } else if (scope === 'States') {
+    if (!states.length) problems.push(inv.id + ': its scope is States, but it names no state');
+    if (scoped.length) problems.push(inv.id + ': its scope is States, but it names transitions');
+  } else if (scope === 'Transition') {
+    if (!scoped.length) problems.push(inv.id + ': its scope is Transition, but it names no transition');
+    if (states.length) problems.push(inv.id + ': its scope is Transition, but it names states');
+  } else {
+    problems.push(inv.id + ': its scope must be AllStates, States or Transition — it says ' + JSON.stringify(scope));
   }
   for (const sid of states) {
     if (!stateIds.has(sid)) problems.push(inv.id + ': names state ' + sid + ', which the states array does not define');

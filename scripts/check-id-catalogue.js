@@ -139,17 +139,29 @@ const ISSUING = [
   "policies", "stateMachines", "states", "transitions", "invariants",
   "scenarios", "issues", "questions",
 ];
+const issue = (id) => {
+  if (!id) return;
+  const prefix = id.replace(/-\d.*$/, "");
+  if (!defined.has(prefix)) defined.set(prefix, new Set());
+  defined.get(prefix).add(id);
+  registry.add(prefix);
+};
 for (const key of ISSUING) {
   const rows = Array.isArray(doc[key]) ? doc[key] : [];
   for (const r of rows) {
     if (!r || typeof r.id !== "string") continue;
-    const id = r.id.trim();
-    if (!id) continue;
-    const prefix = id.replace(/-\d.*$/, "");
-    if (!defined.has(prefix)) defined.set(prefix, new Set());
-    defined.get(prefix).add(id);
-    registry.add(prefix);
+    issue(r.id.trim());
   }
+}
+
+/* The source locator register is the one record whose id is not called
+   `id`: a paragraph of a source document is cited by its LOCATOR, and that
+   locator is the id. So PAR-001 is issued by the register, exactly as
+   TERM-001 is issued by the glossary - and the page must be able to
+   decode it into the paragraph it names. */
+for (const r of (doc.sourceLocatorRegister || [])) {
+  if (!r || typeof r.locator !== "string") continue;
+  issue(r.locator.trim());
 }
 
 /* ------------------------------------------------------------------ compare */
