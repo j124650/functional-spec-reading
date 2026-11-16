@@ -559,8 +559,27 @@
             "type": "string"
           },
           "scope": {
-            "type": "string",
-            "description": "What the invariant binds to — an aggregate, a machine, a state or a transition."
+            "type": "array",
+            "description": "The scope column, CUT where it names a concept. The column is prose with identifiers in it - \"AGG-001 (candidate root: ENT-001)\" - and the page must not have to find them, nor decide which of them is a name and which are words.",
+            "x-view": "invariants",
+            "x-presentation": "parts",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The words of this piece."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The name this piece names. Empty when the piece is words."
+                },
+                "prefix": {
+                  "type": "string",
+                  "description": "The series the name belongs to - AGG, ENT, VO. Empty when the piece is words."
+                }
+              }
+            }
           },
           "expression": {
             "type": "string",
