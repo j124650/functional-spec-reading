@@ -1085,6 +1085,16 @@ Check:
 - Are the state machines internally consistent?
 - Do reconstructed business scenarios agree with the documented state machines?
 
+**A reachability claim is a CLAIM, and the model has the answer.** A state with
+no incoming transition from a reachable state is unreachable — and a completeness
+finding that says "every state is reachable" is a statement about the transition
+table, not about the specification. Argue it from the table, or compute it; do
+not assert what you have not checked. The same holds for the guards: a guard that
+reads a set no transition ever fills is a permanent false, and every state behind
+it is unreachable however well the table reads. The specification's own rule for
+adding things — what a submit adds, what an approval removes — is an EFFECT, and
+an effect that is not modelled is a rule the model cannot see.
+
 **The source's own tables are the FLOOR, not a starting point.** A row in one of
 the source's tables is a fact the source states — a stage in its stage table, a
 role in its roles table, a rule in its notification matrix, a question in its

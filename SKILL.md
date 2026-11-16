@@ -511,6 +511,14 @@ transient error into a fatal one.
 
 ### 10. Pass 8 — deliver the consolidated file
 
+**A reachability claim is a claim.** The previous deliverable asserted "all
+eight states are reachable" while the executable model found Awaiting Approvals
+unreachable — because §6.3's "Requirements added automatically" was never modelled
+as an effect, so `open requirements` was never populated and the guard that
+reaches that state could never hold. Model the specification's own rule for what
+a transition ADDS and what it REMOVES as effects, and check the guards that read
+those sets. Then make the claim agree with the model.
+
 **The source's tables are the floor.** Every row of the source's own tables — the
 stages, the roles, the notification matrix, the questions, the outside items — is
 a fact the source states. Account for each one: as a record, or with a stated
