@@ -326,7 +326,16 @@ A spec typically tabulates **states** and describes **transitions in narrative**
 scattered away from the state table. Reconstruct the transition table yourself.
 
 For each transition record: from → trigger → actor → guard → to → effects, each with the
-section and a short verbatim quote. Note which transitions the spec never specifies at all.
+section and a short verbatim quote. Note which transitions the spec never specifies at all, and what the transitions that DO
+exist assume.
+
+**A guard over an unfilled collection is a permanent false.** Every guard reads a
+gathering or a flag and, if no transition's effect ever writes that collection, the guard
+can never hold and every state behind it is unreachable however well the transition
+table reads. What a transition ADDS and what it REMOVES are effects, and an effect that is
+not modelled is a rule the model cannot see — model the specification's own rule for what a
+submit adds, what an approval removes, what the licensing match computes, and what the
+ship-to realisation adds before you claim a guard holds.
 
 The prose sections are where contradictions live, because no section was written against the
 others. Cross-read the same concept across *every* section it appears in.
@@ -518,6 +527,15 @@ as an effect, so `open requirements` was never populated and the guard that
 reaches that state could never hold. Model the specification's own rule for what
 a transition ADDS and what it REMOVES as effects, and check the guards that read
 those sets. Then make the claim agree with the model.
+
+**The deliverable is the skill's output, not a hand-conversion.** Run the skill's
+procedure against the source specification; the previous-format analysis
+(`domain-model-and-state-machines.md`) is not input to this run. Copying a record,
+field or finding from it into the JSON is a provenance failure — the reader
+cannot tell which rules the specification stated and which the analysis invented.
+If the old format held facts the new one dropped, record them as a `SpecGap` in
+`completenessFindings`, with the reason, and add the new records with their own
+citations. See `references/evidence-and-traceability.md`.
 
 **The source's tables are the floor.** Every row of the source's own tables — the
 stages, the roles, the notification matrix, the questions, the outside items — is
