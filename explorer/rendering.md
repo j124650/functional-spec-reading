@@ -24,8 +24,9 @@ at; nothing else in the cell has to be parsed to find out.
    hues apart, a screenshot in greyscale.
 2. **The colour says the family.** Four families, four colours. The colour
    is secondary: it groups, the icon specifies.
-3. **The code rides along.** Every chip carries its id: a reader must
-   never have to go looking for which thing is meant.
+3. **The id is always available.** Where the cell already says which
+   thing is meant, the id rides in the chip's hint rather than in the
+   chip itself — but it is never lost, and never said twice.
 
 ## The spec table
 
@@ -129,7 +130,8 @@ was there for a table's sake, not the reader's.
 
 - **mark** — 11px, in the family's colour, inside the chip's own rectangle
 - **name** — 10px, the family's colour
-- **id** — 9px, dim grey, in its own element
+- **id** — 9px, dim grey, in its own element; or, where the cell already
+  names the thing, in the chip's hint instead
 - **chip** — one rectangle: a tinted background, a hairline border of the
   same hue (0.1px — the tint carries the shape, the border only closes
   it), radius 5px, line-height 1.2, `inline-block` so it never breaks
