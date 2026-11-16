@@ -118,6 +118,19 @@ copy of the document's vocabulary, and it drifts from the Markdown the moment th
 spec is re-converted. Search the Markdown directly; the section number you already
 have is the better key.
 
+**Cite the document too, not only its section.** A section number on its own
+names a section of no particular document — the analysis you are writing has its
+own sections, and they overlap the source's. Write the source id from your source
+inventory with the section:
+
+```
+SRC-001 §6.3
+```
+
+and, for a section of the analysis you are writing, the analysis's own prefix
+(`DM §14.3`). A citation that names its document can be resolved by that id; a
+bare `§6.3` can only be guessed at.
+
 ## 4. Quote exactly, and never wider than the text
 
 Copy the sentence. Do not paraphrase a rule into a stronger claim than it makes:

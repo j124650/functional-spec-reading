@@ -510,6 +510,49 @@ For inferred knowledge, explain the reasoning chain.
 
 Never present an inferred business rule as an explicit requirement.
 
+### Cite the source by its id, not by a bare section number
+
+**Every citation in an Evidence cell names the document it comes from.**
+
+```
+SRC-001 §6.3
+SRC-001 §3, SRC-001 §12.1
+```
+
+The source id is the one you gave the document in the §2 source inventory —
+`SRC-001` is the specification itself. A bare `§6.3` names a section of *no
+particular document*: the section numbers of this analysis (its own §1–§21)
+and of the source spec (its own §1–§14) overlap, so a reader cannot tell
+which one a cell means, and neither can any tool that reads the file.
+
+Where a cell cites **this analysis's own section** — a state machine, a set of
+transitions, a question — name it with the analysis's own prefix:
+
+```
+DM §14.3
+DM §18.5
+```
+
+`DM` is the analysis document itself. It is not a source: it is where the model
+put something, not where the specification said it.
+
+**Rules for an Evidence cell:**
+
+1. Every citation carries a document id — `SRC-00N` for a source, `DM` for this
+   analysis — and then a section number. No exceptions, no bare `§N`.
+2. The source id is one you issued in the §2 source inventory. Do not invent an
+   id, and do not cite a document you did not list there.
+3. Cite the section of the document you actually read. A claim you inferred
+   belongs to the section it was inferred *from*, with the classification
+   saying it was inferred.
+4. List the citations in the order the evidence appears, separated by `; `.
+5. Quote after the citations, in double quotes: `SRC-001 §6.3 "Owner = default
+   owner in Settings (Blanca)"`.
+
+This is the same convention the §21 traceability matrix already uses
+(`SRC-001 §6.3`). Carry it into every Evidence cell, and a citation can be
+resolved by an id rather than guessed at from the number.
+
 ## 7. Domain discovery questions
 
 Create a final list of questions that a DDD practitioner should ask business stakeholders.

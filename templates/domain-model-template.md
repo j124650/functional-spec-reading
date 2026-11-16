@@ -16,6 +16,12 @@
 ## 3. Ubiquitous Language Glossary
 
 | Term ID | Business Term | Definition | Synonyms | Context | Evidence | Classification |
+<!-- Evidence cells cite a source id and a section: SRC-001 §6.3 — or, for a
+     section of this analysis, DM §14.3. Never a bare §N: the two sets of
+     section numbers overlap, and a bare number names no document. -->
+<!-- Evidence cells cite a source id and a section: SRC-001 §6.3 — or, for a
+     section of this analysis, DM §14.3. Never a bare §N: the two sets of
+     section numbers overlap, and a bare number names no document. -->
 |---|---|---|---|---|---|---|
 
 ### 3.1 Expression vocabulary
