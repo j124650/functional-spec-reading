@@ -121,14 +121,21 @@ have is the better key.
 **Cite the document too, not only its section — always, in every cell.** A section
 number on its own names a section of no particular document: the analysis you are
 writing has its own sections, and they overlap the source's. Write the source id
-from your source inventory with the section:
+from your source inventory with the section, inside brackets:
 
 ```
-SRC-001 §6.3
+[SRC-001, §6.3]
 ```
 
 A citation that names its document can be resolved by that id; a bare `§6.3`
 can only be guessed at.
+
+**A paragraph of the source is located by `PAR-###`.** Give the paragraphs you
+cite ids in reading order within that source document — `PAR-001`, `PAR-002`, … —
+keep the mapping stable, and write the citation as `[SRC-001, PAR-014]`. The
+paragraph glyph is not a locator: a reader cannot follow it and a tool cannot
+resolve it. If a paragraph cannot be reliably identified, cite the source id and
+another locator — `[SRC-001, §6.3]` — rather than guessing.
 
 **The document named is the specification.** The evidence for a claim is what
 the specification says — never what the analysis concluded from it. If a cell

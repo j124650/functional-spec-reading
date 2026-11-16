@@ -10,11 +10,12 @@
 - State dimensions:
 - Initial state:
 - Terminal states:
-- Source references:
+- Source references (mandatory registered `SRC-###` ids; e.g. `[SRC-001, §x, p. y]` or
+  `[SRC-001, PAR-014]`; paragraph locators must use `PAR-###`, never the paragraph glyph):
 
 ## State inventory
 
-| State ID | Name | Category | Business Meaning | Evidence |
+| State ID | Name | Category | Business Meaning | Evidence (`SRC-###` citations required) |
 |---|---|---|---|---|
 
 ## State definitions
@@ -35,17 +36,17 @@
 
 ## Transition table
 
-| Transition ID | From | Trigger / Command / Event | Guard | Actor / Process | To | Events Emitted | Rejection / Failure | Evidence |
+| Transition ID | From | Trigger / Command / Event | Guard | Actor / Process | To | Events Emitted | Rejection / Failure | Evidence (`SRC-###` citations required) |
 |---|---|---|---|---|---|---|---|---|
 
 ## Forbidden and unspecified transitions
 
-| From | Trigger / Attempt | Classification (FORBIDDEN / UNSPECIFIED / AMBIGUOUS / CANDIDATE) | Evidence / Reason |
+| From | Trigger / Attempt | Classification (FORBIDDEN / UNSPECIFIED / AMBIGUOUS / CANDIDATE) | Evidence / Reason (`SRC-###` citations required) |
 |---|---|---|---|
 
 ## Invariants
 
-| Invariant ID | Statement | Category | Scope | Applies To | Evidence |
+| Invariant ID | Statement | Category | Scope | Applies To | Evidence (`SRC-###` citations required) |
 |---|---|---|---|---|---|
 
 ## Mermaid diagram

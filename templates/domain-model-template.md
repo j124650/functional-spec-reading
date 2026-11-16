@@ -3,17 +3,23 @@
 <!-- HOW THIS DOCUMENT CITES. Every cell that says where a thing came from —
      an Evidence column, a Source references field, a classification's
      evidence, the Section column of a role-rewritten rule, the Relevant
-     Sections of a source inventory row — cites a DOCUMENT ID and a section:
+     Sections of a source inventory row — cites a REGISTERED DOCUMENT ID and a
+     locator, in brackets:
 
-         SRC-001 §6.3
-         SRC-001 §3, SRC-001 §12.1
+         [SRC-001, §6.3]
+         [SRC-001, §3], [SRC-001, §12.1]
+         [SRC-001, PAR-014]
 
-     SRC-001 is the specification itself, from the source inventory below.
-     Never a bare §N: this analysis and the specification both number their
-     sections, and the numbers overlap, so a bare number names no document
-     and cannot be resolved. The evidence is grounded in the specification: an
-     Evidence cell points at what the specification says, never at what this
-     analysis concluded from it. -->
+     SRC-001 is the specification itself, from the source inventory below. One
+     document, one id, and the id names the DOCUMENT. A paragraph of a source is
+     located by PAR-###, assigned in reading order within that source; the
+     paragraph glyph is not a locator. Never a bare §N and never a bare
+     filename: this analysis and the specification both number their sections,
+     and the numbers overlap, so a bare number names no document and cannot be
+     resolved. If no reliable locator is available, cite the id alone —
+     [SRC-001]. The evidence is grounded in the specification: an Evidence cell
+     points at what the specification says, never at what this analysis
+     concluded from it. -->
 
 ## 1. Executive Summary
 
@@ -25,8 +31,16 @@
 
 ## 2. Source Inventory, Scope, and Assumptions
 
-| Source ID | Document | Version / Date | Relevant Sections | Authority / Notes |
+| Source ID (`SRC-###`) | Document | Version / Date | Relevant Sections | Authority / Notes |
 |---|---|---|---|---|
+
+### 2.1 Source and locator register
+
+Every `PAR-###` used as a locator, and where it is.
+
+| Source ID | Locator | Where | 
+|---|---|---|
+| SRC-001 | PAR-001 | §2.1, first paragraph | 
 
 ## 3. Ubiquitous Language Glossary
 
@@ -143,5 +157,5 @@ Repeat the state-machine template for each machine.
 
 ## 21. Traceability Matrix and ID Registry
 
-| Finding ID | Type | Summary | Classification | Source IDs | Rationale / Open Question |
+| Finding ID | Type | Summary | Classification | Source IDs (`SRC-###` only) | Rationale / Open Question |
 |---|---|---|---|---|---|

@@ -25,20 +25,25 @@ Discover and reconstruct the underlying business domain, including its explicit 
 
 ### 1.1 How a reference names where it comes from
 
-**Every reference to the specification names the document it comes from.**
+**Every reference to a source names the source document it comes from, and it
+is bracketed.**
 
 ```
-SRC-001 §6.3
-SRC-001 §3, SRC-001 §12.1
+[SRC-001]
+[SRC-001, §6.3]
+[SRC-001, §3, SRC-001, §12.1]
+[SRC-001, PAR-014]
 ```
 
 `SRC-001` is the id you gave the document in the §2 source inventory — the
-specification itself is `SRC-001`.
+specification itself is `SRC-001`. The id names the DOCUMENT; what follows the
+comma is the LOCATOR inside it.
 
-**A bare `§6.3` is not a reference.** This analysis has its own sections
+**A bare `§6.3` is not a citation.** This analysis has its own sections
 (§1–§21) and the specification has its own (§1–§14), and the two overlap:
 a reader — or any tool that reads the file — cannot tell which document a
-bare section number names. Name the document and the question never arises.
+bare section number names. The brackets carry the id, so the question never
+arises.
 
 And the document named is the specification. The evidence for a claim is
 what the specification says, not what this analysis concluded from it — an
@@ -52,16 +57,28 @@ issued an id for (SM-003, INV-004) instead, and the reader can find it.
 
 **The rules.**
 
-1. Every citation carries a document id — `SRC-00N` — and then a section
-   number. No exceptions, no bare `§N`, in any cell of the document.
-2. The source id is one you issued in the §2 source inventory. Do not invent
-   an id, and do not cite a document you did not list there.
-3. Cite the section of the document you actually read. A claim you inferred
+1. Every citation carries a registered source id — `SRC-00N` — inside brackets,
+   and then a locator. No exceptions, no bare `§N`, in any cell of the document.
+2. The source id is one you issued in the §2 source inventory, one document per
+   id. Do not invent an id, and do not cite a document you did not list there.
+3. A locator is a section (`§6.3`), a page (`p. 17`), a requirement id
+   (`Requirement REQ-17`), a table and row (`Table 4, row 2`), or a paragraph
+   (`PAR-014`). Where several sources support one statement, list every one:
+   `[SRC-001, §3.2; SRC-002, §5]`.
+4. **A paragraph is located by `PAR-###`.** Assign those ids sequentially in
+   reading order within each source document, to the paragraphs you use as
+   evidence; keep the mapping stable and scoped by the source id, and record it in
+   the source/locator register in §2. **Never use the paragraph glyph as a
+   locator**, alone or beside an id. If a paragraph cannot be reliably identified,
+   cite the source id and another locator you can verify.
+5. If no reliable locator is available, cite the id alone: `[SRC-001]`. Never
+   invent a locator.
+6. Cite the section of the document you actually read. A claim you inferred
    belongs to the section it was inferred *from*, with the classification
    saying it was inferred.
-4. List the citations in the order the evidence appears, separated by `; `.
-5. Quote after the citations, in double quotes: `SRC-001 §6.3 "Owner =
-   default owner in Settings (Blanca)"`.
+7. List the citations in the order the evidence appears, separated by `; `.
+8. Quote after the citations, in double quotes:
+   `[SRC-001, §6.3] "Owner = default owner in Settings (Blanca)"`.
 
 **Use it in every column that asks where a thing came from** — an Evidence
 cell, a Source references field, a classification's evidence, the Section
@@ -547,7 +564,7 @@ Use the following classifications:
 - UNSPECIFIED: necessary information is absent.
 
 Where possible, reference — a section is cited as §1.1 sets out:
-- Section number, with the document's id: `SRC-001 §6.3`.
+- Section number, with the document's id: `[SRC-001, §6.3]`.
 - Heading.
 - Requirement identifier.
 - Paragraph or table.
@@ -565,8 +582,8 @@ citations are written as §1.1 sets out — a document id and a section:
 ```
 | Evidence |
 |---|
-| SRC-001 §6.3 "Owner = default owner in Settings (Blanca)" |
-| SRC-001 §7.5, SRC-001 §8.2 |
+| [SRC-001, §6.3] "Owner = default owner in Settings (Blanca)" |
+| [SRC-001, §7.5], [SRC-001, §8.2] |
 ```
 
 A cell that says `§6.3` and nothing else has said less than half of what
@@ -576,7 +593,7 @@ stated there because the rules below are about how to fill a cell, not about
 what a citation looks like.
 
 **This is the convention the §21 traceability matrix already uses**
-(`SRC-001 §6.3`). Carry it into every Evidence cell, and a citation can be
+(`[SRC-001, §6.3]`). Carry it into every Evidence cell, and a citation can be
 resolved by an id rather than guessed at from the number.
 
 ## 7. Domain discovery questions
@@ -648,7 +665,8 @@ Use consistent identifiers throughout the document, for example:
 - `POL-001`: Policy
 - `SCN-001`: Scenario
 - `Q-001`: Domain Expert Question
-- `SRC-001`: Source reference
+- `SRC-001`: Source document (registered in §2; every citation carries it)
+- `PAR-001`: Paragraph of a source document, used as a locator
 - `TERM-001`: Ubiquitous-language term
 - `N-01`: Rule written around a person, rewritten around a role
 
@@ -706,7 +724,7 @@ Evidence`. Role-rewritten rules: `# | As written | Rewritten as the role | Secti
 
 **The Sources table lists the sections of the source it is about.** Its `Sections`
 column names the sections of THAT source, and it writes them as §1.1 sets out —
-`SRC-001 §1–§14`. A column that lists a source’s sections as bare numbers cannot
+`[SRC-001, §§1–§14]`. A column that lists a source’s sections as bare numbers cannot
 be told apart from a column listing some other source’s, and the table is the one
 place where several documents’ section numbers sit side by side.
 

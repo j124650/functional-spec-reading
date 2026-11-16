@@ -159,7 +159,7 @@ and what the words mean.
   deliverables (one consolidated `domain-model-and-state-machines.md` with twenty
   numbered sections), the identifier scheme (`ENT-001`, `VO-001`, `AGG-001`,
   `CMD-001`, `EVT-001`, `SM-001`, `ST-001`, `TR-001`, `INV-001`, `POL-001`,
-  `SCN-001`, `Q-001`, `SRC-001`, `TERM-001`, `N-01`), the evidence classes
+  `SCN-001`, `Q-001`, `SRC-001`, `TERM-001`, `N-01`, `PAR-001`), the evidence classes
   (`EXPLICIT` · `INFERRED` · `CANDIDATE` · `CONFLICTING` · `UNSPECIFIED`), and the
   shape each record takes. It also requires a second analytical pass — the
   adversarial review in step 9 is that pass.
@@ -191,6 +191,10 @@ and what the words mean.
   upstream typesetting source before parsing a PDF, repair the artefacts a PDF
   text layer leaves behind, parse into structured data and generate the
   reference from it, and carry the licence with the quote.
+- **`references/explorer-rendering.md`** — how the explorer page draws a reference
+  to an identifier: the chip (mark, name, id), the four colour families, the one
+  look a component must have, and the rule that nothing in a rendered label is
+  ever read back as data.
 - **`references/export-contract.md`** — the contract between the verifier's
   exporter and the explorer page: what the export must carry, what each field
   *means*, and how the page renders it. Both sides are bound by one file, and a
@@ -250,6 +254,12 @@ Absence is a finding only after a complete reading.
 ### 2b. Establish the source inventory and scope
 
 - List every supplied document, file, section, and relevant source identifier.
+- **Register every supplied source document under a `SRC-###` ID** — one document,
+  one ID — in the source inventory, with its version, date, and authority. The ID
+  names the document, so it is what every citation carries.
+- Where a paragraph of a source document is used as evidence, give it a `PAR-###` ID in
+  reading order, scoped by its source, and record the mapping in the source/locator
+  register. Keep it stable across iterations.
 - Determine whether the user expects all documents to be treated as one specification
   or as sources with different authority.
 - If source precedence is unclear and materially affects interpretation, record the
@@ -578,9 +588,38 @@ conclusion, the alternative interpretations if material, and what a stakeholder 
 confirm. Never cite a source as saying more than it actually says, and never invent a
 section number, requirement ID, or quotation.
 
-**Give source references their own IDs.** `SRC-001`, `SRC-002`, … — one per source
-location, reused consistently, so the traceability matrix can point at them instead of
-repeating a location string in every cell. See `references/evidence-and-traceability.md`.
+**Give source references their own IDs — and make the ID name the DOCUMENT.**
+`SRC-001`, `SRC-002`, … — one per source document, registered in the source inventory,
+reused consistently, so the traceability matrix can point at them instead of repeating a
+location string in every cell. The ID names the document, and the locator that follows
+names the place inside it.
+
+**A citation is mandatory, and it is bracketed.** Every reference to a source — in prose,
+in a table, in a state definition, a transition, an invariant, a scenario, a
+contradiction, a traceability row — carries the registered ID:
+
+```
+[SRC-001]
+[SRC-001, §6.3]
+[SRC-001, §2.4, p. 17]
+[SRC-001, PAR-014]
+[SRC-001, §3.2; SRC-002, §5]
+```
+
+Never cite a filename, a document title, a section, a page, a requirement ID, a
+paragraph, a table or a row by itself — always prefix the locator with the registered
+ID. `§6.3` alone is not a citation, because it names no document. If no reliable locator
+is available, cite the ID alone: `[SRC-001]`. Never invent a locator.
+
+**A paragraph is located by `PAR-###`.** Paragraph locators use the identifier format
+`PAR-001`, `PAR-002`, …, assigned sequentially in reading order within each source
+document to the paragraphs used as evidence, and kept stable and scoped by the source ID.
+`[SRC-001, PAR-014]` is paragraph 14 of source `SRC-001`. **Never use the paragraph glyph
+as a locator**, alone or beside an ID — use `PAR-###`, and if a paragraph cannot be reliably
+identified, cite the source ID and another locator you can verify.
+
+See `references/evidence-and-traceability.md` for the full convention and its validation
+gate.
 
 **Never renumber an existing ID.** An ID that changes under you breaks every
 cross-reference and every matrix row that names it. When a finding is added, take the
@@ -687,31 +726,21 @@ there once and in full; the rules below are the ones that reach past the explore
   (machine → states → outgoing/incoming),  so there is one resolution of the
   document's structure and the page never parses a cell.
   **The rule is not about structure alone: the page may not DERIVE anything from a
-  document cell's text.** A cell may be shown; it may not be interpreted. Three
-  shapes, and the exporter supplies what each one needs: a cell that names a
-  record's code beside its name ("CMD-001 Create application") is read as the
-  name, so the export ships the name; a cell that writes ids as a RANGE
-  ("INV-001…INV-011 as in Draft") is resolved against the document's own records,
-  so the page reads ids; a cell holding a MARKER where a value would be
-  ("not expressible") is shipped as a BOOLEAN FLAG, because a marker read as
-  words is not an absence but nonsense — "not expressible" tokenises into the term
-  "not". **A cell that mixes two shapes is shipped as one list per shape**, and
-  the flat field is REPLACED rather than kept beside it — two fields carrying one
-  cell's meaning is one more thing to keep in step, and the flat one is the one
-  that lies. Two lists need no discriminator: the consumer reads the list it
-  wants, and the page composes the cell from the lists — the states first, then
-  the transitions. **Ship the document's own cell only when the page must SHOW
-  the document's words**; when the cell is composed from the resolved ids, a raw
-  the page can quote is a cell the reader must re-interpret by eye. **And a scope
-  that covers EVERYTHING is written out as the list it covers** — with the lists
-  alone an empty list is ambiguous between "none" and "all", so "All states" ships
-  the states it holds in: the states of the machine the scope was RESOLVED
-  against, not of every machine the rule binds to.
-  **And the export's resolution of a cell must be the ENGINE'S.** Where the
-  engine already read a cell — the scope a rule holds in, the states a transition
-  leaves — the export carries that result rather than resolving the cell a second
-  time for its own purposes: two resolutions agree today and diverge the moment
-  one of them is changed, and the export is what the page trusts.
+  document cell's text.** A cell may be shown; it may not be interpreted. Whatever
+  the cell holds — a name beside a code, ids written as a range, a marker where a
+  value would be, two shapes in one column — the exporter resolves it once and the
+  page reads the result. **A cell that mixes two shapes is shipped as one list per
+  shape**, the flat field is REPLACED rather than kept beside it, a scope that
+  covers EVERYTHING is written out as the list it covers, and the resolution is the
+  ENGINE'S — the same result the rule was judged by, so the export and the analysis
+  cannot disagree. `references/export-contract.md` states each of these in full,
+  with the mechanism behind each.
+- **Gather what a step needs once, then act.** Re-reading files already read in the
+  same session is not diligence; it is a loop, and the reader waits through every
+  turn of it. Read what the step needs, keep the facts, and make the change.
+- **The explorer's rendering rules live in `references/explorer-rendering.md`** — how
+  a reference is drawn, the marks and the families, the legend read from the same
+  table the chips are drawn from, and the traps the no-regex rule walks into.
 - **A cell that QUOTES the document and a cell that INTERPRETS it must not share a
   class.** The page marks a cell that carries a reading with its own class, and the
   checks select cells by that class to assert the reading — so a cell showing the
@@ -737,13 +766,16 @@ there once and in full; the rules below are the ones that reach past the explore
 - **Read what you need in one batched pass, then act on it.** Re-reading a file to
   re-derive a fact already in hand is the loop, not the thoroughness: the context is
   what the next edit needs, and a second pass over the same file only delays it.
+- **Identity is an id, and it travels as data.** A component that names a thing
+  carries that id in a data attribute, and the checks compare ids with ids. Never
+  infer an id from a rendered label: that guesses at identity by string.
+- **Do not re-read a file whose contents are already in context.** Batch the
+  reconnaissance into one call, then act on what you know.
+- **`references/explorer-rendering.md`** — how a reference is drawn.
 - **The contract between an instrument and what it consumes must be written down.**
-  The export JSON is the only thing the engine and the page share, and it is the one
-  interface with no written definition: the engine emits a field, the page reads a
-  name, and nothing connects them. Rename the field on one side and the page renders
-  an empty table — no error, no warning, and the reader sees a complete-looking
-  analysis with a hole in it. **Put a schema version and a required-field list in the
-  export, and have the consumer assert them on load and fail loudly.** The same rule
+  The export JSON is the only thing the engine and the page share: the engine emits
+  a field, the page reads a name. **Put a schema version and a required-field list
+  in the export, and have the consumer assert them.** The same rule
   governs anything an instrument reads: the shape it depends on is stated, and the
   thing that consumes it checks.
   **A contract that describes the consumer needs a checker against the consumer too.**
@@ -1224,6 +1256,13 @@ Before delivering:
    the end. An artifact that survives unverified to the summary gets reported as
    delivered.
 9. A reviewer who has not seen the source can follow a finding from evidence to remedy.
+10. **Every source reference carries a registered `SRC-###` id inside brackets.** Scan
+    the whole document for source mentions: every one must be `[SRC-001]`, 
+    `[SRC-001, §6.3]` or `[SRC-001, PAR-014]`. A bare filename, a bare section number, 
+    a bare page number and a bare requirement id are not citations. Every id used must
+    exist in the source inventory and map to the right document; every `PAR-###` used as
+    a locator must be in the source/locator register; and the paragraph glyph must not
+    appear as a locator. Fix a failure before calling the deliverable complete.
 
 **The checks below apply only to an artifact you actually built.** The executable model
 and the explorer page are *optional instruments*; the deliverable is the document. Do not

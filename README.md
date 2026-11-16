@@ -24,6 +24,28 @@ you worked out:
 | `CONFLICTING` | Two sections disagree — show both and the impact. |
 | `UNSPECIFIED` | The information is absent — name the hole, don't fill it. |
 
+## The citation rule
+
+Every reference to a source names the source **document** by its registered `SRC-###` id,
+inside brackets, and then the locator inside that document:
+
+```
+[SRC-001, §6.3]
+[SRC-001, PAR-014]
+[SRC-001, §3.2; SRC-002, §5]
+```
+
+One document, one id, allocated in the source inventory and stable across iterations. A
+paragraph of a source is located by `PAR-###`, assigned in reading order within that
+source; the paragraph glyph is not a locator. A bare `§6.3` names no document — this
+analysis and the specification both number their sections — so it is not a citation. If no
+reliable locator is available, cite the id alone: `[SRC-001]`. The evidence is grounded
+in the specification: an Evidence cell points at what the specification says, never at what
+this analysis concluded from it.
+
+This is a hard requirement, not a style preference, and the skill ends with a validation
+gate that fails a document whose citations do not carry it.
+
 ## How it works
 
 The pipeline has eight passes, and the order matters — later passes depend on earlier ones:
@@ -31,8 +53,8 @@ The pipeline has eight passes, and the order matters — later passes depend on 
 1. **Convert** the input (`.docx` / `.pdf` / `.xlsx`) to Markdown with the sibling conversion
    skills, so headings, lists and tables survive. Tables are evidence; a flattened extract is
    not citable.
-2. **Index** every section and table, and build a source inventory (`SRC-###`) before reading
-   for meaning.
+2. **Index** every section and table, and build a source inventory (`SRC-###`, one document per
+   id) before reading for meaning.
 3. **Glossary** — every domain term, checked across *every* occurrence, with a status:
    `Defined`, `Defined (partial)`, `Conflicting`, `Overloaded`, `Undefined`, `Pending`.
 4. **Roles** — the roles are the unit of permission, not people's names.
@@ -56,7 +78,7 @@ The pipeline has eight passes, and the order matters — later passes depend on 
 | `references/ddd-modeling-guidelines.md` | Domain model vs data model, entity vs value object, when something is a bounded context. |
 | `references/aggregate-design-guidelines.md` | Deriving an aggregate boundary from invariants, not proximity. |
 | `references/state-machine-modeling.md` | State dimensions, trigger vs guard vs postcondition, completeness checks. |
-| `references/evidence-and-traceability.md` | Evidence classes, the `SRC-###` scheme, traceability matrix columns. |
+| `references/evidence-and-traceability.md` | Evidence classes, the `SRC-###` scheme, `PAR-###` paragraph locators, traceability matrix columns. |
 | `references/evidence-extraction.md` | Getting quotable text out of a source document and citing it. |
 | `references/executable-spec-model.md` | Building the traversal, the state key, and the probes. |
 | `references/interactive-diagrams.md` | The self-contained HTML explorer's rules and generator. |
