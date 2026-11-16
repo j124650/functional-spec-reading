@@ -502,13 +502,15 @@ For each invariant, document:
   the model), write `not expressible` **and say what would be needed to express it**
   (§3.5.3); do not paraphrase it into prose and call the invariant formal.
 - Scope.
-- Applicable states. Name them as state identifiers or state names, or write
-  **All states** — which means the invariant holds in every machine's states, so it
-  binds to every machine. A cell that names neither a state nor a transition does not
-  say which machine owns the invariant, and is a defect in the document.
+- Applicable states. The `scope` field says which kind of scope it is —
+  `AllStates`, `States` or `Transition` — and the `states` or `transitions` array
+  names the ones it names. A rule that holds everywhere says `AllStates` and names
+  none: an empty array cannot say "everywhere", because it is ambiguous between
+  "none" and "all". A record that names neither a state nor a transition does not
+  say which machine owns the invariant, and is a defect in the file.
 - Applicable transitions.
 
-**"All states" says which machines the rule binds to; it does not say how many times
+**`AllStates` says which machines the rule binds to; it does not say how many times
 to check it.** A verifier that checks such an invariant once per machine multiplies
 every violation by the machine count and reports several hundred checks over a few
 hundred states as several hundred violations of several different rules — a number a
@@ -517,14 +519,14 @@ aggregate is, so it is checked ONCE against the aggregate. A state-scoped invari
 checked in the states it names, on the machine those states belong to, and a
 transition-scoped one is checked when that transition fires.
 
-**The applicable-states cell is load-bearing, not a label.** It says where the
-invariant is IN FORCE, and a verifier checks the invariant exactly there and nowhere
-else. `Draft → submit` scopes the invariant to the submit from Draft — a precondition
-of that one transition — and checking it in every state of the machine manufactures a
-violation in every state the scope excludes. Write the scope so it names what the
-invariant constrains: a state or state name when it holds throughout that state, a
-transition when it is a precondition of that transition, and **All states** when it
-holds always.
+**The scope is load-bearing, not a label.** It says where the invariant is IN
+FORCE, and a verifier checks the invariant exactly there and nowhere else. `scope`
+`Transition` with `TR-019` scopes the invariant to that one transition — a
+precondition of it — and checking it in every state of the machine manufactures a
+violation in every state the scope excludes. Write it so it names what the
+invariant constrains: `States` with the state ids when it holds throughout those
+states, `Transition` with the transition ids when it is a precondition of one of
+them, and `AllStates` when it holds always.
 - Enforcement responsibility.
 - Consequences of violation.
 - Evidence, cited as §1.1 sets out, and the explicitness classification.
@@ -692,6 +694,7 @@ The file must be self-contained and organised as follows:
 | `overloadedTerms` | one word carrying several meanings |
 | `undefinedTerms` | terms used but never defined |
 | `expressionVocabulary` | every data name an expression may use, with its type |
+| `roles` | The roles the source names, what each may do, and who holds it. |
 | `roleRewrittenRules` | rules written around a person, rewritten around a role |
 | `domainConcepts` | the concepts, and how they relate |
 | `entities` | entities |
@@ -825,18 +828,31 @@ say.
 `id` is `BC-###`. `confidence` is one of `High`, `Medium`, `Low`. `confidenceNote` is
 the reason behind the confidence — a string, or null.
 
-**`contextMap`** — fields `upstream`, `downstream`, `relationship`, `note`,
-`evidence`.
+**`contextMap`** — fields `upstream`, `downstream`, `relationship`, `evidenceFor`, `evidenceAgainst`, `whatWouldSettle`, `evidence`.
 No `id`: the pair (upstream, downstream) is the key.
+`evidenceFor` and `evidenceAgainst` are arrays of citations: what the source says FOR the
+relationship, and what it says AGAINST it. A relationship the source supports in one
+direction only has an empty `evidenceAgainst` — and an empty array says so, which is
+different from a relationship with no evidence either way.
+`whatWouldSettle` is a string: what would decide the relationship, and it is empty only
+when the source settles the relationship itself.
 
-**`aggregates`** — fields `id`, `name`, `candidateRoot`, `responsibilities`, `members`,
-`commands`, `events`, `invariants`, `consistencyRationale`, `consistencyExpectations`,
-`references`, `confidence`, `confidenceNote`, `classification`, `rationale`,
-`evidence`.
+
+**`aggregates`** — fields `id`, `name`, `candidateRoot`, `responsibilities`, `members`, `commands`, `events`, `invariants`, `consistencyRationale`, `consistencyExpectations`, `references`, `confidence`, `confidenceNote`, `aspects`, `classification`, `rationale`, `evidence`.
 `id` is `AGG-###`. `responsibilities` and `consistencyExpectations` are arrays of
 strings. `members`, `commands`, `events`, `invariants` and `references` are arrays of
 ids — and a reference holds an id, not a copy of the thing. `confidence` is one of
 `High`, `Medium`, `Low`; `confidenceNote` is the reason behind it, or null.
+`aspects` is an array of `{label, content, evidence}` — the aggregate's breakdown, as
+STRUCTURE rather than as prose. The labels are the aggregate's own: Root · Members ·
+Commands it handles · Events it produces · Invariants it enforces · Consistency
+rationale · References (held by id only) · Consistency expectations · Confidence.
+A consumer reads the breakdown as separate fields; flattened into one paragraph, the
+page shows "Content" instead of the root, the members and the invariant list — and
+the reader loses exactly the breakdown they came for. The flat fields above are the
+SAME facts, kept for a reader who wants the aggregate as a whole; `aspects` is the
+breakdown, and a consumer that wants one aspect reads one label.
+
 
 **`nonAggregateCandidates`** — fields `name`, `reason`, `evidence`.
 A candidate that was considered and ruled out. No `id`: the name is the key.
@@ -857,10 +873,7 @@ arrays of strings.
 `participants`, `classification`, `rationale`, `evidence`.
 `id` is `POL-###`. `participants` is an array of strings.
 
-**`stateMachines`** — fields `id`, `name`, `modeledConcept`, `aggregate`,
-`boundedContext`, `purpose`, `classification`, `rationale`, `dimensions`, `finite`,
-`orthogonalDimensions`, `initialState`, `terminalStates`, `stateIds`,
-`transitionIds`, `completeness`, `mermaid`, `evidence`.
+**`stateMachines`** — fields `id`, `name`, `modeledConcept`, `aggregate`, `boundedContext`, `purpose`, `classification`, `rationale`, `confidence`, `dimensions`, `finite`, `orthogonalDimensions`, `initialState`, `terminalStates`, `stateIds`, `transitionIds`, `completeness`, `mermaid`, `evidence`.
 `id` is `SM-001`. `classification` is one of `EXPLICIT`, `IMPLICIT`,
 `PARTIALLY_SPECIFIED`, `CANDIDATE` — how much the source establishes about the
 MACHINE, which is a different question from how well each of its records is
@@ -898,40 +911,68 @@ string, or null. `synchronous` is a boolean. `disposition` is one of `ALLOWED`,
 `EXPLICITLY_FORBIDDEN`, `UNSPECIFIED`, `AMBIGUOUS`, `CANDIDATE`. `notes` is an array
 of strings.
 
-**`invariants`** — fields `id`, `statement`, `category`, `scope`, `states`,
-`transitions`, `formalExpression`, `enforcement`, `violationConsequence`,
-`classification`, `rationale`, `evidence`.
+**`roles`** — fields `name`, `mayDo`, `instances`, `evidence`.
+`name` is the role's name as the source writes it. `mayDo` is what the source says
+the role may do. `instances` is who the source names in that role, or empty when
+it names nobody. `evidence` is the citation that says so.
+
+**`invariants`** — fields `id`, `statement`, `category`, `scope`, `binding`, `states`, `transitions`, `formalExpression`, `enforcement`, `violationConsequence`, `register`, `classification`, `rationale`, `evidence`.
 `id` is `INV-###`. `category` is one of `State`, `Transition`, `Aggregate`,
-`CrossAggregate`, `Temporal`, `Authorization`, `Uniqueness`, `Quantitative`. `states`
-and `transitions` are arrays of ids. `formalExpression` is a string, or null when the
-invariant is not expressible.
+`CrossAggregate`, `Temporal`, `Authorization`, `Uniqueness`, `Quantitative`. `scope`
+is one of `AllStates`, `States`, `Transition` — and it is NOT derivable from the
+arrays, which is why it is its own field. A rule that holds everywhere is checked
+ONCE against the aggregate; a rule scoped to named states is checked in each of
+them. Writing "everywhere" out as the list of every state would turn one check into
+one per state, and report one rule broken as several hundred breaks of several
+different rules. So `scope` says which kind it is, and the arrays say which:
+`states` holds the state ids when `scope` is `States`, `transitions` holds the
+transition ids when `scope` is `Transition`, and both are empty when `scope` is
+`AllStates`. `formalExpression` is a string, or null when the invariant is not
+expressible.
+`binding` is an array of ids: the aggregate, bounded context or machine the rule binds
+to — `AGG-001`, or `BC-001` and `BC-005` for a rule that crosses two contexts. It is
+SEPARATE from `scope`: the binding says WHAT the rule is about, the scope says WHERE it
+holds, and a rule about an aggregate can hold in one state of it.
+`register` is one of `stated`, `derived`, `broken by construction` — how the document
+itself registers the rule.
+
 
 **`crossMachineDependencies`** — fields `sourceMachine`, `trigger`, `targetMachine`,
 `expectedEffect`, `ordering`, `evidence`.
 
-**`scenarios`** — fields `id`, `name`, `initialConditions`, `actor`, `commands`,
-`guards`, `transitions`, `events`, `result`, `exceptions`, `invariants`, `evidence`.
+**`scenarios`** — fields `id`, `name`, `initialConditions`, `actor`, `commands`, `guards`, `transitions`, `events`, `result`, `exceptions`, `invariants`, `parts`, `evidence`.
 `id` is `SCN-###`. `commands`, `transitions`, `events` and `invariants` are arrays of
 ids. `guards` and `exceptions` are arrays of strings.
+`parts` is an array of `{label, text, evidence}` — the path's stages, as STRUCTURE rather
+than as prose. The labels are the scenario's own: Initial conditions · Actor · Commands ·
+Guards · State transitions · Events · Result · Exceptions · Invariants in force ·
+Evidence. The flat fields above are the SAME facts, kept for a reader who wants the path
+as a whole; `parts` is the staged breakdown, and a consumer that wants one stage reads
+one label.
+
 
 **`completenessFindings`** — fields `machine`, `check`, `finding`, `severity`,
 `rationale`, `evidence`.
 No `id`: the pair (machine, check) is the key. `severity` is one of `Critical`,
 `High`, `Medium`, `Low`.
 
-**`issues`** — fields `id`, `kind`, `severity`, `statement`, `conflictingEvidence`,
-`impact`, `proposedClarification`, `classification`, `rationale`, `evidence`.
+**`issues`** — fields `id`, `kind`, `severity`, `statement`, `conflictingEvidence`, `impact`, `proposedClarification`, `probe`, `classification`, `rationale`, `evidence`.
 `id` is `F-###`. `kind` is one of `ConfirmedDefect`, `SpecGap` — the two have
 different remedies, so they are never merged: a `ConfirmedDefect` is two sections
 prescribing different outcomes for the same event, and the remedy is to pick a
 reading and amend the specification; a `SpecGap` is something the specification never
 says, and the remedy is to decide it and add the rule. `severity` is one of
 `Critical`, `High`, `Medium`, `Low`. `conflictingEvidence` is an array of strings.
+`probe` is a string, or null: the predicate that says the defect is REACHABLE — what
+must be true of the aggregate in the state where the defect shows. A finding the
+document states no predicate for is a spec gap, and `probe` is null.
 
-**`questions`** — fields `id`, `question`, `priority`, `businessImpact`,
-`architecturalImpact`, `blocksModeling`, `evidence`.
+
+**`questions`** — fields `id`, `question`, `priority`, `businessImpact`, `architecturalImpact`, `blocksModeling`, `related`, `classification`, `rationale`, `evidence`.
 `id` is `Q-###`. `priority` is one of `Critical`, `High`, `Medium`, `Low`.
 `blocksModeling` is a boolean.
+`related` is a string: the findings this question bears on, by id — `F-01, F-09`.
+
 
 **`traceability`** — fields `id`, `type`, `summary`, `classification`, `sourceIds`,
 `rationale`, `openQuestion`.

@@ -145,7 +145,7 @@
       "responsibility": "",
       "languageBoundary": "",
       "confidence": "High",
-      "confidenceNote": null,
+      "confidenceNote": "",
       "classification": "EXPLICIT",
       "rationale": null,
       "evidence": []
@@ -153,10 +153,12 @@
   ],
   "contextMap": [
     {
-      "upstream": "BC-001",
-      "downstream": "BC-002",
+      "upstream": "",
+      "downstream": "",
       "relationship": "",
-      "note": "",
+      "evidenceFor": [],
+      "evidenceAgainst": [],
+      "whatWouldSettle": "",
       "evidence": []
     }
   ],
@@ -174,7 +176,54 @@
       "consistencyExpectations": [],
       "references": [],
       "confidence": "High",
-      "confidenceNote": null,
+      "confidenceNote": "",
+      "aspects": [
+        {
+          "label": "Root",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Members",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Commands it handles",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Events it produces",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Invariants it enforces",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Consistency rationale",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "References (held by id only)",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Consistency expectations",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Confidence",
+          "content": "",
+          "evidence": []
+        }
+      ],
       "classification": "INFERRED",
       "rationale": "",
       "evidence": []
@@ -243,6 +292,7 @@
       "purpose": "",
       "classification": "EXPLICIT",
       "rationale": "",
+      "confidence": "",
       "dimensions": [],
       "finite": true,
       "orthogonalDimensions": false,
@@ -291,7 +341,7 @@
     {
       "id": "TR-001",
       "machine": "SM-001",
-      "from": null,
+      "from": "",
       "to": "",
       "trigger": "",
       "commands": [],
@@ -325,12 +375,14 @@
       "id": "INV-001",
       "statement": "",
       "category": "State",
-      "scope": "",
+      "scope": "AllStates",
+      "binding": [],
       "states": [],
       "transitions": [],
       "formalExpression": null,
       "enforcement": "",
       "violationConsequence": "",
+      "register": "",
       "classification": "EXPLICIT",
       "rationale": null,
       "evidence": []
@@ -359,6 +411,58 @@
       "result": "",
       "exceptions": [],
       "invariants": [],
+      "parts": [
+        {
+          "label": "Initial conditions",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "Actor",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "Commands",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "Guards",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "State transitions",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "Events",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "Result",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "Exceptions",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "Invariants in force",
+          "text": "",
+          "evidence": []
+        },
+        {
+          "label": "Evidence",
+          "text": "",
+          "evidence": []
+        }
+      ],
       "evidence": []
     }
   ],
@@ -381,6 +485,7 @@
       "conflictingEvidence": [],
       "impact": "",
       "proposedClarification": "",
+      "probe": null,
       "classification": "CONFLICTING",
       "rationale": null,
       "evidence": []
@@ -394,6 +499,9 @@
       "businessImpact": "",
       "architecturalImpact": "",
       "blocksModeling": true,
+      "related": "",
+      "classification": null,
+      "rationale": null,
       "evidence": []
     }
   ],
@@ -407,7 +515,7 @@
         "SRC-001"
       ],
       "rationale": "",
-      "openQuestion": null
+      "openQuestion": ""
     }
   ],
   "idRegistry": [
@@ -422,6 +530,14 @@
         "transitions",
         "invariants"
       ]
+    }
+  ],
+  "roles": [
+    {
+      "name": "",
+      "mayDo": "",
+      "instances": "",
+      "evidence": []
     }
   ]
 }

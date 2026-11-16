@@ -125,7 +125,17 @@
     }
   ],
   "boundedContexts": [],
-  "contextMap": [],
+  "contextMap": [
+    {
+      "upstream": "",
+      "downstream": "",
+      "relationship": "",
+      "evidenceFor": [],
+      "evidenceAgainst": [],
+      "whatWouldSettle": "",
+      "evidence": []
+    }
+  ],
   "aggregates": [
     {
       "id": "AGG-001",
@@ -144,7 +154,54 @@
       "consistencyExpectations": [],
       "references": [],
       "confidence": "Medium",
-      "confidenceNote": null,
+      "confidenceNote": "",
+      "aspects": [
+        {
+          "label": "Root",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Members",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Commands it handles",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Events it produces",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Invariants it enforces",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Consistency rationale",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "References (held by id only)",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Consistency expectations",
+          "content": "",
+          "evidence": []
+        },
+        {
+          "label": "Confidence",
+          "content": "",
+          "evidence": []
+        }
+      ],
       "classification": "CANDIDATE",
       "rationale": "",
       "evidence": []
@@ -164,6 +221,7 @@
       "purpose": "to say where the loan stands and what may happen to it next",
       "classification": "EXPLICIT",
       "rationale": "the states and the moves are stated directly in this illustrative example",
+      "confidence": "",
       "dimensions": [
         "loan status"
       ],
@@ -287,7 +345,7 @@
     {
       "id": "TR-001",
       "machine": "SM-001",
-      "from": null,
+      "from": "",
       "to": "ST-001",
       "trigger": "Create loan",
       "commands": [],
@@ -408,7 +466,8 @@
       "id": "INV-001",
       "statement": "A returned loan is not an outstanding loan.",
       "category": "State",
-      "scope": "",
+      "scope": "AllStates",
+      "binding": [],
       "states": [
         "ST-001",
         "ST-002",
@@ -418,6 +477,7 @@
       "formalExpression": "state == 'ST-002' => item returned",
       "enforcement": "",
       "violationConsequence": "",
+      "register": "",
       "classification": "EXPLICIT",
       "rationale": null,
       "evidence": []
@@ -426,7 +486,8 @@
       "id": "INV-002",
       "statement": "A loan has one due date.",
       "category": "Aggregate",
-      "scope": "",
+      "scope": "AllStates",
+      "binding": [],
       "states": [
         "ST-001",
         "ST-002",
@@ -436,6 +497,7 @@
       "formalExpression": "due date != ''",
       "enforcement": "",
       "violationConsequence": "",
+      "register": "",
       "classification": "CANDIDATE",
       "rationale": "exact semantics require source support",
       "evidence": []
@@ -444,7 +506,8 @@
       "id": "INV-003",
       "statement": "Only a borrower may renew a loan.",
       "category": "Authorization",
-      "scope": "",
+      "scope": "AllStates",
+      "binding": [],
       "states": [
         "ST-001",
         "ST-002",
@@ -454,6 +517,7 @@
       "formalExpression": null,
       "enforcement": "",
       "violationConsequence": "",
+      "register": "",
       "classification": "UNSPECIFIED",
       "rationale": "the borrower's role is a permission over who the user is, not a condition on the loan's data; the document would have to model the role and the borrower to express it",
       "evidence": []
@@ -471,6 +535,7 @@
       "conflictingEvidence": [],
       "impact": "a correction cannot be recorded",
       "proposedClarification": "Say whether a returned loan can be reopened, and by whom.",
+      "probe": null,
       "classification": "UNSPECIFIED",
       "rationale": null,
       "evidence": []
@@ -484,6 +549,9 @@
       "businessImpact": "renewal is a rule the vocabulary names but nothing states",
       "architecturalImpact": "the borrower's permissions would need to be modelled",
       "blocksModeling": false,
+      "related": "",
+      "classification": null,
+      "rationale": null,
       "evidence": []
     }
   ],
@@ -592,6 +660,14 @@
       "last": "Q-001",
       "definedIn": "questions",
       "crossReferencedFrom": []
+    }
+  ],
+  "roles": [
+    {
+      "name": "",
+      "mayDo": "",
+      "instances": "",
+      "evidence": []
     }
   ]
 }
