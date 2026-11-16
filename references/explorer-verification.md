@@ -65,14 +65,14 @@ time loses the ones that already caught a defect.
    mechanically, not by eye. A page that lists a severity the document downgraded, or
    omits a finding the document added, contradicts the document in front of the reader.
    `scripts/check-explorer.js` does this comparison in one command:
-   `node scripts/check-explorer.js <page.html> <document.md>`. It exits non-zero and
+   `node scripts/check-explorer.js <page.html> <document.json>`. It exits non-zero and
    names the disagreement. It scopes itself to the ID namespaces the documents own, and
    it distinguishes an ID the document *heads* from one it merely *mentions* — a
    document that says "F-03b is a probe label, not a finding" must not read as a missing
    finding.
    **And every identifier series the document issues must be in the page's catalogue.**
    `scripts/check-id-catalogue.js` checks that in one command:
-   `node scripts/check-id-catalogue.js <page.html> <document.md>`. It reads the
+   `node scripts/check-id-catalogue.js <page.html> <document.json>`. It reads the
    document's own ID registry for the series it issues, and reports a series the
    catalogue lacks, an empty series, an entry with no name to decode into, and an id the
    document never issued. A series the export omits is the silent failure this catches:

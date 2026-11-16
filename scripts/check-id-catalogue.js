@@ -18,11 +18,11 @@
  * beside it (states, transitions, invariants, findings, questions,
  * machines), so a state id is decoded to the state's name even though the
  * catalogue does not list the ST- series. Checking the catalogue alone
- * reports a series as bare when the page renders it perfectly, and pushes
- * the reader toward the wrong repair - duplicating the machine's states
- * into the definitions catalogue.
+ * reports a series as bare when the page renders it perfectly, and pushes the
+ * reader toward the wrong repair - duplicating the machine's states into the
+ * definitions catalogue.
  *
- *   node check-id-catalogue.js <explorer.html> <document.md>
+ *   node check-id-catalogue.js <explorer.html> <document.json>
  *
  * Exits non-zero and names every disagreement.
  */
@@ -32,7 +32,7 @@ const fs = require("fs");
 
 const [pagePath, docPath] = process.argv.slice(2);
 if (!pagePath || !docPath) {
-  console.error("usage: node check-id-catalogue.js <explorer.html> <document.md>");
+  console.error("usage: node check-id-catalogue.js <explorer.html> <document.json>");
   process.exit(2);
 }
 
@@ -110,40 +110,46 @@ if (data) {
 
 /* -------------------------------------------------------------- the document */
 
-const text = fs.readFileSync(docPath, "utf8");
-const lines = text.split(/\r?\n/);
-
-/* The ID registry: a table with a cell that names a series by its prefix.
-   That table is the document's own statement of what schemes it issues, so it
-   is the authority on which series must be covered. */
-const registry = new Set();
-for (const line of lines) {
-  const row = line.match(/^\|(.+)\|\s*$/);
-  if (!row) continue;
-  for (const cell of row[1].split("|")) {
-    const c = cell.replace(/\*/g, "").trim();
-    if (PREFIX_RX.test(c)) { registry.add(c.replace(/-$/, "")); break; }
-  }
+let doc;
+try {
+  doc = JSON.parse(fs.readFileSync(docPath, "utf8"));
+} catch (e) {
+  console.error("cannot read " + docPath + ": " + e.message);
+  process.exit(2);
 }
 
-/* Fallback when the document has no registry table: collect the ids the
-   document DEFINES - a heading that starts with one, or a table row whose
-   FIRST CELL is one - and take their prefixes. */
+/* The ID registry: the `idRegistry` array names every series the document
+   issues, where it is defined, and how many ids it holds. It is the
+   document's own statement of what it numbers, so it is the authority on
+   which series must be covered. */
+const registry = new Set();
+for (const r of (doc.idRegistry || [])) {
+  if (!r || !r.series) continue;
+  registry.add(String(r.series).replace(/-$/, ""));
+}
+
+/* The ids the document ISSUES: the `id` field of a record, and nothing
+   else. An id-shaped token inside a prose string is the SOURCE's numbering
+   - its open-question numbers, its rule numbers - and no series in this
+   document issues it. */
 const defined = new Map();
-if (!registry.size) {
-  const ID_RX = /\b([A-Z][A-Z0-9]{0,5}-\d{1,4}[a-z]?)\b/;
-  for (const line of lines) {
-    const head = line.match(/^#{1,6}\s+(\S+)/);
-    const row = line.match(/^\|\s*([^|]+?)\s*\|/);
-    const candidate = head ? head[1] : (row ? row[1].replace(/\*/g, "").trim() : null);
-    if (!candidate) continue;
-    const m = candidate.match(ID_RX);
-    if (!m || m[0] !== candidate) continue;   // the id must be the whole token
-    const prefix = candidate.replace(/-\d.*$/, "");
+const ISSUING = [
+  "sources", "roleRewrittenRules", "glossary", "domainConcepts", "entities",
+  "valueObjects", "boundedContexts", "aggregates", "commands", "domainEvents",
+  "policies", "stateMachines", "states", "transitions", "invariants",
+  "scenarios", "issues", "questions",
+];
+for (const key of ISSUING) {
+  const rows = Array.isArray(doc[key]) ? doc[key] : [];
+  for (const r of rows) {
+    if (!r || typeof r.id !== "string") continue;
+    const id = r.id.trim();
+    if (!id) continue;
+    const prefix = id.replace(/-\d.*$/, "");
     if (!defined.has(prefix)) defined.set(prefix, new Set());
-    defined.get(prefix).add(candidate);
+    defined.get(prefix).add(id);
+    registry.add(prefix);
   }
-  for (const p of defined.keys()) registry.add(p);
 }
 
 /* ------------------------------------------------------------------ compare */
@@ -154,9 +160,9 @@ const notes = [];
 /* 1. every series the document issues must be decodable somewhere */
 for (const prefix of [...registry].sort()) {
   if (!cat.has(prefix)) {
-    problems.push("the document issues " + prefix + "- ids, but neither the catalogue "
-      + "nor the export's own records carry them - the page has nowhere to decode "
-      + "those ids into a name, so they reach the reader as bare handles");
+    problems.push("the document issues " + prefix + "- ids, but neither the catalogue " +
+      "nor the export's own records carry them - the page has nowhere to decode " +
+      "those ids into a name, so they reach the reader as bare handles");
     continue;
   }
   const m = cat.get(prefix);
@@ -169,15 +175,15 @@ for (const prefix of [...registry].sort()) {
       problems.push(prefix + ": " + id + " has no name - the page can decode it into nothing");
     }
     /* 3. the catalogue must not carry an id the document never issued */
-    if (text.indexOf(id) < 0) {
-      problems.push("the catalogue carries " + id + ", which the document never mentions");
+    if (!defined.has(prefix) || !defined.get(prefix).has(id)) {
+      problems.push("the catalogue carries " + id + ", which the document never issues");
     }
   }
-  /* 4. in the fallback mode, every id the document defines must be carried */
+  /* 4. every id the document issues must be carried */
   if (defined.has(prefix)) {
     for (const id of defined.get(prefix)) {
       if (!m.has(id)) {
-        problems.push("the document defines " + id + " but the catalogue does not carry it");
+        problems.push("the document issues " + id + " but the catalogue does not carry it");
       }
     }
   }

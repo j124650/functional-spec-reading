@@ -1,39 +1,37 @@
-/* Check that a generated explorer page agrees with the document it summarises.
+/* Check that the explorer page and the document it renders agree.
  *
- * The page embeds one JSON document; the analysis document owns the findings.
- * When the page is derived from the document by a generator, the two agree by
- * construction - but a hand-edited page, a stale document, or a generator that
- * silently skips a record breaks that, and the page then contradicts the
- * document the reader is holding.
+ *   node check-explorer.js <explorer.html> <document.json>
  *
- * This compares them mechanically: the ID sets must match, and every severity
- * must match.
+ * The page is a VIEW of the document. Every finding the document issues must
+ * appear on the page, with the same severity and the same kind; and the page
+ * must not show a finding the document never issued. A page that lists a
+ * severity the document downgraded, or omits a finding the document added,
+ * contradicts the document in front of the reader.
  *
- *   node check-explorer.js <explorer.html> <document.md> [more.md ...]
- *
- * Exits non-zero when they disagree, and prints what disagrees.
+ * The document is JSON now, so the records are read from its `issues` array
+ * rather than scraped from headings and table rows. That removes the two
+ * ways the old reader could compare nothing and still exit zero: a document
+ * whose findings were headings, and one whose findings were table rows.
  */
+"use strict";
+
 const fs = require("fs");
-
-/* An ID is a short uppercase token and a number: F-01, ISS-12, TR-007,
-   ST-003. The pattern is deliberately loose about the prefix so the script
-   works on any document's namespace. */
-const ID_RX = /\b([A-Z][A-Z0-9]{0,5}-\d{1,4}[a-z]?)\b/g;
-
-/* A severity is a word from the usual ramp, in any capitalisation. */
-const SEV_RX = /\b(critical|high|medium|low|blocker|major|minor|info)\b/i;
 
 const [pagePath, ...docPaths] = process.argv.slice(2);
 if (!pagePath || docPaths.length === 0) {
-  console.error("usage: node check-explorer.js <explorer.html> <document.md> [...]");
+  console.error("usage: node check-explorer.js <explorer.html> <document.json>");
   process.exit(2);
 }
 
-/* ---- the page's embedded JSON ---- */
+/* An id of the document's own scheme. */
+const ID_RX = /\b([A-Z][A-Z0-9]{0,5}-\d{1,4}[a-z]?)\b/g;
+const SEV_RX = /\b(critical|high|medium|low|blocker|major|minor|info)\b/i;
+
+/* ---------------------------------------------------------------- the page */
 
 const html = fs.readFileSync(pagePath, "utf8");
-/* The data block's id is not fixed — the skill's own example calls it
-   reachData, other pages call it explorerData — so either will do. What
+/* The data block's id is not fixed - the skill's own example calls it
+   reachData, other pages call it explorerData - so either will do. What
    matters is that the data is EMBEDDED as JSON, not typed into the
    script: a page that fetches it renders empty when opened from disk,
    and the failure is quiet. */
@@ -68,97 +66,70 @@ const pageRecords = new Map();
       const sev = typeof sevField === "string" ? (sevField.match(SEV_RX) || [])[0] : undefined;
       const kindField = node.kind ?? node.kindLabel;
       const kind = typeof kindField === "string"
-        ? (kindField.replace(/\*/g, "").trim().toLowerCase().match(/^(confirmed defect|spec gap)\b/) || [])[0]
+        ? (kindField.replace(/\*/g, "").trim().toLowerCase().match(/^(confirmed\s*defect|spec\s*gap)\b/) || [])[0]
         : undefined;
-      pageRecords.set(id, { sev: sev ? sev.toLowerCase() : undefined, kind });
+      pageRecords.set(id, { sev: sev ? sev.toLowerCase() : undefined, kind: normaliseKind(kind) });
     }
   }
   Object.values(node).forEach(walk);
 })(data);
 
-/* ---- the documents' records ---- */
+/* The document's `kind` is a token - ConfirmedDefect, SpecGap - and the
+   page's may be the words. Both are reduced to one spelling, so a difference
+   in wording is not reported as a difference in meaning. */
+function normaliseKind(k) {
+  if (!k) return undefined;
+  return k.toLowerCase().replace(/\s+/g, "");
+}
 
-/* A record is EITHER
-     - a heading that starts with an ID: "### F-01 - Title - Critical", or
-     - a table row whose FIRST CELL is an ID: "| F-01 | Title | Confirmed defect | ...".
-   Both shapes are used by real analysis documents, and a checker that only
-   understood headings would compare nothing while still exiting zero - which
-   reads as a pass but is a vacuous one. */
+/* ---- the document's records ---- */
+
+/* The findings ARE the `issues` array. The document issues them by id, and
+   each carries the severity and the kind the page must show. */
 const docRecords = new Map();
 const ownedPrefixes = new Set();
 
-/* A cell that is exactly one severity word. */
-function cellSeverity(cells) {
-  for (const c of cells) {
-    const m = c.match(/^\*{0,2}(critical|high|medium|low|blocker|major|minor|info)\*{0,2}$/i);
-    if (m) return m[1].toLowerCase();
-  }
-  return undefined;
-}
-
-/* A cell that names what KIND of record it is: "Confirmed defect", "Spec gap".
-   A cell may carry a qualifier after it ("Confirmed defect (broken by
-   construction)"), so only the leading kind is compared. */
-function cellKind(cells) {
-  for (const c of cells) {
-    const t = c.replace(/\*/g, "").trim().toLowerCase();
-    const m = t.match(/^(confirmed defect|spec gap)\b/);
-    if (m) return m[1];
-  }
-  return undefined;
-}
-
 for (const p of docPaths) {
-  const text = fs.readFileSync(p, "utf8");
-  text.split("\n").forEach(line => {
-    const h = line.match(/^#{1,6}\s+(.*\S)\s*$/);
-    if (h) {
-      const head = h[1];
-      const hit = head.match(ID_RX);
-      if (!hit) return;
-      const id = hit[0];
-      ownedPrefixes.add(id.replace(/-\d.*$/, ""));
-      const parts = head.split("·");
-      const tail = parts.length > 1 ? parts[parts.length - 1] : head.replace(ID_RX, "");
-      const sev = (tail.match(SEV_RX) || [])[0];
-      docRecords.set(id, { sev: sev ? sev.toLowerCase() : undefined, kind: undefined });
-      return;
-    }
-    const row = line.match(/^\|\s*([^|]+?)\s*\|(.*)$/);
-    if (!row) return;
-    const first = row[1].replace(/\*/g, "").trim();
-    const hit = first.match(ID_RX);
-    if (!hit || hit[0] !== first) return;   // the ID must be the whole first cell
-    const id = hit[0];
+  let doc;
+  try {
+    doc = JSON.parse(fs.readFileSync(p, "utf8"));
+  } catch (e) {
+    console.error("cannot read " + p + ": " + e.message);
+    process.exit(2);
+  }
+  for (const issue of (doc.issues || [])) {
+    if (!issue || typeof issue.id !== "string") continue;
+    const id = issue.id.trim();
+    if (!id) continue;
     ownedPrefixes.add(id.replace(/-\d.*$/, ""));
-    const cells = row[2].split("|").map(c => c.replace(/\*/g, "").trim());
-    docRecords.set(id, { sev: cellSeverity(cells), kind: cellKind(cells) });
-  });
+    const sev = typeof issue.severity === "string"
+      ? (issue.severity.match(SEV_RX) || [])[0] : undefined;
+    docRecords.set(id, {
+      sev: sev ? sev.toLowerCase() : undefined,
+      kind: normaliseKind(issue.kind),
+    });
+  }
 }
 
-/* Compare within the namespaces the documents own. The page carries records
-   from other documents too - invariants, questions, stages - and those are
-   not this comparison's business.
-
-   A document may name an ID that is explicitly NOT one of its records:
-   "F-03b is a probe label, not a finding". The page then legitimately shows
-   that ID in a different role. So an ID counts as a record only when the
-   document gives it a heading - a mention in prose or a table is not one. */
-const prefixOf = id => id.replace(/-\d.*$/, "");
-const pageInScope = new Map([...pageRecords].filter(([id]) => ownedPrefixes.has(prefixOf(id))));
-const docInScope = new Map([...docRecords].filter(([id]) => ownedPrefixes.has(prefixOf(id))));
-
-/* An ID the document mentions but does not head is a mention, not a record. */
+/* An id the document NAMES but does not issue is a mention, not a record.
+   The document may reference an id that is explicitly not one of its own
+   records - a probe label, a source's own numbering - and the page then
+   legitimately shows that id in a different role. */
 const mentioned = new Set();
 for (const p of docPaths) {
-  for (const m of fs.readFileSync(p, "utf8").matchAll(ID_RX)) {
-    if (ownedPrefixes.has(prefixOf(m[0]))) mentioned.add(m[0]);
+  const text = fs.readFileSync(p, "utf8");
+  for (const hit of text.matchAll(ID_RX)) {
+    if (ownedPrefixes.has(hit[1].replace(/-\d.*$/, ""))) mentioned.add(hit[1]);
   }
 }
 
 /* ---- compare ---- */
 
 const problems = [];
+
+const prefixOf = id => id.replace(/-\d.*$/, "");
+const pageInScope = new Map([...pageRecords].filter(([id]) => ownedPrefixes.has(prefixOf(id))));
+const docInScope = new Map([...docRecords].filter(([id]) => ownedPrefixes.has(prefixOf(id))));
 
 const inDocOnly = [...docInScope.keys()].filter(id => !pageInScope.has(id));
 const inPageOnly = [...pageInScope.keys()].filter(

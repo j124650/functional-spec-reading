@@ -114,11 +114,11 @@ The eight scripts under `scripts/` are dependency-free Node programs.
 
 ```bash
 node scripts/test-explorer-cdp.js <page.html> [checks.js]   # headless-Chrome regression test for the HTML explorer
-node scripts/check-explorer.js <explorer.html> <document.md> # verifies the page still matches the document it summarises
+node scripts/check-explorer.js <explorer.html> <document.json> # verifies the page still matches the document it summarises
 node scripts/check-export-contract.js <export.json> [contract.json] # checks the export against the contract it must satisfy
 node scripts/check-contract-vs-page.js [contract.json] [page.html]  # checks the contract against the page that implements it
-node scripts/check-id-catalogue.js <page.html> <document.md>  # checks the page's id catalogue against the document
-node scripts/check-model-expressions.js <document.md>         # checks the document's expressions against the vocabulary
+node scripts/check-id-catalogue.js <page.html> <document.json>  # checks the page's id catalogue against the document
+node scripts/check-model-expressions.js <document.json>        # checks the document's expressions against the vocabulary
 node scripts/build-vocabulary.js <book.json> <out.md>        # regenerates the vocabulary reference from the DDD Reference source
 node scripts/parse-ddd-source.js <src-dir> <out.json>        # parses the DDD Reference source into structured data
 ```

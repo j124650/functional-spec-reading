@@ -865,7 +865,7 @@ labelled parts), not a flattened paragraph. Assert the catalogue table's row cou
 against the export, the way the glossary's is asserted.
 
 **Check the catalogue against the document mechanically.** `scripts/check-id-catalogue.js`
-does it in one command — `node scripts/check-id-catalogue.js <page.html> <document.md>`.
+does it in one command — `node scripts/check-id-catalogue.js <page.html> <document.json>`.
 It reads the document's own ID registry for the series it issues, then reports a
 series the catalogue lacks, an empty series, an entry with no name to decode into,
 and an id the document never issued. A series the export omits is silent: nothing

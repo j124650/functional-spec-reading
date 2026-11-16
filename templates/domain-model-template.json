@@ -375,6 +375,8 @@
   "issues": [
     {
       "id": "F-001",
+      "kind": "ConfirmedDefect",
+      "severity": "Critical",
       "statement": "",
       "conflictingEvidence": [],
       "impact": "",

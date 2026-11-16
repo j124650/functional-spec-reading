@@ -919,9 +919,14 @@ ids. `guards` and `exceptions` are arrays of strings.
 No `id`: the pair (machine, check) is the key. `severity` is one of `Critical`,
 `High`, `Medium`, `Low`.
 
-**`issues`** — fields `id`, `statement`, `conflictingEvidence`, `impact`,
-`proposedClarification`, `classification`, `rationale`, `evidence`.
-`id` is `F-###`. `conflictingEvidence` is an array of strings.
+**`issues`** — fields `id`, `kind`, `severity`, `statement`, `conflictingEvidence`,
+`impact`, `proposedClarification`, `classification`, `rationale`, `evidence`.
+`id` is `F-###`. `kind` is one of `ConfirmedDefect`, `SpecGap` — the two have
+different remedies, so they are never merged: a `ConfirmedDefect` is two sections
+prescribing different outcomes for the same event, and the remedy is to pick a
+reading and amend the specification; a `SpecGap` is something the specification never
+says, and the remedy is to decide it and add the rule. `severity` is one of
+`Critical`, `High`, `Medium`, `Low`. `conflictingEvidence` is an array of strings.
 
 **`questions`** — fields `id`, `question`, `priority`, `businessImpact`,
 `architecturalImpact`, `blocksModeling`, `evidence`.
@@ -938,8 +943,11 @@ of source ids. `openQuestion` is a `Q-###`, or null.
 
 **`idRegistry`** — fields `series`, `count`, `first`, `last`, `definedIn`,
 `crossReferencedFrom`.
-`count` is a number. `definedIn` is the key the series is defined in.
-`crossReferencedFrom` is an array of keys.
+One row per series the document issues, and every series — a registry that lists
+some of them is a registry a consumer cannot rely on. `count` is a number: how many
+ids the series holds. `first` and `last` are the series' lowest and highest ids.
+`definedIn` is the key the series is defined in. `crossReferencedFrom` is an array of
+the keys that reference it.
 
 ### 8.2 The rules that make the file parseable
 
@@ -999,6 +1007,15 @@ two runs over the same source produce the same file and a diff shows what change
 `invariants` or any other reference field exists in the array it points at. No id is
 issued twice in the array that issues it — and a `traceability` row's `id` is a
 reference to a record that exists, not a second issue of that id.
+
+**An id-shaped token inside a prose string is not an issued id.** The source has its
+own numbering — its open-question numbers, its rule numbers, its requirement ids —
+and those appear inside `notes`, `rules`, `description` and the other prose fields.
+`OQ-17` is such a token: it is a thing the SOURCE calls something, and no array in
+this file issues it. Only the `id` field of a record issues an id, and only that id
+resolves to a record. A parser that collects every id-shaped token from the file
+collects the source's numbering as well, and then reports a series that resolves to
+nothing — so the id namespace is the `id` fields, not the text.
 
 **The file is JSON and nothing else.** No comments, no trailing commas, no
 unquoted keys, no `NaN`, no single-quoted strings, no `//` or `/* */`. A consumer

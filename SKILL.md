@@ -1324,10 +1324,11 @@ deliverable is fine.
     labelled *contradiction* or *gap*, and the deliverable's summary counts match the
     tests that exist. `references/executable-spec-model.md` has the harness's rules.
 12. **The document's expressions resolve against the document's own vocabulary.**
-    `node scripts/check-model-expressions.js <document.md>` checks every transition's
-    guard and effect, every invariant's formal expression, every `not expressible`
+    `node scripts/check-model-expressions.js <document.json>` checks every transition's
+    guard and effect, every invariant's formal expression, every `notExpressible`
     that carries no reason, and every invariant that names no state — and exits
-    non-zero naming each disagreement. Run it before the model, so a format defect is
+    non-zero naming each disagreement. It reads the JSON directly, so there is no
+    table to find by the wrong column. Run it before the model, so a format defect is
     found in the document rather than worked around in the engine.
 
 *If you built an explorer page:*

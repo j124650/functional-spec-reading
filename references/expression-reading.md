@@ -9,31 +9,34 @@ This is the whole of how a formal expression becomes English: unwrapping, the
 tokenizer, the parser, the effect reader, the audit that finds the fields the reader
 never reached, and the assertions.
 
-## Unwrap the decoration first
+## The value arrives plain
 
-The document writes every expression in inline code, so the string that arrives is
-`` `true` ``, not `true`. Two things go wrong while the decoration is still on:
+The document is JSON, so an expression is the string in `expression.value` — the text
+of the rule, with no decoration around it. There is nothing to unwrap.
 
-- A shortcut that tests the raw text (`text === "true"`) never fires, because the
-  text is backticked.
-- The tokenizer's default branch discards the characters that are not in the grammar,
-  so the backticks vanish silently and `` `true` `` reaches the keyword reader as the
-  literal `true` — which is read as the ANSWER "Yes". A constant-true guard then
-  reads as a yes/no answer rather than as the absence of a condition, and every such
-  guard in the document is wrong the same way.
+That is worth saying because the decoration was a defect, not a style. When the
+document wrote every expression in inline code, the string that arrived was
+`` `true` `` rather than `true`, and two things went wrong while the decoration was
+still on:
 
-Unwrap once, at the top of the reader, and let every caller benefit:
+- A shortcut that tested the raw text (`text === "true"`) never fired, because the
+  text was backticked.
+- The tokenizer's default branch discarded the characters that were not in the
+  grammar, so the backticks vanished silently and `` `true` `` reached the keyword
+  reader as the literal `true` — which is read as the ANSWER "Yes". A constant-true
+  guard then read as a yes/no answer rather than as the absence of a condition, and
+  every such guard in the document was wrong the same way.
 
-```javascript
-let text=String(expression).trim();
-if(text.startsWith("`") && text.endsWith("`")) text=text.slice(1,-1).trim();
-```
+**A reader that unwraps anyway must unwrap identically everywhere.** A guard reader
+and an effect reader that parse the same vocabulary are two entry points into one
+language, and a fix applied to one and not the other is a defect waiting for the
+other call site. The unwrap is gone, but the rule it taught stands: one language, one
+reader, no variation between call sites.
 
-**Both readers of the same language must unwrap identically.** A guard reader and an
-effect reader that parse the same vocabulary are two entry points into one language,
-and a fix applied to one and not the other is a defect waiting for the other call
-site. When one reader strips the decoration and the other does not, the defect
-appears only in whichever half the reader happens to be used in.
+**And the value is the whole of it.** §8.2 of the prompt forbids markdown inside a
+value, so there is no bold, no list marker and no pipe in an expression — and the
+expression language's own `||` needs no escaping, because a JSON string is not a
+Markdown cell. The reader takes `expression.value` as it stands.
 
 ## The three steps
 
@@ -108,18 +111,21 @@ not at all? A field rendered in symbols where the reader would have read it is a
 visible gap; a field rendered NOWHERE is worse, because the reader is told a rule
 applies and is never shown it.
 
-**A sentinel is not an expression.** `` `not expressible` `` is the document's marker
-that the rule cannot be written down, not a rule to translate — and "not expressible"
-is not itself expressible. Show the marker and the reason the document gives for it;
-the reason is the part that tells the reader what to decide.
+**A sentinel is not an expression.** The document's marker that the rule cannot be
+written down is the expression's `kind` — `notExpressible`, with the reason in
+`expression.reason` — not a rule to translate, and not text inside a value. Show the
+marker and the reason the document gives for it; the reason is the part that tells the
+reader what to decide.
 
-**And the reader must REFUSE the sentinel, not parse it.** "not expressible" is two
-words the vocabulary does not define, and a parser that tolerates an unknown
-identifier reads it as the term "not" — so the marker comes out as the word "not",
-in italics, where a reading belongs. A conjunct that mixes a real rule with the
-marker reads as a sentence with no ending: "the number of divisions is greater than
-zero and not". Detect the marker in the token stream and return nothing, so the
-caller shows the source expression alone:
+**And the reader must REFUSE the sentinel, not parse it.** The sentinel is a `kind`,
+so the reader never reaches it as text: check `kind` before reading `value`, and a
+`notExpressible` expression yields no reading at all, so the caller shows the reason
+instead. A reader that read the marker's text would parse two words the vocabulary
+does not define, and a parser that tolerates an unknown identifier reads the first
+as the term "not" — so the marker comes out as the word "not", in italics, where a
+reading belongs. A conjunct that mixes a real rule with the marker reads as a
+sentence with no ending: "the number of divisions is greater than zero and not".
+Return nothing for the marker, so the caller shows the source expression alone:
 
 ```javascript
 for(let i=0;i<ts.length;i++){
@@ -182,10 +188,12 @@ guard that is always true must read as the absence of a condition, never as "yes
 question is wrong in a way that survives a glance:
 
 ```javascript
-const BT = String.fromCharCode(96);   // the document writes expressions in inline code
-const bare = d.transitions.filter(t => (t.guardExpression||"").trim() === BT + "true" + BT);
+const bare = d.transitions.filter(t => {
+  const g = t.guard && t.guard.expression;
+  return g && g.kind === "expression" && String(g.value).trim() === "true";
+});
 for (const t of bare) {
-  const w = decypher(t.guardExpression);
+  const w = decypher(t.guard.expression);
   if (w !== "always true") bad.push(t.id + ": reads '" + w + "'");
 }
 ```
