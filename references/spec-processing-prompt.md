@@ -1085,6 +1085,25 @@ Check:
 - Are the state machines internally consistent?
 - Do reconstructed business scenarios agree with the documented state machines?
 
+**The source's own tables are the FLOOR, not a starting point.** A row in one of
+the source's tables is a fact the source states — a stage in its stage table, a
+role in its roles table, a rule in its notification matrix, a question in its
+questions table, an outside item in its outside-items table. Every one of them
+must be accounted for: as a record, or with a stated reason in
+`completenessFindings` why it is not modelled. A model that mentions such a row
+in passing has not accounted for it, and the model that leaves it out entirely
+has lost a fact the source stated outright.
+
+Run the gate that proves it:
+
+```
+node scripts/check-source-coverage.js <the source .md> <the deliverable .json>
+```
+
+It reads the source's tables row by row and names what the deliverable does not
+account for. A hole it reports is a hole in the analysis, not in the checker:
+account for the row and re-run until it is clean.
+
 Correct any inconsistencies discovered during this review.
 
 ## 10. Final instruction

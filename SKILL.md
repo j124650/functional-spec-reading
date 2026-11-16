@@ -511,6 +511,18 @@ transient error into a fatal one.
 
 ### 10. Pass 8 — deliver the consolidated file
 
+**The source's tables are the floor.** Every row of the source's own tables — the
+stages, the roles, the notification matrix, the questions, the outside items — is
+a fact the source states. Account for each one: as a record, or with a stated
+reason in `completenessFindings` that it is not modelled. Then run the gate:
+
+```
+node scripts/check-source-coverage.js <the source .md> <the deliverable .json>
+```
+
+It names every row the deliverable does not account for. A model that mentions
+a row in passing has not accounted for it. Fix the model, not the checker.
+
 **The deliverable is the prompt's file.** `references/spec-processing-prompt.md`
 requires **one** consolidated `domain-model-and-state-machines.json`, with the
 top-level keys, the record fields, the identifier scheme and evidence classes it
