@@ -11,9 +11,40 @@ explores rather than scrolls.
 
 ## Build it self-contained
 
-No CDN, no build step, no external assets: one `.html` file with inline CSS and JS, and
-the data embedded in the file. It must open from disk on a machine with no network.
+No CDN, no build step, no external assets: one `.html` file with inline CSS and JS, and the
+data embedded in the file. It must open from disk on a machine with no network.
 External fonts or a chart library break that.
+
+### A check finds its subject by ID, never by its visible text
+
+A check that locates what it is about by reading a label — the cell's text, a column
+heading, a row's position — is a check that breaks the moment the label changes, and it
+fails in the WORST way: not loudly, but by asserting against the wrong element and
+passing. A matrix check that finds its cell by counting headers picks the cell one
+column to the left of the one it means, compares a transition's endpoints against the
+neighbour's, and reports no problem.
+
+So mark the subject with an ID and select on that:
+
+- the page renders `data-from`, `data-to`, `data-tr` on a transition cell, `data-col`
+  and `data-tr` on a matrix head, `data-role` on an actor, `data-id` on every linked id;
+- the check queries those attributes and compares **ids with ids** — the cell's
+  `data-tr` against the export's transition id, the header's `data-col` against the
+  state id in the export;
+- and the expected value is read from the EXPORT, never re-derived by the check. A
+  check that re-implements the page's parsing asserts that the page parses the way
+  the check parses, and both can be wrong together — the page's trigger reading and
+  the check's own trigger stripping were the same code twice.
+
+**The same rule covers the page's own reading of a document cell.** The page may show
+a cell; it may not work out what the cell meant. A trigger cell that names its
+command by code and by name is read as the NAME, and the exporter ships the name, so
+the page strips nothing. A cell that marks a rule as not expressible is recognised by
+a BOOLEAN the exporter ships, not by the marker's wording — because a marker read as
+words is not an absence, it is nonsense. A cell that lists ids as a range is resolved
+by the exporter, so the page reads ids. Every one of these is the same rule: the
+document's structure is interpreted once, by the code that owns it, and the page
+draws what it is given.
 
 **Embed the data in the file, and read it from there — never fetch it.** A `fetch()`
 of a sibling file is blocked when the HTML is opened from disk (`file://`), which is
@@ -685,6 +716,40 @@ to be looking at applies nowhere else.
 Apply the same rule inside the diagram: the node's **name** is bold and its **id** is
 regular, not the other way round.
 
+### Chips, labels and folded lists
+
+**A filter chip's label carries the NAME and the COUNT — never the identifier code.**
+A catalogue filter that reads "SRC · Source (8)" shows the reader a namespace prefix
+they did not ask for; the prefix belongs to the records, not to the filter. Put the
+series' name on the chip and the record count UNDER it, so the chip reads "Source"
+with "8" beneath:
+
+```html
+<label class="chip"><input type="radio" name="catk" value="SRC">
+  <span class="catlab"><span>Source</span><span class="catn">8</span></span></label>
+```
+```css
+.catlab{display:flex;flex-direction:column;line-height:1.25}
+.catlab .catn{font-size:10px;color:var(--dim)}
+```
+
+**One control, one look — build the same chip from one function.** When two tabs filter
+by the same thing, the chips must be the SAME control, not two that resemble each
+other: the reader learns the shape once. Build them in one function that takes the
+host and the state, so a change to the chip lands in both places, and a reader who
+switches tabs finds the same control rather than a subtly different one.
+
+**A long list in a detail panel folds into a disclosure.** A state can name seven
+invariants, and a row that always takes that space pushes the rest of the panel down.
+Fold it: a `<details>` whose summary names the list, collapsed by default, with the
+items inside. Assert the disclosure exists, that it starts closed, and that opening it
+reveals the items.
+
+**The folded text is the document's own sentence, and a RANGE is not expanded.**
+"INV-001…INV-011 as in Draft" is a range the document wrote; expanding it into eleven
+ids invents invariants the document never gave that state. Show the sentence as it
+stands, with the ids it names as links.
+
 ### Decode an id into words, and make the words a way in
 
 The document's cells are full of handles — `VO-004`, `ENT-007`, `ST-001`, `AGG-001` —
@@ -697,9 +762,15 @@ link that says what it means.
 ```javascript
 const IDX = {};
 function indexId(id, name, series, tab, title){ IDX[id] = {id, name, series, tab, title}; }
-(D.catalogue||[]).forEach(s => s.entries.forEach(e => indexId(e.id, e.name, s.kind, "catalogue")));
+(D.catalogue||[]).forEach(e => indexId(e.id, e.name, e.kind, "catalogue"));
 STATES.forEach(s => indexId(s.id, s.name, "State", "machines"));
 ```
+
+**The catalogue is FLAT: one record per identifier, each carrying the series it belongs
+to.** A nested catalogue — a record per series, each holding its own entries — makes the
+page flatten it before it can render, and two flattenings can disagree about what a
+series holds. The export's shape here and the page's reader of it are one decision, not
+two, and a checker left reading the old shape reads an empty catalogue.
 
 **Rewrite only the TEXT between tags.** An id inside an attribute — an `href`, a
 `title` — must not be rewritten, or the attribute is corrupted and the link points
@@ -1335,10 +1406,12 @@ transitions, invariants, findings, questions — so have the export carry the
 namespace as data and let the page derive its pattern from it:
 
 ```javascript
-const PREFIXES = (D.catalogue||[]).map(s => s.series)
-  .concat(["SM","ST","TR","INV","F","Q"]);            // the series with their own tabs
+const PREFIXES = (D.idSeries||[]).map(s => s.prefix);
 const ID_RE = new RegExp("\\b(?:" + PREFIXES.join("|") + ")-\\d{1,3}\\b", "g");
 ```
+
+**The export carries the namespace, so the page writes no list at all** — not even the
+six series that have their own tabs, which is the copy that drifts first.
 
 The same applies to a status vocabulary, a set of tab names, and a priority list: build
 the filter's options from the values the data carries, and keep a hand-written
@@ -1783,6 +1856,13 @@ defect here:
   content and `innerText` to assert a fact about rendering, and never swap one for
   the other: the first fails against correct code, the second passes against an
   element that was never rendered.
+- **compare against what the page RENDERS, not against the raw source string.** The
+  cell pipeline turns the document's `**emphasis**` into real markup, so the text on
+  screen is not the text in the export: a check asserting the panel shows
+  `"…legal name **or** the DBA…"` fails against a page showing it correctly. Render the
+  expectation with the page's own cell function and compare the result — `cell(s)` into
+  a scratch element, then its `textContent`. An expression shown as a READING is the
+  same case: the source sits in the element's `title`, not in its text.
 - **the checks file is itself JavaScript, and a raw backtick inside it breaks it.**
   The expressions are template literals, so a backtick in a character class ends the
   literal and the file stops parsing — the symptom is a harness that fails to load,
@@ -1838,106 +1918,11 @@ contrast, arrowhead overlap, whether the flow is legible at a glance.
 
 ## Read an expression back in words
 
-A formal expression is the precise form of a rule, and it is unreadable to the
-reader the page is written for. **Show the rule in words above the rule in symbols.**
-The words are derived from the document's own vocabulary and state names — they are a
-reading of what the document already says, not a second opinion about it.
-
-Read it in three steps: tokenize against the vocabulary, parse with the engine's
-grammar, and word the tree.
-
-**Match vocabulary terms longest-first, and take them whole.** A term may be several
-words ("legal business name"), so it is matched as a unit rather than split into
-identifiers the document never defined:
-
-```javascript
-const VOCAB_TERMS = VOCAB.map(v=>v.term).filter(t=>t.length)
-  .sort((a,b)=>b.length-a.length);
-// at an identifier, try each term in turn; the term must not be cut short
-// by a following letter or digit
-```
-
-**The engine's own keywords are not vocabulary terms.** `state`, `input`, `true` and
-`false` belong to the expression language, not to the document's vocabulary. If the
-tokenizer only knows the vocabulary, they tokenize as unknown identifiers and the
-reading comes out italicised. Carry them as a separate list and read them in the
-reader's terms: "the current state", "the input", "yes", "no".
-
-**A domain written as a range must be expanded.** The vocabulary says a term may
-hold "ST-001 … ST-008"; reading only the endpoints names two of eight states. Expand
-the range across every state it spans, then name each one.
-
-**An identifier the vocabulary does not define is a finding, not a word.** Render it
-in italics so the reader sees that the expression names something unknown, and say so
-rather than reading it out as if it were defined.
-
-**Decode a state id to the state's name, in bold.** `state != 'ST-006'` reads as
-"the current state is not **Approved** (ST-006)" — the id stays in parentheses so the
-reader can match it against the table.
-
-**Word the operators.** `!=` → "is not", `==` → "is", `>` → "is greater than",
-`&&` → "and", `||` → "or", `!` → "… is not true". An empty string is "empty", not
-`''`.
-
-**Parse with the engine's precedence** — `||`, then `&&`, then `!`, then a
-comparison, then an operand — so the words follow the same reading the engine does:
-
-```javascript
-function parseAnd(ts,i){
-  let left=parseNot(ts,i);
-  while(left.ok && ts[left.i] && ts[left.i].k==="op" && ts[left.i].v==="&&"){
-    const right=parseNot(ts,left.i+1);
-    left={ok:left.ok&&right.ok,node:{t:"and",l:left.node,r:right.node},i:right.i};
-  }
-  return left;
-}
-```
-
-**The loop must advance from the position the left operand ENDED at.** Testing
-`ts[i]` — the index the loop started with — stops the chain after the first
-conjunct, and a fourteen-conjunct guard silently reads as one conjunct. The
-returned `i` is the only position that knows where the parse got to.
-
-**An effect is a statement language, not a rule.** `set('clock started', true); if
-owner == '' then set('owner', default owner)` is a script, and feeding it to the
-boolean parser yields nonsense. Split it on top-level `;`, read each statement, and
-read the condition of an `if … then …` with the boolean reader above:
-
-| Statement | Reads as |
-|---|---|
-| `set('term', value)` | set the term to the value |
-| `clear('term')` | clear the term |
-| `add('set', 'value')` | add the value to the set |
-| `remove('set', 'value')` | remove the value from the set |
-| `apply(input)` | write the edited field onto the application |
-| `if <cond> then <effect>` | if the condition holds, the effect |
-
-**The quotes in an effect's arguments are the term's NAME, not a literal.** `set('clock
-started', true)` sets the term *clock started*; stripping the quotes as if they
-delimited a value loses the term. Strip them, then read the term through the
-vocabulary.
-
-**An effect of "—" means no effect.** Say so rather than rendering nothing: a
-transition with no effect is a fact about the transition.
-
-**Assert the reading.** Every guard in the document should render in words, and the
-rendering must not contain the operators it replaced:
-
-```javascript
-const t = d.transitions.find(x => /ST-\d{3}/.test(x.guardExpression||""));
-showTransition(t.id);
-const w = document.querySelector("#machDetail .written");
-if (!w) return ["no reading in words for " + t.id];
-if (/!=|&&|\|\|/.test(w.textContent)) return ["the reading still contains operators"];
-```
-
-Count how many expressions translated and how many did not; a guard that fails to
-translate is a gap in the reader, and a reader that silently renders nothing for the
-one hard expression hides exactly the rule the reviewer came for.
-
-**Keep the reading above the formal form, and put the formal form in monospace.**
-The reader reads the words; the reader who wants the precision has the symbols one
-line below.
+The page renders the document's formal rules in English, above the symbols.
+`references/expression-reading.md` has the whole of it: unwrapping the document's
+inline-code decoration before the tokenizer sees it, the vocabulary matcher, the
+parser's precedence, the effect reader, the audit that finds every expression-bearing
+field the reader never reached, and the assertions.
 
 ## Make the pending work visible
 

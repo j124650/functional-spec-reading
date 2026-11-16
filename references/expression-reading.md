@@ -1,0 +1,202 @@
+# Reading an expression back in words
+
+The page shows the document's formal rules to a reader who cannot parse symbols.
+**Show the rule in words above the rule in symbols.** The words are derived from the
+document's own vocabulary and state names — a reading of what the document already
+says, not a second opinion about it.
+
+This is the whole of how a formal expression becomes English: unwrapping, the
+tokenizer, the parser, the effect reader, the audit that finds the fields the reader
+never reached, and the assertions.
+
+## Unwrap the decoration first
+
+The document writes every expression in inline code, so the string that arrives is
+`` `true` ``, not `true`. Two things go wrong while the decoration is still on:
+
+- A shortcut that tests the raw text (`text === "true"`) never fires, because the
+  text is backticked.
+- The tokenizer's default branch discards the characters that are not in the grammar,
+  so the backticks vanish silently and `` `true` `` reaches the keyword reader as the
+  literal `true` — which is read as the ANSWER "Yes". A constant-true guard then
+  reads as a yes/no answer rather than as the absence of a condition, and every such
+  guard in the document is wrong the same way.
+
+Unwrap once, at the top of the reader, and let every caller benefit:
+
+```javascript
+let text=String(expression).trim();
+if(text.startsWith("`") && text.endsWith("`")) text=text.slice(1,-1).trim();
+```
+
+**Both readers of the same language must unwrap identically.** A guard reader and an
+effect reader that parse the same vocabulary are two entry points into one language,
+and a fix applied to one and not the other is a defect waiting for the other call
+site. When one reader strips the decoration and the other does not, the defect
+appears only in whichever half the reader happens to be used in.
+
+## The three steps
+
+Read it in three steps: tokenize against the vocabulary, parse with the engine's
+grammar, and word the tree.
+
+**Match vocabulary terms longest-first, and take them whole.** A term may be several
+words ("legal business name"), so it is matched as a unit rather than split into
+identifiers the document never defined:
+
+```javascript
+const VOCAB_TERMS = VOCAB.map(v=>v.term).filter(t=>t.length)
+  .sort((a,b)=>b.length-a.length);
+// at an identifier, try each term in turn; the term must not be cut short
+// by a following letter or digit
+```
+
+**The engine's own keywords are not vocabulary terms.** `state`, `input`, `true` and
+`false` belong to the expression language, not to the document's vocabulary. If the
+tokenizer only knows the vocabulary, they tokenize as unknown identifiers and the
+reading comes out italicised. Carry them as a separate list and read them in the
+reader's terms: "the current state", "the input", "yes", "no".
+
+**A domain written as a range must be expanded.** The vocabulary says a term may
+hold "ST-001 … ST-008"; reading only the endpoints names two of eight states. Expand
+the range across every state it spans, then name each one.
+
+**An identifier the vocabulary does not define is a finding, not a word.** Render it
+in italics so the reader sees that the expression names something unknown, and say so
+rather than reading it out as if it were defined.
+
+**Decode a state id to the state's name, in bold.** `state != 'ST-006'` reads as
+"the current state is not **Approved** (ST-006)" — the id stays in parentheses so the
+reader can match it against the table.
+
+**Word the operators.** `!=` → "is not", `==` → "is", `>` → "is greater than",
+`&&` → "and", `||` → "or", `!` → "… is not true". An empty string is "empty", not
+`''`.
+
+**Parse with the engine's precedence** — `||`, then `&&`, then `!`, then a
+comparison, then an operand — so the words follow the same reading the engine does:
+
+```javascript
+function parseAnd(ts,i){
+  let left=parseNot(ts,i);
+  while(left.ok && ts[left.i] && ts[left.i].k==="op" && ts[left.i].v==="&&"){
+    const right=parseNot(ts,left.i+1);
+    left={ok:left.ok&&right.ok,node:{t:"and",l:left.node,r:right.node},i:right.i};
+  }
+  return left;
+}
+```
+
+**The loop must advance from the position the left operand ENDED at.** Testing
+`ts[i]` — the index the loop started with — stops the chain after the first
+conjunct, and a fourteen-conjunct guard silently reads as one conjunct. The
+returned `i` is the only position that knows where the parse got to.
+
+## One reader for the language, and an audit of every field that carries one
+
+**The boolean reader is general — it is not written for transitions.** It reads any
+rule over the document's vocabulary, so the same function serves a transition's guard,
+the condition of an `if … then …` inside an effect, an invariant's formal expression,
+and a probe's predicate. A reader written for one caller will not be reused, and the
+other fields then stay in symbols while the page looks complete.
+
+**Audit the fields mechanically — enumerate, then find each one's render site.** The
+gaps are not found by remembering which tables exist; they are found by listing every
+field in the export whose value is an expression, and then finding where the page
+renders it. For each field the question is: is it rendered in words, in symbols, or
+not at all? A field rendered in symbols where the reader would have read it is a
+visible gap; a field rendered NOWHERE is worse, because the reader is told a rule
+applies and is never shown it.
+
+**A sentinel is not an expression.** `` `not expressible` `` is the document's marker
+that the rule cannot be written down, not a rule to translate — and "not expressible"
+is not itself expressible. Show the marker and the reason the document gives for it;
+the reason is the part that tells the reader what to decide.
+
+**And the reader must REFUSE the sentinel, not parse it.** "not expressible" is two
+words the vocabulary does not define, and a parser that tolerates an unknown
+identifier reads it as the term "not" — so the marker comes out as the word "not",
+in italics, where a reading belongs. A conjunct that mixes a real rule with the
+marker reads as a sentence with no ending: "the number of divisions is greater than
+zero and not". Detect the marker in the token stream and return nothing, so the
+caller shows the source expression alone:
+
+```javascript
+for(let i=0;i<ts.length;i++){
+  if(ts[i].k==="unknown" && ts[i].v.toLowerCase()==="not" &&
+     ts[i+1] && ts[i+1].k==="unknown" && ts[i+1].v.toLowerCase()==="expressible")
+    return null;      /* the marker - show the source, do not read it */
+}
+```
+
+**A partial reading is not a reading.** A reader that returns a half-translated
+sentence — because it stopped at a word it did not know — puts a fragment where the
+reader expects a complete rule, and the fragment looks plausible. When the reader
+cannot read the whole expression it returns nothing and the caller shows the formal
+form: the symbols are then the authority, and the page never states a rule in half.
+
+## Effects are a statement language
+
+**An effect is a statement language, not a rule.** `set('clock started', true); if
+owner == '' then set('owner', default owner)` is a script, and feeding it to the
+boolean parser yields nonsense. Split it on top-level `;`, read each statement, and
+read the condition of an `if … then …` with the boolean reader above:
+
+| Statement | Reads as |
+|---|---|
+| `set('term', value)` | set the term to the value |
+| `clear('term')` | clear the term |
+| `add('set', 'value')` | add the value to the set |
+| `remove('set', 'value')` | remove the value from the set |
+| `apply(input)` | write the edited field onto the application |
+| `if <cond> then <effect>` | if the condition holds, the effect |
+
+**The quotes in an effect's arguments are the term's NAME, not a literal.** `set('clock
+started', true)` sets the term *clock started*; stripping the quotes as if they
+delimited a value loses the term. Strip them, then read the term through the
+vocabulary.
+
+**An effect of "—" means no effect.** Say so rather than rendering nothing: a
+transition with no effect is a fact about the transition.
+
+## Assert the reading
+
+Every guard in the document should render in words, and the rendering must not
+contain the operators it replaced:
+
+```javascript
+const t = d.transitions.find(x => /ST-\d{3}/.test(x.guardExpression||""));
+showTransition(t.id);
+const w = document.querySelector("#machDetail .written");
+if (!w) return ["no reading in words for " + t.id];
+if (/!=|&&|\|\|/.test(w.textContent)) return ["the reading still contains operators"];
+```
+
+Count how many expressions translated and how many did not; a guard that fails to
+translate is a gap in the reader, and a reader that silently renders nothing for the
+one hard expression hides exactly the rule the reviewer came for.
+
+**Assert the CONSTANT case too, because it is the one that reads plausibly.** A
+guard that is always true must read as the absence of a condition, never as "yes" or
+"no" — a boolean literal is a value, and reading it as the answer to a yes/no
+question is wrong in a way that survives a glance:
+
+```javascript
+const BT = String.fromCharCode(96);   // the document writes expressions in inline code
+const bare = d.transitions.filter(t => (t.guardExpression||"").trim() === BT + "true" + BT);
+for (const t of bare) {
+  const w = decypher(t.guardExpression);
+  if (w !== "always true") bad.push(t.id + ": reads '" + w + "'");
+}
+```
+
+**Keep the reading above the formal form, and put the formal form in monospace.**
+The reader reads the words; the reader who wants the precision has the symbols one
+line below.
+
+**In a table, the column holds the READING and the source sits in the hover.** A
+detail panel can afford the formal form on its own line; a table row cannot, and a
+column of symbols down twenty rows is the page the reader cannot read. So the cell
+carries the words and the `title` carries the expression, and the column is named for
+what it holds — "In words", not "Formal expression", because the heading tells the
+reader which of the two they are looking at.

@@ -244,6 +244,21 @@ place the name appears:
    cell, the export carries the engine's own result. A scope, a range, a set of names — each
    is resolved once, by the code that owns it, and the export reads it. Re-resolving a cell
    for the export's benefit puts the document's structure in two places, and they drift.
+7. **A cell the page draws as objects is resolved into those objects.** A trigger cell is
+   prose — "CMD-006/CMD-007 Submit" — and the page draws the COMMANDS it names, as command
+   chips. The export ships the command ids the trigger names. A trigger that names none is
+   fired by an event rather than by a command: it ships an empty list, and the page keeps
+   the document's own words, because there is no object to draw.
+8. **The document itself travels as paragraphs.** A page that shows the specification cuts
+   it into paragraphs — heading, text, list, table, code — and resolves every reference the
+   document makes to itself ("§6.2") to the paragraph it means. The paragraph arrives
+   ALREADY CUT where it refers to another, so the page never looks for a reference in a
+   sentence, and every link it draws goes to a paragraph that exists. A reference to a
+   section the document does not have stays as the words it was written with.
+9. **The export's field names follow ONE convention.** A record type serialised directly
+   emits its property names as they are written — `Id`, `Kind`, `Refs` — while every other
+   field in the export is lower case, and the page and the contract read one convention.
+   Project a record into the export's shape rather than serialising it as it is.
 
 ## The explorer's obligations
 
@@ -474,6 +489,33 @@ checker whose default path only works from one of the two is a checker the other
 to be taught to call with arguments — and nobody reads the help.
 
 Run all of them. A check that is not in the loop is a check that reports a problem nobody reads.
+
+---
+
+## The project side: the build loop
+
+The arrangement above is format-level; here are the concrete places, for the machine that
+runs it (the **SpecReader** repo, and this skill's own git clone).
+
+| | Where | Branch |
+|---|---|---|
+| the exporter, the page, the export | `C:\_Recover\SpecReader` | `master` |
+| the contract, the checkers, the rendering spec | this skill's clone, `C:\Users\Dmitry\AppData\Local\hermes\cache\scratch\fsr-clone` | **`main`** |
+
+- The exporter is `model/Onboarding.Model` (`Program.cs` plus `Model/*.cs`); the page is
+  `explorer/explorer.template.html`.
+- `explorer/build.js` embeds `explorer/explorer-data.json` (gitignored - a build artefact)
+  into `explorer/explorer.html` (committed), and it is a **gate**: the export must conform to
+  the contract, and the contract must agree with the page, or the build fails.
+- The CDP suite is `scripts/test-explorer-cdp.js` here:
+  `node <skill>/scripts/test-explorer-cdp.js explorer/explorer.html explorer/checks.js` -
+  run it after every change to the page, and expect a count, not a green tick.
+- Edit the contract in the **installed** skill, then copy it to the clone and push; the two
+  must stay byte-identical, and the clone's branch is `main`, not `master`.
+
+**How a reference is drawn lives beside this file**, in `explorer/rendering.md`: the chip -
+one rectangle, a mark, a name, the id - the families and their colours, and the legend a
+reader needs when the accents do not reach them.
 
 ---
 
