@@ -1,7 +1,7 @@
 # Interactive diagram for a spec analysis
 
 **This is an optional view of the deliverable, not the deliverable.** The consolidated
-`domain-model-and-state-machines.md` is the artifact. Build a page only when the reader
+`domain-model-and-state-machines.json` is the artifact. Build a page only when the reader
 asks for one, and build it against the document that already exists — never the other
 way round.
 

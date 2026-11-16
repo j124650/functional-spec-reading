@@ -22,9 +22,8 @@ The spec is the artifact under audit. It is prose addressed to reviewers, not a 
 contract — so the work is extraction, reconstruction and proof.
 
 **What you produce is fixed.** `references/spec-processing-prompt.md` is the contract:
-one consolidated `domain-model-and-state-machines.md`, the twenty-one numbered
-sections of the domain-discovery layout, the identifier scheme, and the evidence
-classes. **What the words mean is fixed too.**
+one consolidated `domain-model-and-state-machines.json`, the DDD-shaped key list
+that holds the model, the identifier scheme, and the evidence classes. **What the words mean is fixed too.**
 `references/ddd-vocabulary.md` is the authority — the definitions and patterns of the
 DDD Reference (Eric Evans, 2015, CC BY 4.0). Load both before extracting; a methodology
 without an authority cannot be checked, and a deliverable without a contract is a pile of
@@ -47,7 +46,7 @@ retrieved external sources (use `grounded-citations`).
 ## What to build, and what not to
 
 **The deliverable is the document.** One consolidated
-`domain-model-and-state-machines.md`, written from reading the spec. Everything else —
+`domain-model-and-state-machines.json`, written from reading the spec. Everything else —
 an executable model, an interactive page, a compiler that produces an intermediate
 representation, a checker script — is an *instrument*, and it gets built only when the
 reader asks for it or when the document genuinely cannot be produced without it.
@@ -176,21 +175,19 @@ Before extracting anything, load the two files that say what you are producing
 and what the words mean.
 
 - **`references/spec-processing-prompt.md`** — the output contract. It fixes the
-  deliverables (one consolidated `domain-model-and-state-machines.md` with twenty
-  numbered sections), the identifier scheme (`ENT-001`, `VO-001`, `AGG-001`,
-  `CMD-001`, `EVT-001`, `SM-001`, `ST-001`, `TR-001`, `INV-001`, `POL-001`,
-  `SCN-001`, `Q-001`, `SRC-001`, `TERM-001`, `N-01`, `PAR-001`), the evidence classes
-  (`EXPLICIT` · `INFERRED` · `CANDIDATE` · `CONFLICTING` · `UNSPECIFIED`), and the
-  shape each record takes. It also requires a second analytical pass — the
-  adversarial review in step 9 is that pass.
+  deliverable (one consolidated `domain-model-and-state-machines.json`), the top-level
+  key list and the field of every record in it, the identifier scheme (`ENT-001`,
+  `VO-001`, `AGG-001`, `CMD-001`, `EVT-001`, `SM-001`, `ST-001`, `TR-001`, `INV-001`,
+  `POL-001`, `SCN-001`, `Q-001`, `SRC-001`, `TERM-001`, `N-01`, `PAR-001`), the
+  evidence classes (`EXPLICIT` · `INFERRED` · `CANDIDATE` · `CONFLICTING` ·
+  `UNSPECIFIED`), and the rules that make the file parseable. It also requires a
+  second analytical pass — the adversarial review in step 9 is that pass.
 
-  **Two section lists exist, and the longer one wins.** The prompt's §8 lists twenty
-  sections; the domain-discovery layout adds `Source Inventory`, `Bounded Contexts`,
-  and an `ID Registry` inside the traceability matrix, giving twenty-one. Use the
-  twenty-one layout — it is a superset, and a bounded context needs a section of its
-  own because a context map without one is just a list of systems. Everything else in
-  the prompt still holds: the identifier scheme, the evidence classes, and the
-  one-file rule.
+  **The key list is the domain model, not a document outline.** Every key is a DDD
+  concept — `glossary`, `entities`, `aggregates`, `boundedContexts`, `stateMachines`,
+  `transitions`, `invariants` — and each holds an array of records with the fields
+  §8.1 fixes. A consumer reads the file and finds the domain in it; there is no
+  second rendering of the same fact to disagree with it.
 - **`references/ddd-vocabulary.md`** — the authority for what the output
   *means*. The definitions and the 45 patterns of the DDD Reference (Eric Evans,
   2015, CC BY 4.0), plus a mapping from each required output onto the patterns
@@ -204,8 +201,8 @@ and what the words mean.
   machine, how to separate state dimensions, trigger vs guard vs postcondition,
   and the completeness checks.
 - **`references/evidence-and-traceability.md`** — the evidence classes with
-  their required treatment, the `SRC-###` source-reference scheme, and the
-  traceability matrix columns.
+  their required treatment, the `SRC-###` source-reference scheme, the shape of a
+  citation object, and the `traceability` array.
 - **`references/reference-material-extraction.md`** — how to get quotable,
   structurally parseable text out of a published book or paper: look for the
   upstream typesetting source before parsing a PDF, repair the artefacts a PDF
@@ -228,12 +225,10 @@ and what the words mean.
   sees it, the vocabulary matcher, the parser's precedence, the effect reader, and
   the audit that finds every expression-bearing field the reader never reached.
 
-**Templates and a worked example.** `templates/domain-model-template.md`,
-`templates/state-machine-template.md` and `templates/transition-table-template.md`
-give the table shapes; `examples/example-domain-model.md` is a small worked
-example showing both the format and the cautions — note how it records what
-must *not* be inferred. Use the templates as skeletons, but fill them from the
-source: a template's empty row is a question, not a fact.
+**The template and a worked example.** `templates/domain-model-template.json` is the
+skeleton of the deliverable — every key, every field, in order. Copy it and fill it
+from the source: a template's empty value is a question, not a fact, and a field you
+cannot fill is `null`, not a guess.
 
 **Why the vocabulary is not optional.** A methodology without an authority cannot
 be checked: nothing says what "Conflicting" means versus "Overloaded", or what
@@ -505,19 +500,19 @@ delegated agent dies on a provider error, the fallback chain is the first thing 
 check — a chain entry pointing at a model the provider no longer serves turns any
 transient error into a fatal one.
 
-### 10. Pass 8 — deliver the consolidated document
+### 10. Pass 8 — deliver the consolidated file
 
 **The deliverable is the prompt's file.** `references/spec-processing-prompt.md`
-requires **one** consolidated `domain-model-and-state-machines.md`, organised
-into its twenty-one numbered sections, with the identifier scheme and evidence
-classes it fixes. Produce that file — and produce it from the per-pass analysis,
-not beside it. Write it in the directory the reader is working in, beside the source
-document, unless they name another destination: the prompt fixes the file name, not
-the path. The separate glossary/context/state-machine/issues files are
-working notes; the consolidated file is the artifact, and its traceability
-matrix is what lets a reviewer follow a claim back to the spec.
+requires **one** consolidated `domain-model-and-state-machines.json`, with the
+top-level keys, the record fields, the identifier scheme and evidence classes it
+fixes. Produce that file — and produce it from the per-pass analysis, not beside
+it. Write it in the directory the reader is working in, beside the source document,
+unless they name another destination: the prompt fixes the file name, not the path.
+The separate glossary/context/state-machine/issues files are working notes; the
+consolidated file is the artifact, and its `traceability` array is what lets a
+reviewer follow a claim back to the spec.
 
-**That file is the whole job.** Everything below is optional and comes after it:
+**The file is the whole job.** Everything below is optional and comes after it:
 an interactive page is a *view* of the deliverable, for a reviewer who would rather
 explore than scroll. Build one only if the reader asks. See
 `references/interactive-diagrams.md`.

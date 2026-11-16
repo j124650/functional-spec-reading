@@ -25,65 +25,61 @@ Discover and reconstruct the underlying business domain, including its explicit 
 
 ### 1.1 How a reference names where it comes from
 
-**Every reference to a source names the source document it comes from, and it
-is bracketed.**
+**Every reference to a source names the source document it comes from, and it is
+an object.**
 
+```json
+{ "source": "SRC-001", "locator": "§6.3" }
+{ "source": "SRC-001", "locator": "PAR-014" }
+{ "source": "SRC-001", "locator": null }
 ```
-[SRC-001]
-[SRC-001, §6.3]
-[SRC-001, §3, SRC-001, §12.1]
-[SRC-001, PAR-014]
-```
 
-`SRC-001` is the id you gave the document in the §2 source inventory — the
-specification itself is `SRC-001`. The id names the DOCUMENT; what follows the
-comma is the LOCATOR inside it.
+`source` is the id you gave the document in the `sources` array — the
+specification itself is `SRC-001`. The id names the DOCUMENT; `locator` names the
+PLACE inside it.
 
-**A bare `§6.3` is not a citation.** This analysis has its own sections
-(§1–§21) and the specification has its own (§1–§14), and the two overlap:
-a reader — or any tool that reads the file — cannot tell which document a
-bare section number names. The brackets carry the id, so the question never
-arises.
+**A bare `§6.3` is not a citation.** The analysis numbers its own things and the
+specification numbers its own, and the numbers overlap: a reader — or any tool that
+reads the file — cannot tell which document a bare section number names. The
+citation carries the id, so the question never arises.
 
 And the document named is the specification. The evidence for a claim is
-what the specification says, not what this analysis concluded from it — an
-Evidence cell that points at the analysis points at the analysis.
+what the specification says, not what this analysis concluded from it — a
+citation that points at the analysis points at the analysis.
 
-**Every citation is grounded in the specification.** An Evidence cell says
+**Every citation is grounded in the specification.** An `evidence` array says
 where the specification says the thing — never where this analysis says
-it. A reference to a section of the analysis itself is not evidence, and
-it does not belong in an Evidence cell: name the thing the analysis
-issued an id for (SM-003, INV-004) instead, and the reader can find it.
+it. A reference to something the analysis issued an id for (SM-003, INV-004) is
+not evidence; name that id in the field that takes ids, and the reader can find it.
 
 **The rules.**
 
-1. Every citation carries a registered source id — `SRC-00N` — inside brackets,
-   and then a locator. No exceptions, no bare `§N`, in any cell of the document.
-2. The source id is one you issued in the §2 source inventory, one document per
+1. Every citation carries a registered source id in `source`, and a `locator` for
+   the place inside it. No exceptions, no bare `§N`, in any field of the file.
+2. The source id is one you issued in the `sources` array, one document per
    id. Do not invent an id, and do not cite a document you did not list there.
 3. A locator is a section (`§6.3`), a page (`p. 17`), a requirement id
    (`Requirement REQ-17`), a table and row (`Table 4, row 2`), or a paragraph
-   (`PAR-014`). Where several sources support one statement, list every one:
-   `[SRC-001, §3.2; SRC-002, §5]`.
+   (`PAR-014`). Where several sources support one statement, the `evidence` array
+   holds one object per source.
 4. **A paragraph is located by `PAR-###`.** Assign those ids sequentially in
    reading order within each source document, to the paragraphs you use as
    evidence; keep the mapping stable and scoped by the source id, and record it in
-   the source/locator register in §2. **Never use the paragraph glyph as a
+   the `sourceLocatorRegister` array. **Never use the paragraph glyph as a
    locator**, alone or beside an id. If a paragraph cannot be reliably identified,
    cite the source id and another locator you can verify.
-5. If no reliable locator is available, cite the id alone: `[SRC-001]`. Never
-   invent a locator.
+5. If no reliable locator is available, the locator is `null`:
+   `{ "source": "SRC-001", "locator": null }`. Never invent a locator.
 6. Cite the section of the document you actually read. A claim you inferred
    belongs to the section it was inferred *from*, with the classification
    saying it was inferred.
-7. List the citations in the order the evidence appears, separated by `; `.
-8. Quote after the citations, in double quotes:
-   `[SRC-001, §6.3] "Owner = default owner in Settings (Blanca)"`.
+7. The citations stand in the order the evidence appears.
+8. A quotation is its own field, not part of the citation:
+   `"quote": "Owner = default owner in Settings (Blanca)"`.
 
-**Use it in every column that asks where a thing came from** — an Evidence
-cell, a Source references field, a classification's evidence, the Section
-column of a role-rewritten rule, the Relevant Sections of a source
-inventory row. A document that cites by id in one column and by number in
+**Use it in every field that asks where a thing came from** — an `evidence`
+array, a source's `sections`, a classification's evidence, the `section` of a
+role-rewritten rule. A file that cites by id in one place and by number in
 another has two kinds of citation, and only the one that names its document
 can be resolved.
 
@@ -268,7 +264,9 @@ For EVERY state, document:
 - Source references, cited as §1.1 sets out.
 - Explicitness classification.
 
-A state must represent a meaningful business condition, not merely an arbitrary value of a technical field.
+The state is one record of §13's `states[]` array, and §8.2 fixes its field names and
+their types. A state must represent a meaningful business condition, not merely an
+arbitrary value of a technical field.
 
 ### 3.4 Transition definitions
 
@@ -303,22 +301,23 @@ For each transition, document:
 - Source references.
 - Inference justification, if applicable.
 
-### 3.5 Transition tables
+The transition is one record of §14's `transitions[]` array, and §8.2 fixes its field
+names and their types.
 
-Create a complete transition table for each state machine.
+#### 3.5 Transition records
 
-Use these columns:
+Every transition of every machine is one record in §14's `transitions[]` array — the
+fields are the list above, and §8.2 gives their names, types and allowed values.
 
-| From State | Trigger / Command | Guard Conditions | Guard (expression) | Business Actor | Resulting State | Effect (expression) | Domain Events | Rejection Conditions | Evidence |
-|---|---|---|---|---|---|---|---|---|---|
+`guard.text` is the business reading, in prose. `guard.expression` is the SAME
+condition written in the expression language below — it is what a verifier evaluates,
+and it is **mandatory**, not a summary of the prose. `effect` states what the
+transition does to the aggregate's data; a transition that only changes state leaves
+`effect` null.
 
-`Guard Conditions` is the business reading, in prose. `Guard (expression)` is the SAME
-condition written in the expression language below — it is what a verifier evaluates, and
-it is **mandatory**, not a summary of the prose. `Effect (expression)` states what the
-transition does to the aggregate's data; a transition that only changes state leaves it
-empty.
-
-Include forbidden or unspecified transitions in a separate section rather than silently assuming they are impossible.
+A transition the source forbids, does not describe, or admits two readings is in the
+same array, with its `disposition` naming which of those it is. It is never silently
+assumed impossible, and never left out of the document.
 
 #### 3.5.1 The expression language
 
@@ -361,18 +360,25 @@ document's own §3.1 vocabulary is the authority on which is correct.
 | `remove('term', 'value')` | remove an element from a set term |
 | `if <expression> then <effect>` | apply an effect only when the condition holds |
 
-A transition's state change is carried by the `Resulting State` column, not by an effect.
+A transition's state change is carried by `to`, not by the effect.
 
-**Alternative readings.** Where the spec admits two readings of one rule, the cell carries
-both, separated by `||`, and the verifier evaluates each and reports a divergence when
-they land on different states:
+**Alternative readings.** Where the spec admits two readings of one rule, the
+`expression` object's `kind` is `alternatives` and `values` holds one entry per
+reading, each with its own `kind`:
 
+```json
+"expression": {
+  "kind": "alternatives",
+  "values": [
+    { "kind": "expression", "value": "set('clock started', true)" },
+    { "kind": "expression", "value": "clear('clock started')" }
+  ]
+}
 ```
-set('clock started', true) || clear('clock started')
-```
 
-A `Resulting State` cell that names two states — `ST-004 In Review or ST-002 Returned to
-Sales` — is read the same way: two readings of one transition.
+The verifier evaluates each reading and reports a divergence when they land on
+different states. A `to` that names two states is read the same way: two readings of
+one transition, in `values`.
 
 **Every expression must be evaluable from the aggregate alone.** If a condition depends on
 something the document does not model as data — a person outside the system, an external
@@ -381,40 +387,40 @@ explicitly rather than being approximated.
 
 #### 3.5.2 The expression vocabulary
 
-Declare the vocabulary in the glossary section, as a table under §3:
+Declare the vocabulary in the `expressionVocabulary` array — every data name the
+document uses as a data name, with its type:
 
-| Term | Type | Domain / Values | Notes |
-|---|---|---|---|
-Types are `flag`, `text`, `set`, `number`. A term whose domain the source spec leaves open
-takes the literal `—` for its values. Terms come from the source document's own field
+```json
+{ "term": "licensing match", "type": "flag", "domain": null, "notes": "the outcome of the licensing check, run against the Licensing app" }
+```
+
+Types are `flag`, `text`, `set`, `number`. A term whose domain the source spec leaves
+open takes `null` for its values. Terms come from the source document's own field
 names — never invented for the model.
 
-**Give the vocabulary its own subsection number, and make it unique within §3.** The
-glossary section already carries subsections of its own — the overloaded terms, the
-undefined terms — and the vocabulary is a third one. Two subsections under §3 that
-both read `### 3.1` put two different tables in the same slot: a reader looking for
-the vocabulary finds one of them by luck, and a parser that keys on the subsection
-number reads whichever it reached first. Number the subsections in the order they
-appear, and check before writing that no two headings under the same section carry
-the same number.
+**The vocabulary is an array, so there is nothing to find by number.** The old form
+put the vocabulary in a table under a numbered subsection and told a parser to
+recognise it by its columns — `Term`, `Type`, `Domain / Values` — because the
+subsection number was for the reader and the columns were for the tooling. A JSON
+array has one shape and one place: the consumer reads `expressionVocabulary`, and
+there is no second table to confuse it with.
 
-**A parser must be able to find the vocabulary by its COLUMNS** — `Term`, `Type`,
-`Domain / Values` — and not by the subsection number alone. The number is for the
-reader; the columns are for the tooling. A checker that keys on the number reads the
-wrong table the moment the document renumbers its subsections, and then reports every
-expression in a sound document as unresolvable.
+**Every expression resolves against this array, and nothing else.** A name that is
+not in the vocabulary is an unresolvable expression, and it must be reported, not
+guessed.
 
 #### 3.5.3 What "not expressible" has to say
 
 A condition the document does not model as data cannot be written over the vocabulary:
 a person's role, an external system's answer, a stored history, a comparison against a
-list the source does not contain. Write `not expressible` in the expression cell — and
-**say what would be needed to express it**, in the same cell or beside it.
+list the source does not contain. The `expression` object's `kind` is then
+`notExpressible` — and **the reason says what would be needed to express it**:
 
-```
-| TR-306 | … | `not expressible` — the match compares the legal name against the approved
-  account's name in the Licensing app; modelling the approved accounts as data would
-  express it | … |
+```json
+"expression": {
+  "kind": "notExpressible",
+  "reason": "the match compares the legal name against the approved account's name in the Licensing app; modelling the approved accounts as data would express it"
+}
 ```
 
 A marking with no reason is indistinguishable from a marking nobody got to, and the
@@ -424,16 +430,15 @@ unexpressive and still pass every check. The reason is what lets a reader tell
 
 **The reason must be prose, not another expression.** A conjunct beside the marking is
 not a justification — it says nothing about what would have to be modelled. So
-`divisions.count > 0 && not expressible` is not one unevaluable condition: it is a
-checkable conjunct beside an unevaluable one, and it needs a reason for the second
-part in words.
+`divisions.count > 0` beside a `notExpressible` marking is a checkable conjunct beside
+an unevaluable one, and it needs a reason for the second part in words.
 
-**Prefer splitting the cell over mixing the marking in.** An invariant with a
-checkable part and an unevaluable part is best written as two conjuncts, each
-labelled, so the verifier can check what it can and report the rest as unchecked.
-An evaluator that cannot evaluate a conjunct does not thereby declare the whole
-invariant broken — it reports it as unchecked, and the difference between "checked and
-violated" and "not checked" is the difference between a finding and a gap.
+**Prefer splitting the record over mixing the marking in.** A guard with a checkable
+part and an unevaluable part is best written as two entries in `values`, each with
+its own `kind`, so the verifier can check what it can and report the rest as
+unchecked. An evaluator that cannot evaluate an entry does not thereby declare the
+whole guard broken — it reports it as unchecked, and the difference between "checked
+and violated" and "not checked" is the difference between a finding and a gap.
 
 ### 3.6 State invariants
 
@@ -529,7 +534,9 @@ Look for:
 - Ordering constraints.
 - Compensation and rollback requirements.
 
-Document these relationships in a dedicated cross-state-machine table.
+Document these relationships in the `crossMachineDependencies` array — one record per
+dependency, naming the source machine, the trigger, the target machine, the effect
+expected, the ordering constraint, and the evidence.
 
 ## 5. Scenario reconstruction
 
@@ -574,27 +581,27 @@ For inferred knowledge, explain the reasoning chain.
 
 Never present an inferred business rule as an explicit requirement.
 
-### The evidence cell names its document
+### The evidence array names its document
 
-An Evidence cell carries the citations and the words they support, and the
-citations are written as §1.1 sets out — a document id and a section:
+An `evidence` array carries the citations and the words they support, and the
+citations are written as §1.1 sets out — a document id and the place inside it:
 
+```json
+"evidence": [
+  { "source": "SRC-001", "locator": "§6.3", "quote": "Owner = default owner in Settings (Blanca)" },
+  { "source": "SRC-001", "locator": "§7.5" }
+]
 ```
-| Evidence |
-|---|
-| [SRC-001, §6.3] "Owner = default owner in Settings (Blanca)" |
-| [SRC-001, §7.5], [SRC-001, §8.2] |
-```
 
-A cell that says `§6.3` and nothing else has said less than half of what
-it must: the analysis and the specification both number their sections, and
-the numbers overlap. §1.1 is the one place the format is stated, and it is
-stated there because the rules below are about how to fill a cell, not about
-what a citation looks like.
+An evidence entry that says `§6.3` and nothing else has said less than half of
+what it must: the analysis numbers its own things and the specification numbers
+its own, and the numbers overlap. §1.1 is the one place the format is stated, and
+it is stated there because the rules below are about how to fill an array, not
+about what a citation looks like.
 
-**This is the convention the §21 traceability matrix already uses**
-(`[SRC-001, §6.3]`). Carry it into every Evidence cell, and a citation can be
-resolved by an id rather than guessed at from the number.
+**This is the convention the `traceability` array already uses.** Carry it into
+every `evidence` array, and a citation can be resolved by an id rather than
+guessed at from the number.
 
 ## 7. Domain discovery questions
 
@@ -620,38 +627,58 @@ Rank each question by:
 - Architectural impact.
 - Whether it blocks reliable domain modeling.
 
-## 8. Required output: ONE consolidated file
+## 8. Required output: ONE JSON file
 
-Produce exactly one consolidated Markdown file:
+Produce exactly one file:
 
-`domain-model-and-state-machines.md`
+`domain-model-and-state-machines.json`
 
-The file must be self-contained and organized as follows:
+It is a single JSON document — UTF-8, no comments, no trailing commas — and it is
+the whole deliverable. It is written in the DDD's own vocabulary: the top-level keys
+are the concepts a domain model is made of, and every key but `document` is an array
+of records. Nothing sits outside the records — the explanation of a thing is a field
+of that thing — so a consumer reads one place.
 
-1. Executive Summary
-2. Scope and Modeling Assumptions
-3. Ubiquitous Language Glossary
-4. Domain Concepts and Relationships
-5. Entities and Value Objects
-6. Aggregate Candidates and Consistency Boundaries
-7. Commands and Business Actions
-8. Domain Events
-9. Domain Policies and Business Processes
-10. State Machine Inventory
-11. Detailed State Machine Definitions
-12. State Definitions
-13. State Transition Tables
-14. State and Aggregate Invariants
-15. Cross-State-Machine Dependencies
-16. Business Scenario Reconstructions
-17. State Machine Completeness and Consistency Analysis
-18. Ambiguities, Contradictions, and Missing Requirements
-19. Questions for Domain Experts
-20. Traceability Matrix
+The file must be self-contained and organised as follows:
 
-Include Mermaid state diagrams where useful, but never use diagrams as a replacement for detailed transition tables.
+| Key | What it holds |
+|---|---|
+| `document` | the summary, the scope, and the assumptions |
+| `sources` | the source inventory — one record per source document |
+| `sourceLocatorRegister` | every `PAR-###` locator, and where it sits |
+| `glossary` | the ubiquitous language |
+| `overloadedTerms` | one word carrying several meanings |
+| `undefinedTerms` | terms used but never defined |
+| `expressionVocabulary` | every data name an expression may use, with its type |
+| `roleRewrittenRules` | rules written around a person, rewritten around a role |
+| `domainConcepts` | the concepts, and how they relate |
+| `entities` | entities |
+| `valueObjects` | value objects |
+| `boundedContexts` | the contexts and their responsibilities |
+| `contextMap` | how the contexts depend on each other |
+| `aggregates` | aggregate candidates and their consistency boundaries |
+| `commands` | commands and business actions |
+| `domainEvents` | domain events |
+| `policies` | domain policies and business processes |
+| `stateMachines` | one record per machine: its identity, its purpose, its shape |
+| `states` | one record per state |
+| `transitions` | one record per transition |
+| `invariants` | state and aggregate invariants |
+| `crossMachineDependencies` | how one machine's event moves another |
+| `scenarios` | business scenario reconstructions |
+| `completenessFindings` | the completeness and consistency analysis |
+| `issues` | ambiguities, contradictions, and missing requirements |
+| `questions` | questions for domain experts |
+| `traceability` | every claim, mapped back to the source it came from |
+| `idRegistry` | the identifier series: counts, ranges, where each is defined |
 
-Use consistent identifiers throughout the document, for example:
+Every key is present, always, even when its array is empty.
+
+The Mermaid diagram of a machine, when one clarifies it, is the machine record's
+`mermaid` field — and it never replaces the transitions, which are records like every
+other thing here.
+
+Use consistent identifiers throughout the file, for example:
 
 - `ENT-001`: Entity
 - `VO-001`: Value Object
@@ -674,59 +701,167 @@ Padding within a series is the document's own choice but must be consistent — 
 and `N-02`, not `N-01` and `N-002`. The series are what a parser matches on; the
 numbers within one are what a reader cites.
 
-Cross-reference these identifiers throughout the document.
+Cross-reference these identifiers throughout the file, and never restate an id in
+prose where the array already carries it.
 
 ### 8.1 The shape of each record
 
-Several record kinds do not fit a table of the section's own rows: an aggregate is a
-named thing with a breakdown under it, a scenario is a named path with stages, and a
-rule written around a person is a pair of sentences. Give each of them a shape a
-parser can find without ambiguity.
+Every record is a JSON object with named fields. A field's type is fixed by this
+section, and a consumer reads it without guessing. `id` is the record's own
+identifier, where the model gives it one.
 
-**A heading that carries a record's id IS the record.** Put the id in the heading,
-in its own series' format, and let the heading's text carry the title:
+**`document`** — an object, not an array: `title` (string), `purpose` (string),
+`capabilities` (array of strings), `keyConcepts` (array of strings),
+`uncertainties` (array of strings), `scope` (string), `assumptions` (array of
+objects: `statement`, `rationale`, `evidence`).
 
-```
-### 7.1 AGG-001 — Application (candidate root: ENT-001)
-### SCN-001 — New customer, terms and a discount, the full path
-```
+**`sources`** — `id`, `document`, `version`, `sections` (array of section numbers,
+one per element — never a range), `authority`, `notes`.
 
-A parser matches the id pattern, not the section number — and the two are not the
-same. One heading form is numbered (`### 7.1 AGG-001 — …`) and another is not
-(`### SCN-001 — …`), because the scenarios belong to no subsection of their own. A
-parser whose heading rule requires a digit-led number collects the aggregates and
-silently loses the scenarios, and the series comes back empty with no error anywhere.
-Give every heading-based record its id in the heading, whatever the heading's shape.
+**`sourceLocatorRegister`** — `source`, `locator`, `where` (an object: `section`,
+`openingWords`).
 
-**An aggregate is a heading and an aspect table.** Under the heading, one table with
-the columns `Aspect | Content | Evidence`, carrying these aspects: Root · Members ·
-Commands it handles · Events it produces · Invariants it enforces · Consistency
-rationale · References (held by id only) · Consistency expectations · Confidence.
+**`glossary`** — `id`, `term`, `definition`, `synonyms` (array), `context`,
+`status`, `classification`, `evidence`.
 
-**A scenario is a heading and labelled bullets.** Under the heading, one bullet per
-stage, each with its label in bold: Initial conditions · Actor · Commands · Guards ·
-State transitions · Events · Result · Exceptions · Invariants in force · Evidence.
+**`overloadedTerms`** — `word`, `meanings` (array of objects: `meaning`,
+`sections` — an array of section numbers), `evidence`.
 
-**Keep the breakdown as structure, not as prose.** An aggregate's aspects and a
-scenario's stages are separate fields. Flattened into one paragraph each, the page
-that reads the document shows "Content" instead of the root, the members, the
-consistency expectation and the invariant list — and the reader loses exactly the
-breakdown they came for.
+**`undefinedTerms`** — `term`, `whereUsed` (array), `decisionNeeded`, `evidence`.
 
-**A section may hold two different tables.** Bounded contexts and the context map
-share a section; roles and the role-rewritten rules share a section. Distinguish
-them by what a ROW contains — a cell holding an id of the series being collected —
-and not by which section the row is in.
+**`expressionVocabulary`** — `term`, `type`, `domain`, `notes`.
 
-**Tables whose columns carry ids.** Sources: `ID | Document | Version | Sections |
-Authority`. Bounded contexts: `ID | Context | Responsibility | Language boundary |
-Evidence`. Role-rewritten rules: `# | As written | Rewritten as the role | Section`.
+**`roleRewrittenRules`** — `id`, `asWritten`, `rewrittenAsRole`, `section`,
+`evidence`.
 
-**The Sources table lists the sections of the source it is about.** Its `Sections`
-column names the sections of THAT source, and it writes them as §1.1 sets out —
-`[SRC-001, §§1–§14]`. A column that lists a source’s sections as bare numbers cannot
-be told apart from a column listing some other source’s, and the table is the one
-place where several documents’ section numbers sit side by side.
+**`domainConcepts`** — `id`, `name`, `description`, `relationships` (array of
+objects: `type`, `target`), `evidence`.
+
+**`entities`** — `id`, `name`, `identity`, `purpose`, `lifecycle`, `relationships`
+(array of strings), `classification`, `evidence`.
+
+**`valueObjects`** — `id`, `name`, `meaning`, `values`, `constraints`,
+`classification`, `evidence`.
+
+**`boundedContexts`** — `id`, `name`, `responsibility`, `languageBoundary`,
+`confidence`, `classification`, `evidence`.
+
+**`contextMap`** — `upstream`, `downstream`, `relationship`, `note`, `evidence`.
+No `id`: the pair (upstream, downstream) is the key.
+
+**`aggregates`** — `id`, `name`, `candidateRoot`, `members` (array of ids),
+`commands` (array of ids), `events` (array of ids), `invariants` (array of ids),
+`consistencyRationale`, `consistencyExpectations` (array), `references` (array of
+ids, and nothing else — a reference holds an id, not a copy of the thing),
+`confidence`, `classification`, `evidence`.
+
+**`commands`** — `id`, `name`, `actor`, `target`, `preconditions` (array),
+`effects`, `events` (array of ids), `rejectionConditions` (array),
+`classification`, `evidence`.
+
+**`domainEvents`** — `id`, `name`, `meaning`, `trigger`, `affectedConcepts`
+(array), `consequences`, `classification`, `evidence`.
+
+**`policies`** — `id`, `name`, `trigger`, `condition`, `action`, `scope`,
+`participants` (array), `classification`, `evidence`.
+
+**`stateMachines`** — `id`, `name`, `modeledConcept`, `aggregate`, `boundedContext`,
+`purpose`, `classification` (an object: `states` and `transitions`, each one of the
+five classes), `classificationRationale`, `dimensions` (array), `initialState`,
+`terminalStates` (array of ids), `stateIds` (array of ids), `transitionIds` (array
+of ids), `completeness` (an object: `initialStateIdentified` (boolean),
+`reachability`, `unreachableStates` (array), `deadEnds` (array), `terminalSemantics`,
+`missingTransitions` (array), `guardOverlap`, `contradictions` (array),
+`recoveryGaps` (array), `questions` (array of ids)), `mermaid` (string), `evidence`.
+
+**`states`** — `id`, `machine`, `name`, `category`, `reopenable` (boolean),
+`meaning`, `entryConditions`, `exitConditions`, `permittedOperations` (array),
+`forbiddenOperations` (array), `invariants` (array of ids),
+`incomingTransitions` (array of ids), `outgoingTransitions` (array of ids),
+`businessConsequences`, `classification`, `evidence`.
+
+**`transitions`** — `id`, `machine`, `from` (a state id, or null for a transition
+that starts a machine), `to` (a state id, or null when the source does not say),
+`trigger`, `commands` (array of ids), `guard` (an object: `text`, and `expression`
+— an object with `kind` and the value that kind carries), `actor` (array),
+`effect` (an object with `kind` and the value that kind carries, or null when the
+transition only moves the state), `events` (array of ids), `rejection` (string, or
+null), `disposition`, `classification`, `notes` (array of strings), `evidence`.
+
+**`invariants`** — `id`, `statement`, `category`, `scope`, `states` (array of ids),
+`transitions` (array of ids), `formalExpression` (string, or null),
+`enforcement`, `violationConsequence`, `classification`, `evidence`.
+
+**`crossMachineDependencies`** — `sourceMachine`, `trigger`, `targetMachine`,
+`expectedEffect`, `ordering`, `evidence`.
+
+**`scenarios`** — `id`, `name`, `initialConditions`, `actor`, `commands` (array of
+ids), `guards` (array), `transitions` (array of ids), `events` (array of ids),
+`result`, `exceptions` (array), `invariants` (array of ids), `evidence`.
+
+**`completenessFindings`** — `machine`, `check`, `finding`, `severity`, `rationale`,
+`evidence`. No `id`: the pair (machine, check) is the key.
+
+**`issues`** — `id`, `statement`, `conflictingEvidence` (array), `impact`,
+`proposedClarification`, `classification`, `evidence`.
+
+**`questions`** — `id`, `question`, `priority`, `businessImpact`,
+`architecturalImpact`, `blocksModeling` (boolean), `evidence`.
+
+**`traceability`** — `id`, `type`, `summary`, `classification`, `sourceIds` (array
+of source ids), `rationale`, `openQuestion`.
+
+**`idRegistry`** — `series`, `count` (number), `first`, `last`, `definedIn` (the
+key the series is defined in), `crossReferencedFrom` (array of keys).
+
+### 8.2 The rules that make the file parseable
+
+**One fact, one place.** A fact lives in exactly one record. Everywhere else it is
+referenced by id, and the id is the whole reference — a name that repeats is a
+second copy waiting to drift.
+
+**Every key is always present.** An unknown scalar is `null`; an empty collection is
+`[]`. A key that is missing is a key the consumer must guess about, and a consumer
+that guesses is wrong somewhere.
+
+**Enums are closed.** `category` is one of `Initial`, `Intermediate`, `Terminal`,
+`Exceptional` — `Terminal (reopenable)` is `Terminal` with `reopenable: true`.
+`classification` is one of `EXPLICIT`, `INFERRED`, `CANDIDATE`, `CONFLICTING`,
+`UNSPECIFIED`. `disposition` is one of `ALLOWED`, `EXPLICITLY_FORBIDDEN`,
+`UNSPECIFIED`, `AMBIGUOUS`. `severity` is one of `Critical`, `High`, `Medium`, `Low`.
+A machine's `classification.states` and `classification.transitions` are each one of
+the five classes.
+
+**An expression is a value, not decoration.** The guard and effect expressions are
+the plain text of the expression language (§3.5.1) — no backticks, no bold, no
+leading or trailing space. `not expressible` is not a string a consumer must
+recognise inside an expression: it is `expression.kind` = `notExpressible`, with the
+reason in `expression.reason`. Two readings of one rule are `expression.kind` =
+`alternatives`, with each reading in `expression.values`.
+
+**A citation is an object.** An `evidence` array holds objects: `source` (a
+registered source id) and `locator` (the place inside it, or null when there is
+none to give). One citation per element — a range of sections is two citations, not
+one — and never a section number without its document.
+
+**Types are types.** An id is a string. A count is a number. A flag is `true` or
+`false`, never `"true"` and never `"yes"`. An em dash is not a value: a field with
+nothing to say is `null` or `[]`.
+
+**No markdown inside a value.** No `**bold**`, no backticks, no list markers, no
+pipe characters, and no line break — except in `mermaid`, where the diagram is
+multi-line by nature.
+
+**Order is fixed.** Every array is sorted by id, numerically within its series, so
+two runs over the same source produce the same file and a diff shows what changed.
+
+**Every id resolves.** An id that appears in `references`, `stateIds`, `members`,
+`invariants` or any other reference field exists in the array it points at, and no
+id is issued twice.
+
+**The file is JSON and nothing else.** No comments, no trailing commas, no
+unquoted keys, no `NaN`, no single-quoted strings, no `//` or `/* */`. A consumer
+parses it with a standard JSON parser and nothing else.
 
 ## 9. Quality assurance
 
@@ -777,4 +912,4 @@ The objective is to produce a rigorous, business-oriented domain knowledge artif
 
 If information is missing, document the gap instead of guessing.
 
-The resulting file must represent the richest defensible domain model that can be extracted from the supplied functional specification.
+The resulting file must represent the richest defensible domain model that can be extracted from the supplied functional specification, and it must be readable by a parser that was never told what the analysis meant.

@@ -9,9 +9,12 @@ summary. Read it as evidence and you get a model with the contradictions still i
 
 ## What you get
 
-One file: `domain-model-and-state-machines.md`, organised into 21 numbered sections, with a
-stable identifier scheme (`ENT-001`, `AGG-001`, `TR-001`, `INV-001`, …) cross-referenced
-throughout and a traceability matrix that maps every claim back to the section it came from.
+One file: `domain-model-and-state-machines.json`, organised by DDD concept — `glossary`,
+`entities`, `aggregates`, `boundedContexts`, `stateMachines`, `states`, `transitions`,
+`invariants` — with a stable identifier scheme (`ENT-001`, `AGG-001`, `TR-001`, `INV-001`, …)
+cross-referenced throughout and a `traceability` array that maps every claim back to the
+section it came from. Every record's fields are fixed by the contract, so the file is
+read by a parser without a template of its own.
 
 Every claim carries an **evidence class**, so a reviewer can tell what the spec said from what
 you worked out:

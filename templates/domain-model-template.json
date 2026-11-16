@@ -1,0 +1,158 @@
+{
+  "document": {
+    "title": "",
+    "purpose": "",
+    "capabilities": [],
+    "keyConcepts": [],
+    "uncertainties": [],
+    "scope": "",
+    "assumptions": [
+      { "statement": "", "rationale": "", "evidence": [] }
+    ]
+  },
+  "sources": [
+    { "id": "SRC-001", "document": "", "version": "", "sections": [], "authority": "", "notes": "" }
+  ],
+  "sourceLocatorRegister": [
+    { "source": "SRC-001", "locator": "PAR-001", "where": { "section": "", "openingWords": "" } }
+  ],
+  "glossary": [
+    { "id": "TERM-001", "term": "", "definition": "", "synonyms": [], "context": "", "status": "", "classification": "EXPLICIT", "evidence": [] }
+  ],
+  "overloadedTerms": [
+    { "word": "", "meanings": [ { "meaning": "", "sections": [] } ], "evidence": [] }
+  ],
+  "undefinedTerms": [
+    { "term": "", "whereUsed": [], "decisionNeeded": "", "evidence": [] }
+  ],
+  "expressionVocabulary": [
+    { "term": "", "type": "flag", "domain": null, "notes": "" }
+  ],
+  "roleRewrittenRules": [
+    { "id": "N-01", "asWritten": "", "rewrittenAsRole": "", "section": "", "evidence": [] }
+  ],
+  "domainConcepts": [
+    { "id": "CON-001", "name": "", "description": "", "relationships": [ { "type": "", "target": "" } ], "evidence": [] }
+  ],
+  "entities": [
+    { "id": "ENT-001", "name": "", "identity": "", "purpose": "", "lifecycle": "", "relationships": [], "classification": "EXPLICIT", "evidence": [] }
+  ],
+  "valueObjects": [
+    { "id": "VO-001", "name": "", "meaning": "", "values": "", "constraints": "", "classification": "EXPLICIT", "evidence": [] }
+  ],
+  "boundedContexts": [
+    { "id": "BC-001", "name": "", "responsibility": "", "languageBoundary": "", "confidence": "", "classification": "EXPLICIT", "evidence": [] }
+  ],
+  "contextMap": [
+    { "upstream": "BC-001", "downstream": "BC-002", "relationship": "", "note": "", "evidence": [] }
+  ],
+  "aggregates": [
+    { "id": "AGG-001", "name": "", "candidateRoot": "ENT-001", "members": [], "commands": [], "events": [], "invariants": [], "consistencyRationale": "", "consistencyExpectations": [], "references": [], "confidence": "", "classification": "INFERRED", "evidence": [] }
+  ],
+  "commands": [
+    { "id": "CMD-001", "name": "", "actor": "", "target": "", "preconditions": [], "effects": "", "events": [], "rejectionConditions": [], "classification": "EXPLICIT", "evidence": [] }
+  ],
+  "domainEvents": [
+    { "id": "EVT-001", "name": "", "meaning": "", "trigger": "", "affectedConcepts": [], "consequences": "", "classification": "EXPLICIT", "evidence": [] }
+  ],
+  "policies": [
+    { "id": "POL-001", "name": "", "trigger": "", "condition": "", "action": "", "scope": "", "participants": [], "classification": "EXPLICIT", "evidence": [] }
+  ],
+  "stateMachines": [
+    {
+      "id": "SM-001",
+      "name": "",
+      "modeledConcept": "",
+      "aggregate": "",
+      "boundedContext": "",
+      "purpose": "",
+      "classification": { "states": "EXPLICIT", "transitions": "INFERRED" },
+      "classificationRationale": "",
+      "dimensions": [],
+      "initialState": "",
+      "terminalStates": [],
+      "stateIds": [],
+      "transitionIds": [],
+      "completeness": {
+        "initialStateIdentified": true,
+        "reachability": "",
+        "unreachableStates": [],
+        "deadEnds": [],
+        "terminalSemantics": "",
+        "missingTransitions": [],
+        "guardOverlap": "",
+        "contradictions": [],
+        "recoveryGaps": [],
+        "questions": []
+      },
+      "mermaid": "",
+      "evidence": []
+    }
+  ],
+  "states": [
+    {
+      "id": "ST-001",
+      "machine": "SM-001",
+      "name": "",
+      "category": "Initial",
+      "reopenable": false,
+      "meaning": "",
+      "entryConditions": "",
+      "exitConditions": "",
+      "permittedOperations": [],
+      "forbiddenOperations": [],
+      "invariants": [],
+      "incomingTransitions": [],
+      "outgoingTransitions": [],
+      "businessConsequences": "",
+      "classification": "EXPLICIT",
+      "evidence": []
+    }
+  ],
+  "transitions": [
+    {
+      "id": "TR-001",
+      "machine": "SM-001",
+      "from": null,
+      "to": "",
+      "trigger": "",
+      "commands": [],
+      "guard": {
+        "text": "",
+        "expression": { "kind": "expression", "value": "" }
+      },
+      "actor": [],
+      "effect": { "kind": "expression", "value": "" },
+      "events": [],
+      "rejection": null,
+      "disposition": "ALLOWED",
+      "classification": "EXPLICIT",
+      "notes": [],
+      "evidence": []
+    }
+  ],
+  "invariants": [
+    { "id": "INV-001", "statement": "", "category": "", "scope": "", "states": [], "transitions": [], "formalExpression": null, "enforcement": "", "violationConsequence": "", "classification": "EXPLICIT", "evidence": [] }
+  ],
+  "crossMachineDependencies": [
+    { "sourceMachine": "SM-001", "trigger": "", "targetMachine": "SM-002", "expectedEffect": "", "ordering": "", "evidence": [] }
+  ],
+  "scenarios": [
+    { "id": "SCN-001", "name": "", "initialConditions": "", "actor": "", "commands": [], "guards": [], "transitions": [], "events": [], "result": "", "exceptions": [], "invariants": [], "evidence": [] }
+  ],
+  "completenessFindings": [
+    { "machine": "SM-001", "check": "", "finding": "", "severity": "Low", "rationale": "", "evidence": [] }
+  ],
+  "issues": [
+    { "id": "ISS-001", "statement": "", "conflictingEvidence": [], "impact": "", "proposedClarification": "", "classification": "CONFLICTING", "evidence": [] }
+  ],
+  "questions": [
+    { "id": "Q-001", "question": "", "priority": "High", "businessImpact": "", "architecturalImpact": "", "blocksModeling": true, "evidence": [] }
+  ],
+  "traceability": [
+    { "id": "TR-001", "type": "", "summary": "", "classification": "EXPLICIT", "sourceIds": ["SRC-001"], "rationale": "", "openQuestion": null }
+  ],
+  "idRegistry": [
+    { "series": "ST", "count": 0, "first": "ST-001", "last": "ST-001", "definedIn": "states", "crossReferencedFrom": ["stateMachines", "transitions", "invariants"] }
+  ]
+}

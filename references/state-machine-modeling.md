@@ -54,9 +54,10 @@ A missing transition is not the same as a forbidden transition. Use separate lab
 - Ambiguous.
 - Candidate inferred transition.
 
-In the deliverable these four are written as the codes `EXPLICITLY FORBIDDEN`,
-`UNSPECIFIED`, `AMBIGUOUS`, and `CANDIDATE` — see
-`templates/transition-table-template.md` for the column that carries them.
+In the deliverable these four are written as the `disposition` of a transition record:
+`EXPLICITLY_FORBIDDEN`, `UNSPECIFIED`, `AMBIGUOUS`, and `CANDIDATE` — a transition the
+source forbids is a record in the `transitions` array like any other, with its own
+`TR-###` id, not a separate table.
 
 ## Machine classification
 
