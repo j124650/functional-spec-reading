@@ -70,7 +70,13 @@ const contractFields = (key) => {
 for (const key of Object.keys(template)) {
   const want = contractFields(key);
   if (!want) continue;
-  const rows = Array.isArray(doc[key]) ? doc[key] : [];
+  // a fragment whose value is not an array is not a key of the contract's shape:
+  // it would be dropped silently, and the key would look empty. Refuse it.
+  if (!Array.isArray(doc[key])) {
+    problems.push(`the fragment for "${key}" is not an array of records - the contract's keys hold arrays`);
+    continue;
+  }
+  const rows = doc[key];
   rows.forEach((r, i) => {
     if (!r || typeof r !== "object") { problems.push(`${key}[${i}] is not a record`); return; }
     const got = Object.keys(r);
