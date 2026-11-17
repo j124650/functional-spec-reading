@@ -23,7 +23,32 @@ Discover and reconstruct the underlying business domain, including its explicit 
 9. Do not assume that a field called `status`, `type`, or `flag` necessarily represents a state machine.
 10. Do not assume that every state machine belongs to an aggregate. Discover candidate consistency boundaries from the business rules.
 
-### 1.1 How a reference names where it comes from
+### 1.1 The engine's rules are in this skill, not in its source
+
+A deliverable is checked by an engine: it parses the file, resolves every scope,
+evaluates every guard and effect, and reports what it can reach and what breaks.
+**The document must satisfy that engine, so the rules it applies are part of what
+you produce.**
+
+They are written down here, in this skill:
+
+- **`references/executable-spec-model.md`** — how the engine reads the file: the
+  shape of a guard (`guard.expression.value`) and of an effect (`effect.value`),
+  what `notExpressible` and `alternatives` mean to it, how a scope resolves to the
+  states it holds in, what an effect must look like for the engine to be able to
+  evaluate it, and what a reachability claim must be based on.
+- **`references/expression-reading.md`** — the expression language: what evaluates,
+  what does not, and what the engine reports for each.
+
+**Read these two before you write the behaviour keys** — `transitions`,
+`invariants`, `stateMachines`, `scenarios`, `issues`. They are shorter than the
+engine's source and they say the same thing.
+
+**Do not read the engine's source code.** It is not the specification of what the
+engine does, it is the implementation of it, and reading it costs a turn and tells
+you less. The two references above are the specification.
+
+### 1.2 How a reference names where it comes from
 
 **Every reference to a source names the source document it comes from, and it is
 an object.**

@@ -198,6 +198,21 @@ and what the words mean.
   *means*. The definitions and the 45 patterns of the DDD Reference (Eric Evans,
   2015, CC BY 4.0), plus a mapping from each required output onto the patterns
   that ground it.
+
+**And two more, before the behaviour keys.** The deliverable is checked by an
+engine that parses it, resolves every scope and evaluates every guard and effect;
+the document has to satisfy that engine, so its rules are part of what you produce.
+
+- **`references/executable-spec-model.md`** — how the engine reads the file: the
+  shape of a guard and of an effect, what `notExpressible` and `alternatives` mean
+  to it, how a scope resolves, and what an effect must look like to be evaluable.
+- **`references/expression-reading.md`** — the expression language: what
+  evaluates, what does not, and what the engine reports for each.
+
+**Read those two, and not the engine's source.** The source is the implementation,
+not the specification; it costs a turn and says less. This is measured, not
+assumed: a run that went to the source instead spent forty of its ninety minutes
+reading `Program.cs`, `Scope.cs` and `Aggregate.cs`.
 - **`references/ddd-modeling-guidelines.md`** — the distinctions that prevent
   modelling errors: domain model vs data model, entity vs value object, when
   something is a bounded context, and the humility rules for thin evidence.

@@ -1,10 +1,21 @@
 # The executable spec model
 
-**This is an optional instrument, not a stage of the pipeline.** The deliverable is the
-consolidated JSON file. Reach for this file only when the reader asks for a computed
-reachability result, or when the state space is too large to argue by hand — and even
-then, build the model *after* the document, against the rules the document already
-states.
+**Two things live here, and they have different standing.**
+
+**The rules the engine applies to a deliverable are NOT optional.** The deliverable
+is checked by an engine that parses the file, resolves every scope, and evaluates
+every guard and effect. The sections below say what that engine expects: the shape
+of a guard and of an effect, what `notExpressible` and `alternatives` mean to it,
+how a scope resolves to the states it holds in, and what an effect must look like
+for the engine to be able to evaluate it. A run producing a deliverable reads those
+sections before it writes `transitions`, `invariants`, `stateMachines`, `scenarios`
+and `issues` — and reads them here, not in the engine's source.
+
+**Building the instrument IS optional.** The deliverable is the consolidated JSON
+file. Reach for the rest of this file only when the reader asks for a computed
+reachability result, or when the state space is too large to argue by hand — and
+even then, build the model *after* the document, against the rules the document
+already states.
 
 **The model reads the file, and the file is already data.** The document's
 `stateMachines`, `states`, `transitions`, `invariants` and `expressionVocabulary` arrays
