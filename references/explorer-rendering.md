@@ -226,3 +226,54 @@ show the id exactly where it is needed — no guesswork.*
   and the border only closes it.
 - After changing how anything is drawn, look at it. The suite proves the
   structure; the picture proves the drawing.
+
+## A field whose value is a LIST of pieces
+
+Some fields hold a list rather than a string: the words a record was cut from,
+with the sections those words cite. Draw such a field with the page's own
+citation renderer — a chip per referenced section, the quoted words as prose
+beside them — and never with the escaping helper.
+
+The escaping helper takes a string. Handed a list of objects it calls
+`String()` on them, and the panel renders `Source [object Object],[object
+Object],[object Object]`: the field is there, it is full, and it says
+nothing. The failure is silent because the value is not empty and the
+container is not missing, so no count and no presence check sees it — only
+the reader does, on the field they clicked.
+
+So: a field that holds pieces is rendered by the piece renderer, and a field
+that holds one string is rendered by the string renderer. Which is which is
+the export contract's business, and the contract already says it: a value
+that is a list is a list.
+
+## The graph's own language: an end the document does not name
+
+The graph is not a table of chips, and it has its own way of saying "the
+document does not say". An edge whose end resolves to no state is drawn to a
+MARKER — a dashed node saying so — because the missing end is itself a fact
+the reader needs.
+
+There are two such facts, and they are not the same one. An end that names
+SEVERAL states leaves the landing point undetermined; an end that names NO
+state leaves it unstated. Both are drawn to a marker, but the marker says
+which, because the document's own words are the evidence for the first and
+the absence of them is the evidence for the second.
+
+A renderer that creates its marker only when the end carries text handles the
+first and drops the second: the edge is left with no destination, the path
+builder returns null, and the transition disappears from the diagram while
+every gate stays green. Create the marker whenever the edge has no resolved
+end, and take that fact from the export's flag rather than from a pattern
+matched against the cell's text — the same end is missed the moment the
+wording changes. Two transitions with unnamed ends are two facts, so key the
+markers on the transition, not on the shared empty text.
+
+The same rule governs the edge's FROM end, where the right drawing is the
+start marker the pseudo-state rule already describes: a position in the flow
+rather than a state of the machine.
+
+And count only the markers that stand for a MISSING destination. The start
+marker is a position in the flow, not a destination the document failed to
+name, so a count taken over every synthetic marker reports a destination that
+is not missing — and the machine overview's figure then contradicts the
+diagram beside it.

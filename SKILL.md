@@ -216,8 +216,11 @@ and what the words mean.
   reference from it, and carry the licence with the quote.
 - **`references/explorer-rendering.md`** — how the explorer page draws a reference
   to an identifier: the chip (mark, name, id), the four colour families, the one
-  look a component must have, and the rule that nothing in a rendered label is
-  ever read back as data.
+  look a component must have, the rule that nothing in a rendered label is
+  ever read back as data, how a field holding a LIST of pieces is drawn (with
+  the piece renderer, never the escaping helper, which renders a list of
+  objects as `[object Object]`), and how the graph draws an end the document
+  does not name — to a marker, never by dropping the transition.
 - **`references/export-contract.md`** — the contract between the verifier's
   exporter and the explorer page: what the export must carry, what each field
   *means*, and how the page renders it. Both sides are bound by one file, and a
@@ -1347,6 +1350,16 @@ Before delivering:
     that order; every enumerated value is in its closed set; every id series is issued by
     exactly one array; and every record with a `classification` has a `rationale` beside
     it. The file parses as JSON with a standard parser and no repair.
+12. **A green run is evidence of CONSISTENCY, not of BREADTH.** The gates check that
+    the file is well formed, that every expression resolves, that every identifier
+    resolves, that every row of the source's own tables is accounted for. None of
+    them counts the lifecycles the source describes against the lifecycles the model
+    holds: a model of two state machines passes every gate on a specification that
+    describes five. Count them yourself — the source's own section headings and stage
+    tables enumerate what it describes, and each one must be a machine, a state, or a
+    stated reason it is not — and report that count beside the gate results, because
+    "every gate passes" and "the analysis is as complete as the source allows" are
+    different claims and only the second one is what the reader asked for.
 
 **The checks below apply only to an artifact you actually built.** The executable model
 and the explorer page are *optional instruments*; the deliverable is the document. Do not
