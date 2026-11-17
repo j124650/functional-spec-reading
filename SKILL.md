@@ -572,6 +572,28 @@ node scripts/check-source-coverage.js <the source .md> <the deliverable .json>
 It names every row the deliverable does not account for. A model that mentions
 a row in passing has not accounted for it. Fix the model, not the checker.
 
+**The source's SECTIONS are the floor too, and ONE command runs every gate.** A
+table row is only part of what a specification states; most of it is prose in
+numbered sections, and a section nobody cites is a part of the source the model
+did not read. Every section must be accounted for — modelled, or declared with a
+reason in `completenessFindings` — and the nine gates together check all of it:
+
+```
+node scripts/gate.js <the deliverable .json> [the source .md] [the export .json] [the page .html]
+```
+
+It runs every gate, prints one line per gate, and names what failed. Use it
+rather than the individual scripts: a run that opens the nine `check-*.js` files
+to learn what they ask has spent seven minutes reading the equivalent of
+`references/gates.md`, which says the same thing in prose. Read that file
+instead — it is what the gates ask.
+
+**The whole model is bounded by the source.** A fact the source does not state
+enters the deliverable only as an explicitly labelled inference, or as a
+declared gap — never silently, and never as a fact. The gap belongs IN the
+deliverable (a question, an undefined term, a completeness finding), because a
+gap the reader cannot see is a gap the reader has to rediscover.
+
 **The deliverable is the prompt's file.** `references/spec-processing-prompt.md`
 requires **one** consolidated `domain-model-and-state-machines.json`, with the
 top-level keys, the record fields, the identifier scheme and evidence classes it

@@ -137,6 +137,7 @@ the pipeline end to end:
 
 ```bash
 node scripts/assemble.js <fragments-dir> <out.json>    # build the deliverable from per-key fragments
+node scripts/feedback.js <fragments-dir>               # the engine's verdict on what is written so far
 node scripts/gate.js <document.json> [source.md] [export.json] [page.html]   # every gate, once
 node scripts/check-section-accountability.js <source.md> <document.json>    # every section accounted for
 node scripts/check-citation-fidelity.js <source.md> <document.json>       # every record cites the spec

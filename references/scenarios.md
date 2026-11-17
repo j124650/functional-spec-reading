@@ -82,3 +82,31 @@ that stopped mid-assembly.
 **Why it exists.** The assembled file is a build output; the fragments are
 the work. A run that stopped mid-assembly has not lost the analysis, and
 re-running it to get the file back is the slowest way to recover it.
+
+---
+
+## scenario: the run is reading the engine's source
+
+**Trigger.** The run opens the implementation — `Program.cs`, `Scope.cs`,
+`Aggregate.cs` — or the gate scripts (`check-*.js`) — to work out what the
+model must satisfy.
+
+**Decision.** The rules are written down in this skill, in prose, in three
+files: `references/executable-spec-model.md` (how the engine reads a guard and
+an effect), `references/expression-reading.md` (the expression language), and
+`references/gates.md` (what each of the nine gates asks). Reading the
+implementation is reading a second, longer and vaguer copy of the same rules.
+
+**Action.**
+1. Read those three files. They are the specification; the source is one
+   implementation of them, and the run needs the specification.
+2. Then write — one fragment per key, and the assembly is a command.
+3. If a gate still rejects something, its own output names the record and the
+   rule that rejected it. That is the whole repair loop, and it needs no
+   further reading.
+
+**Why it exists.** A run that read the engine's C# spent forty of its ninety
+minutes there and produced no records. Another read nine gate scripts in seven
+minutes and wrote nothing, because it was trying to learn from the checker
+what the checker would say. The rules were in the skill all along, in files
+shorter than the code it was reading.
