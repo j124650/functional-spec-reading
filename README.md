@@ -96,6 +96,8 @@ The pipeline has eight passes, and the order matters — later passes depend on 
 | `examples/example-domain-model.json` | A worked example showing the format — and what must *not* be inferred. |
 | `examples/bread-purchase-spec.md` | A small fictional specification to run the skill against — a shop sale of bread, with two roles, six stages and a table of rules the model has to account for. |
 | `scripts/` | Node helpers: vocabulary build, explorer generation, and the explorer test harness. |
+| `model/Onboarding.Model/` | **The engine.** Reads a deliverable, resolves its expressions, explores its state space, and writes the export the page reads. |
+| `explorer/` | The page: its template, its builder, its own checks, the contract it implements, and the built page. |
 
 ## Install
 
@@ -108,6 +110,24 @@ hermes skills install j124650/functional-spec-reading/ --yes
 
 Or copy the folder into your profile's `skills/` directory and restart the session. The skill
 then loads automatically whenever a request matches its description.
+
+## Run the pipeline
+
+The engine ships with the skill, so a clone of this repository can take a deliverable
+all the way to a page on its own. It needs the .NET SDK (the engine targets net11.0) and
+Node 22+.
+
+```bash
+cd model/Onboarding.Model
+dotnet build                                              # build first: --no-build runs the old binary
+dotnet run -- check <deliverable.json>                    # the gate: every expression resolves, every id exists
+dotnet run -- export <deliverable.json> x <export.json>   # the data the page reads
+cd ../..
+node explorer/build.js --data <export.json> --out explorer/explorer.html   # the page; a gate
+node scripts/check-export-contract.js <export.json>       # the export against the contract
+node scripts/check-explorer.js explorer/explorer.html <deliverable.json>
+node scripts/check-id-catalogue.js explorer/explorer.html <deliverable.json>
+```
 
 ## Run the helpers
 

@@ -508,12 +508,14 @@ Run all of them. A check that is not in the loop is a check that reports a probl
 ## The project side: the build loop
 
 The arrangement above is format-level; here are the concrete places, for the machine that
-runs it (the **SpecReader** repo, and this skill's own git clone).
+runs it. All of it is in this skill's own repository, on branch **`main`**, because the
+skill's pipeline uses all of it: a clone of this repository can check a deliverable,
+export it and build the page by itself.
 
 | | Where | Branch |
 |---|---|---|
-| the exporter, the page, the export | `C:\_Recover\SpecReader` | `master` |
-| the contract, the checkers, the rendering spec | this skill's clone, `C:\Users\Dmitry\AppData\Local\hermes\cache\scratch\fsr-clone` | **`main`** |
+| the contract, the checkers, the rendering spec | this skill's clone | **`main`** |
+| the exporter, the page, the export | this skill's clone, beside them | **`main`** |
 
 - The exporter is `model/Onboarding.Model` (`Program.cs` plus `Model/*.cs`); the page is
   `explorer/explorer.template.html`.
@@ -525,6 +527,9 @@ runs it (the **SpecReader** repo, and this skill's own git clone).
   run it after every change to the page, and expect a count, not a green tick.
 - Edit the contract in the **installed** skill, then copy it to the clone and push; the two
   must stay byte-identical, and the clone's branch is `main`, not `master`.
+- The engine moves with the skill. When the exporter changes, the change lands here, in
+  the same commit as the contract it answers to, and the page is rebuilt here - so there
+  is never a version of the engine that the contract in this repository does not describe.
 
 **How a reference is drawn lives beside this file**, in `explorer/rendering.md`: the chip -
 one rectangle, a mark, a name, the id - the families and their colours, and the legend a

@@ -1,0 +1,2755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain model explorer</title>
+<style>
+:root{
+  --bg:#f4f6f9; --panel:#ffffff; --panel2:#eef1f6; --line:#d7dee8;
+  --fg:#151920; --muted:#57616f; --dim:#8892a2;
+  --accent:#2563eb; --ok:#15803d; --warn:#b45309; --bad:#b91c1c;
+}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{display:flex;flex-direction:column;margin:0;background:var(--bg);color:var(--fg);
+  font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{flex:0 0 auto;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:15px;font-weight:650}
+header .sub{color:var(--muted);font-size:12px;margin-top:2px}
+nav{flex:0 0 auto;display:flex;gap:4px;padding:6px 12px;background:var(--panel2);
+  border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--fg);
+  padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap}
+nav button.on{background:var(--accent);border-color:var(--accent);color:#ffffff;font-weight:600}
+main{flex:1 1 auto;min-height:0;display:flex;overflow:hidden}
+/* Every section is hidden until its tab is chosen. Without this the
+   sections stack: the page grows past its own height and the panel that
+   holds the diagram is pushed off-screen. */
+main>section{display:none}
+main>section.on{display:flex;flex-direction:column;gap:11px;flex:1 1 auto;min-height:0;overflow:hidden;padding:12px}
+.panel{flex:1 1 auto;min-height:0;overflow:auto;background:var(--panel);
+  border:1px solid var(--line);border-radius:9px;
+  /* The gutter is always reserved. Without it the scrollbar comes and
+     goes with the height of the content, and every column of every table
+     in the panel widens by a pixel or two when the reader filters it. */
+  scrollbar-gutter:stable}
+.panel h2{margin:0;padding:9px 13px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+.cols{display:grid;gap:12px;flex:1 1 auto;min-height:0}
+.c-2{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+.c-wide{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr)}
+/* The diagram wants the room: it is the one view whose content cannot be
+   summarised, and a machine drawn small is a machine drawn badly. */
+.c-graph{grid-template-columns:minmax(0,2.1fr) minmax(0,1fr)}
+.c-3{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.toolbar{flex:0 0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:7px 11px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
+.toolbar label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.chip{font-size:12px}
+.chip input{appearance:none;width:15px;height:15px;border:1.5px solid #98a2b3;border-radius:50%;
+  background:#fff;display:grid;place-content:center;cursor:pointer;flex:0 0 auto}
+.chip input:checked{background:var(--accent);border-color:var(--accent)}
+.chip input:checked::after{content:"";width:7px;height:7px;background:#fff;border-radius:50%}
+/* A checkbox is a checkbox: square, with a tick. It is used only where
+   more than one value may be selected at once. */
+.chip.cb input{border-radius:3px}
+.chip.cb input:checked::after{content:"";width:9px;height:9px;background:#fff;border-radius:0;
+  clip-path:polygon(14% 44%,0 65%,50% 100%,100% 16%,80% 0,43% 62%)}
+/* A machine is named by its human title; its id is a handle. The human
+   title is what a reader recognises, so it is set in bold, and the id
+   follows in the regular face. These classes are not scoped to .chip,
+   because the same label is used inside table cells. */
+.mtitle{font-weight:600}
+.mcode{font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+.grp{display:flex;align-items:center;gap:8px;padding:0 10px 0 2px;margin:0 2px;
+  border-right:1px solid var(--line)}
+.grp:last-child{border-right:0}
+.grp>.glabel{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);
+  font-weight:600}
+input[type=search],input[type=text]{border:1px solid var(--line);border-radius:6px;padding:4px 8px;
+  background:#fff;color:var(--fg);font-size:12px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{text-align:left;padding:5px 9px;border-bottom:1px solid var(--line);vertical-align:top;
+  overflow-wrap:anywhere}
+th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:11px;
+  text-transform:uppercase;letter-spacing:.03em;position:sticky;top:33px;z-index:1}
+th[data-k]{cursor:pointer;user-select:none}
+/* An id is a handle: it is one token and must not be broken up. */
+td.id,th.id{white-space:nowrap}
+/* A reference to a finding can be a sentence; the row's height is set by
+   the question, not by the reference to it. */
+.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+th[data-k]:hover{color:var(--fg)}
+th[data-k]::after{content:"↕";opacity:.3;margin-left:4px}
+th.asc::after{content:"↑";opacity:.9}
+th.desc::after{content:"↓";opacity:.9}
+tbody tr:hover{background:#f7f9fc}
+td.id{white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10.5px;font-weight:600;
+  white-space:nowrap}
+.pill.def{background:#fee2e2;color:#991b1b}
+.pill.gap{background:#fef3c7;color:#92400e}
+.pill.ok{background:#dcfce7;color:#14532d}
+.pill.info{background:#e0f2fe;color:#0c4a6e}
+.pill.mute{background:var(--panel2);color:var(--muted)}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+.stats{display:flex;gap:8px;flex-wrap:wrap;padding:9px 13px}
+.stat{background:var(--panel2);border-radius:8px;padding:6px 11px;min-width:96px}
+.stat b{display:block;font-size:17px;font-weight:650;line-height:1.25}
+.stat span{font-size:11px;color:var(--muted)}
+.stat.bad b{color:var(--bad)} .stat.ok b{color:var(--ok)} .stat.warn b{color:var(--warn)}
+svg{display:block;width:100%;height:100%;background:var(--panel)}
+.nbox rect{fill:#e0f2fe;stroke:#7dd3fc;stroke-width:1.2;rx:8}
+/* The diagram is drawn at its natural size and the panel scrolls, so the
+   text must not shrink when the diagram is wider than the panel. The text
+   is sized in screen pixels and the shapes around it in diagram units. */
+.nbox text{fill:#0c4a6e;font-size:12px;font-weight:600}
+.nbox text.sub{fill:#64748b;font-size:10px;font-weight:400}
+.nbox text.sid{fill:#64748b;font-size:10px;font-weight:400}
+.nbox text.sname{fill:#0c4a6e;font-size:12px;font-weight:600}
+.nbox.sel rect{fill:#dbeafe;stroke:#2563eb;stroke-width:2.4}
+.nbox.sel text.sname{fill:#1e3a8a}
+.nbox.dim{opacity:.26}
+.nbox.dim text.sname{fill:#64748b}
+.nbox rect{vector-effect:non-scaling-stroke}
+.dtabs{display:flex;gap:4px;margin:9px 0 5px;border-bottom:1px solid var(--line)}
+.dtabs button{appearance:none;border:1px solid var(--line);border-bottom:none;background:var(--panel2);
+  color:var(--muted);padding:4px 11px;border-radius:6px 6px 0 0;cursor:pointer;font-size:11.5px}
+.dtabs button.on{background:var(--panel);color:var(--fg);font-weight:600;border-color:var(--accent)}
+.dtabs button:hover{color:var(--fg)}
+table.mini{font-size:11.5px}
+table.mini th{top:0}
+table.mini td{padding:4px 8px}
+.written{background:var(--panel2);border-left:3px solid var(--accent);padding:7px 10px;
+  border-radius:0 6px 6px 0;line-height:1.65}
+.written b{color:var(--accent)}
+/* The id that goes with a name - "Submit (TR-004)". The id is a handle,
+   so it reads quieter than the name it belongs to. */
+.idcode{color:var(--dim);font-size:10.5px}
+/* The chip: a reference drawn as a small object - a type icon, the
+   name, and the id. The TYPE comes first, because the icon is the
+   signal that survives when the colour cannot be seen; the colour says
+   the family. The rectangle carries a tinted background and a darker
+   border of the same hue. */
+a.idlink.chip{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  max-width:9.375rem;padding:0 6px;margin:0 3px 0 0;border:0.1px solid var(--chip-border);
+  border-radius:5px;background:var(--chip-bg);line-height:1.2;
+  font-size:0.625rem;text-decoration:none;vertical-align:middle}
+/* The type mark, inside the chip's own rectangle. */
+a.idlink.chip .chip__icon{font-size:0.6875rem;color:var(--chip-ink);flex:none;
+  width:13px;text-align:center}
+a.idlink.chip .idname{color:var(--chip-ink);border-bottom:none}
+/* The chip is at most 150px wide. When the name does not fit, IT is what
+   gives way - an ellipsis - and the mark and the id stay, so the chip
+   still says what kind of thing this is and which one. The hint carries
+   the whole text. */
+a.idlink.chip .chip__name{flex:1 1 auto;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+a.idlink.chip .chip__code{font-size:0.5625rem;color:var(--dim);flex:none;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+/* The visual state is the rectangle's shade. Nothing else moves. */
+a.idlink.chip:hover{background:var(--chip-bg-hi)}
+/* The four families. One colour each - the icon says the type, the
+   colour says the group. */
+.chip--model{--chip-border:#5B21B6;--chip-bg:#F5F3FF;--chip-bg-hi:#EDE9FE;--chip-ink:#5B21B6}
+.chip--definitions{--chip-border:#115E59;--chip-bg:#F0FDFA;--chip-bg-hi:#CCFBF1;--chip-ink:#115E59}
+.chip--behaviour{--chip-border:#166534;--chip-bg:#F0FDF4;--chip-bg-hi:#DCFCE7;--chip-ink:#166534}
+.chip--work{--chip-border:#991B1B;--chip-bg:#FEF2F2;--chip-bg-hi:#FEE2E2;--chip-ink:#991B1B}
+/* The specification tab: the outline on the left, the document on the
+   right, and the paragraphs the document refers to drawn as chips. */
+.specitem{padding:3px 6px;border-radius:4px;cursor:pointer;font-size:12px;line-height:1.45}
+.specitem:hover{background:var(--panel2)}
+.specnum{color:var(--dim);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:10.5px;margin-right:5px}
+.specp{padding:7px 2px;border-bottom:1px solid var(--border);font-size:13px;line-height:1.65}
+.specp.spechead{border-bottom:none;padding-top:16px}
+/* The name of the document a run of paragraphs belongs to. The tab holds
+   two documents, and a reader must be able to say which one a paragraph
+   belongs to without being told. */
+.specdoc{font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--dim);border-bottom:1px solid var(--border);padding:10px 2px 6px;
+  margin-top:6px;font-weight:600}
+.specdoc:first-child{margin-top:0}
+.spechead h3{margin:0 0 4px;font-size:14.5px}
+.specpre{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;
+  white-space:pre;overflow-x:auto;margin:2px 0;max-width:100%}
+/* A word longer than the column - a URL, an id, a path - must break
+   rather than stretch the paragraph. The column is the page's, and the
+   text is the document's; the text gives way. */
+.specp,.specp *{overflow-wrap:anywhere;word-break:break-word}
+/* A table the document wrote, drawn as a table. It is a document, not
+   a view: the author's order stands, and the header does not sort. */
+.specp table{font-size:12px;margin:6px 0}
+.specp thead th{position:static;top:auto;background:var(--panel2)}
+.specp td,.specp th{padding:4px 8px;vertical-align:top}
+.backlink{appearance:none;border:0;background:none;color:var(--accent);cursor:pointer;
+  font-size:11.5px;padding:0;margin-bottom:7px;text-align:left}
+.nbox.unstated rect{fill:#fffbeb;stroke:#b45309;stroke-width:1.4;stroke-dasharray:5 3}
+.nbox.unstated text{fill:#92400e}
+.nbox.start rect{fill:#f1f5f9;stroke:#94a3b8;stroke-width:1.2;stroke-dasharray:3 3}
+.nbox.start text{fill:#475569}
+path.edge{fill:none;stroke:#5c6675;stroke-width:1.5}
+path.edge.def{stroke:#b91c1c;stroke-width:2;stroke-dasharray:5 3}
+path.edge.gap{stroke:#b45309;stroke-width:1.8}
+path.edge.dim{opacity:.22}
+/* The selected edge is accented, not merely thicker: a halo of the accent
+   colour is drawn beneath it, so it is unmistakable whichever kind of edge
+   it is. The kind's own colour and dash pattern are kept — a selected
+   defect is still dashed red.
+
+   The halo and the selected edge's stroke are NOT scaled with the viewBox.
+   A machine with twenty transitions is drawn small to fit its panel, and a
+   stroke that scaled with it would vanish. These stay a fixed number of
+   screen pixels, so the accent is visible at any zoom. */
+path.edge.sel{stroke-width:3.4;vector-effect:non-scaling-stroke}
+path.edgehalo{fill:none;stroke:#2563eb;stroke-width:9;opacity:.30;stroke-linecap:round;
+  vector-effect:non-scaling-stroke}
+text.elabel.sel{fill:#1d4ed8;font-weight:700}
+text.elabel{fill:#151920;font-size:11px;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+text.elabel.dim{opacity:.28}
+line.leader{stroke:#94a3b8;stroke-width:1}
+circle.tip{fill:#2563eb;opacity:0}
+#smTip{position:fixed;pointer-events:none;background:#111827;color:#fff;padding:5px 8px;border-radius:6px;
+  font-size:11px;max-width:340px;display:none;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.detail{padding:11px 13px}
+/* The detail panel does not scroll. Its head stays where it is and only
+   the table under it scrolls, so the tabs are always in reach and the
+   fields do not slide out of sight. */
+#machDetail{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:auto}
+/* Nothing in the panel shrinks: the fields are read, not scrolled. The
+   table is the part that gives way, because it is the part that lists. */
+#machDetail>*{flex:0 0 auto}
+#machDetail>.dscroll{flex:1 1 auto;min-height:120px;overflow:auto}
+/* A table that scrolls inside the state detail has no panel heading above
+   it, so its header sticks to the top of its own scroll area. Otherwise
+   it is pushed down and the rows show through the gap. */
+#stateList th{top:0}
+.detail h3{margin:0 0 7px;font-size:13px}
+.detail dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
+.detail dt{color:var(--muted);white-space:nowrap}
+.detail dd{margin:0}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;
+  background:var(--panel2);padding:1px 5px;border-radius:4px}
+.prose{max-width:80ch}
+.prose p{margin:0 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:11px}
+.rowsel{background:#eff6ff !important}
+a.idlink{text-decoration:none;white-space:normal}
+a.idlink .idname{color:var(--accent);border-bottom:1px solid rgba(37,99,235,.4)}
+a.idlink:hover .idname{border-bottom-color:var(--accent)}
+/* A handle: the id, for the reader who needs it. Not a link — the NAME
+   beside it is the link. */
+.handle{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;
+  color:var(--muted);white-space:nowrap}
+/* A term whose possible values are in the hint rather than in the sentence. */
+.mayhold{border-bottom:1px dotted var(--dim);cursor:help}
+/* How a state machine came to be. The chip in the toolbar carries it, and
+   the detail panel says it in a sentence of its own. */
+.chip .cls{margin-left:5px;vertical-align:middle}
+.clsline{display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;
+  padding:7px 9px;margin:0 0 9px;background:var(--panel2);border-radius:8px}
+.clslabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+/* The view switch: the same machine, as a graph or as a matrix. */
+.vswitch{display:flex;gap:4px;align-items:center}
+.vswitch button{appearance:none;border:1px solid var(--line);background:var(--panel2);
+  color:var(--muted);font-size:11px;padding:4px 13px;cursor:pointer;border-radius:6px}
+.vswitch button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.vswitch button:hover:not(.on){color:var(--fg)}
+/* The matrix: the states across, the states down, and what the document
+   says may happen between them. */
+.matrix{border-collapse:separate;border-spacing:0;font-size:11px;table-layout:fixed;
+  width:100%;min-width:660px}
+.matrix th,.matrix td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  vertical-align:top;padding:4px 5px}
+.matrix thead th{position:sticky;top:0;z-index:3;background:var(--panel2);color:var(--muted);
+  font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;
+  text-align:left;padding:5px;border-bottom:1px solid var(--line)}
+.matrix thead th.corner{z-index:4;left:0;width:118px}
+.matrix tbody th{position:sticky;left:0;z-index:2;background:var(--panel2);
+  text-align:left;font-weight:600;color:var(--fg);font-size:11px;width:118px}
+.matrix td.gap{background:#fbfcfe}
+.matrix tbody tr:hover td{background:#f7f9fc}
+/* The head of a matrix cell NAMES what is in the cell: it is a header,
+   accented as one, and not a second thing to click. */
+.mcellhead{display:block;font-weight:600;color:var(--accent);font-size:12px;line-height:1.4}
+/* The cell is the object. Hovering it says so. */
+.matrix td[data-tr]{cursor:pointer}
+.matrix td[data-tr]:hover{background:#e9f0fd;box-shadow:inset 0 0 0 1px rgba(37,99,235,.28)}
+.mcell{display:flex;flex-direction:column;gap:2px}
+.mtrigger{display:block;font-weight:600;color:var(--accent);text-decoration:none;
+  cursor:pointer;line-height:1.2}
+.mtrigger:hover{text-decoration:underline}
+.mrole{display:block;color:var(--muted);line-height:1.25}
+.mrole em{font-style:normal;color:var(--dim)}
+.mrole.unresolved{color:var(--dim);font-style:italic}
+.maxis{font-size:10px;color:var(--dim);text-transform:none;letter-spacing:0}
+.catlist{max-height:60vh;overflow:auto}
+.catchip{font-size:11px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--fg);
+  padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11.5px}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.warnbar{padding:7px 11px;background:#fffbeb;border:1px solid #fcd34d;border-radius:9px;color:#78350f;font-size:12px}
+.errbar{padding:7px 11px;background:#fef2f2;border:1px solid #fecaca;border-radius:9px;color:#7f1d1d;font-size:12px}
+/* On a narrow screen the panels stack. Side by side, each is too narrow
+   to hold a sentence, and a table that has to be read a word at a time
+   is a table nobody reads. */
+@media (max-width:1150px){
+  .c-2,.c-wide,.c-3,.c-graph{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="hTitle">Domain model explorer</h1>
+  <div class="sub" id="hSub"></div>
+</header>
+
+<nav id="nav"></nav>
+
+<main>
+  <section id="t-machines" class="on active">
+    <div class="toolbar" id="machToolbar"></div>
+    <div class="toolbar" id="machViews"></div>
+    <div class="cols c-graph">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <h2>State machine</h2>
+        <div style="flex:1 1 auto;min-height:0"><svg id="sm"></svg></div>
+        <div id="matrixBox" style="display:none;flex:1 1 auto;min-height:0;overflow:auto"></div>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;overflow:hidden"><h2>Detail</h2><div class="detail" id="machDetail"></div></div>
+    </div>
+  </section>
+
+  <section id="t-transitions">
+    <div class="toolbar" id="transToolbar"></div>
+    <div class="panel"><h2>Transitions</h2><div id="transTable"></div></div>
+  </section>
+
+  <section id="t-invariants">
+    <div class="toolbar" id="invToolbar"></div>
+    <div class="panel"><h2>Invariants</h2><div id="invTable"></div></div>
+  </section>
+
+  <section id="t-reach">
+    <div class="toolbar" id="reachToolbar"></div>
+    <div class="toolbar" id="reachStats"></div>
+    <div class="panel"><h2>Reachability</h2><div id="reachTable"></div></div>
+  </section>
+
+  <section id="t-couplings">
+    <div class="cols c-2">
+      <div class="panel"><h2>Cross-machine dependencies (§16)</h2><div id="coupTable"></div></div>
+      <div class="panel"><h2>Context map (§6.1)</h2><div id="ctxTable"></div></div>
+    </div>
+  </section>
+
+  <section id="t-findings">
+    <div class="toolbar" id="findToolbar"></div>
+    <div class="panel"><h2>Findings</h2><div id="findTable"></div></div>
+  </section>
+
+  <section id="t-spec">
+    <div class="panel" style="display:flex;flex-direction:column;overflow:hidden">
+      <h2>Specification</h2>
+      <div style="display:flex;gap:16px;flex:1 1 auto;min-height:0">
+        <div id="specOutline" style="flex:0 0 24%;overflow:auto;padding-right:10px"></div>
+        <div id="specBody" style="flex:1 1 auto;overflow:auto;padding-right:10px"></div>
+      </div>
+    </div>
+  </section>
+  <section id="t-open">
+    <div class="toolbar" id="openToolbar"></div>
+    <div class="cols c-wide">
+      <div class="panel"><h2>Open questions &amp; gaps</h2><div id="openTable"></div></div>
+      <div class="panel"><h2>Coverage</h2><div id="coverageTable"></div></div>
+    </div>
+  </section>
+
+  <section id="t-glossary">
+    <div class="toolbar" id="glossaryToolbar"></div>
+    <div class="panel"><h2>Ubiquitous language</h2><div id="glossaryTable"></div></div>
+  </section>
+
+  <section id="t-catalogue">
+    <div class="toolbar" id="catToolbar"></div>
+    <div class="cols c-2">
+      <div class="panel"><h2>Definitions the document issues</h2><div id="catTable"></div></div>
+      <div class="panel"><h2>Detail</h2><div class="detail" id="catDetail"></div></div>
+    </div>
+  </section>
+</main>
+
+<div id="smTip"></div>
+
+<script id="reachData" type="application/json">__DATA__</script>
+<script>
+"use strict";
+/* ---------------------------------------------------------------- helpers */
+const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const q = s => esc(s)
+  .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")
+  .replace(/\*([^*\n]+)\*/g,"<i>$1</i>");
+const $ = s => document.querySelector(s);
+const el = (t,c,x) => { const n=document.createElement(t); if(c)n.className=c;
+  if(x!==undefined)n.textContent=x; return n; };
+const num = v => (v==null?"—":Number(v).toLocaleString());
+
+let D = null;
+try { D = JSON.parse($("#reachData").textContent); }
+catch(e){ console.warn("reach data not embedded", e); }
+if(!D){ document.body.innerHTML =
+  '<div class="errbar" style="margin:20px">The explorer data is not embedded in this page. '+
+  'Regenerate it: see the comment at the top of the file.</div>'; throw new Error("no data"); }
+
+const byId = (arr,id) => (arr||[]).find(x=>x.id===id);
+const stateById = id => byId(D.states,id);
+const machineById = id => byId(D.machines,id);
+
+/* ------------------------------------------------------------- vocabulary */
+const MACHINES = D.machines||[];
+const STATES = D.states||[];
+const TRANSITIONS = D.transitions||[];
+const INVARIANTS = D.invariants||[];
+const FINDINGS = D.findings||[];
+const PROBES = D.probes||[];
+const COMMANDS = D.commands||[];
+const POLICIES = D.policies||[];
+const QUESTIONS = D.questions||[];
+const COUPLINGS = D.couplings||[];
+
+function kindOf(f){
+  const k = (f.kind||"").toLowerCase();
+  if(k.indexOf("confirmed defect")===0) return "def";
+  if(k.indexOf("spec gap")===0) return "gap";
+  return "mute";
+}
+function kindLabel(f){
+  const k = (f.kind||"").toLowerCase();
+  if(k.indexOf("confirmed defect")===0) return "confirmed defect";
+  if(k.indexOf("spec gap")===0) return "spec gap";
+  return f.kind||"";
+}
+function probeOf(id){ return byId(PROBES,id); }
+function probePill(id){
+  const p=probeOf(id);
+  if(!p) return '<span class="pill mute">not probed</span>';
+  if(p.status==="REPRODUCED") return '<span class="pill def">reproduced</span>';
+  if(p.status==="NOT REPRODUCED") return '<span class="pill gap">not reproduced</span>';
+  return '<span class="pill mute">not probed</span>';
+}
+
+/* ===================================================== the index of ids
+ *
+ * The document issues identifiers. A reader who meets "VO-004" in a cell
+ * should be able to see what it is, and to go there. So every id the
+ * document issues is indexed here with the name it carries and the tab
+ * that holds it, and every mention of an id in the page is turned into a
+ * link that says what it means.
+ */
+/* The kinds of thing the document issues, and how each one is drawn.
+   One row per series: the plain mark that says what it is, and the
+   family whose colour it wears. THIS TABLE IS ALSO WHAT A LEGEND IS
+   BUILT FROM - a reader who cannot tell the accents apart needs a key,
+   and the key must not be a second, separate list of the same facts. */
+const KINDS = {
+  SM:  {glyph:"▣", family:"model",       kind:"State machine"},
+  ST:  {glyph:"□", family:"model",       kind:"State"},
+  TR:  {glyph:"→", family:"model",       kind:"Transition"},
+  INV: {glyph:"✓", family:"model",       kind:"Invariant"},
+  SRC: {glyph:"§", family:"definitions", kind:"Source"},
+  TERM:{glyph:"▤", family:"definitions", kind:"Glossary term"},
+  ENT: {glyph:"○", family:"definitions", kind:"Entity"},
+  VO:  {glyph:"◇", family:"definitions", kind:"Value object"},
+  AGG: {glyph:"◈", family:"definitions", kind:"Aggregate candidate"},
+  BC:  {glyph:"⊞", family:"definitions", kind:"Bounded context"},
+  SCN: {glyph:"≡", family:"definitions", kind:"Scenario"},
+  N:   {glyph:"✎", family:"definitions", kind:"Role-rewritten rule"},
+  P:   {glyph:"¶", family:"definitions", kind:"Paragraph of the specification"},
+  CMD: {glyph:"▶", family:"behaviour",   kind:"Command"},
+  EVT: {glyph:"★", family:"behaviour",   kind:"Domain event"},
+  POL: {glyph:"⊘", family:"behaviour",   kind:"Policy"},
+  F:   {glyph:"✕", family:"work",        kind:"Finding"},
+  Q:   {glyph:"?", family:"work",        kind:"Question"},
+};
+/* The code is shown where the NAME alone cannot say which thing is
+   meant: "Approved" is SM-001's terminal state and SM-004's per-
+   division state, and CMD-006 and CMD-007 are both "Submit". */
+const CODE_SHOWN = {model:true, behaviour:true, definitions:false, work:false};
+/* A reference, drawn as a small object: the type icon, the name, and
+   the id. NOTHING here is read back out of text - the glyph comes from
+   the series, the name from the index, the id from the data. */
+/* ONE chip, one look: a rectangle, a mark, the name, the id. Whether a
+   cell holds one reference or eight, the reference is drawn the same
+   way - the same transition must not look like two different things
+   in two tabs. */
+function chip(id,prefix,opt){
+  opt=opt||{};
+  const spec=KINDS[prefix];
+  const d=IDX[id];
+  if(!spec) return esc(id);
+  /* The code rides along wherever the table does not show the id in a
+     column of its own - there is no point saying it twice, and a
+     reader must not have to go looking for which thing it is. */
+  const name=opt.label || (d&&d.name) || id;
+  /* The id rides along - unless the NAME IS the id, as it is for a
+     concept the document has not named ("AGG-001"): saying it twice is
+     saying it twice. */
+  const showCode=opt.code!=null ? !!opt.code : (name!==id);
+  const attr=opt.tr ? 'data-tr="' : opt.spec ? 'data-spec="' : 'data-id="';
+  /* The hint carries the whole text: a chip that had to shorten its
+     name must still say what it said. The mark and the id are in the
+     hint too - it is the whole chip, in words. */
+  let extra=(d&&d.title)?String(d.title):"";
+  if(extra.indexOf(name)===0){
+    extra=extra.slice(name.length);
+    while(extra.length &&
+          (extra[0]===" "||extra[0]==="—"||extra[0]==="–"||
+           extra[0]===":"||extra[0]==="-")) extra=extra.slice(1);
+  }
+  if(extra===name||extra===id) extra="";
+  const hint=id+" — "+name+(extra?" — "+extra:"");
+  return '<a class="idlink chip chip--'+spec.family+'" href="#'+esc(id)+
+         '" '+attr+esc(id)+'" title="'+esc(hint)+'">'+
+         '<span class="chip__icon">'+esc(spec.glyph)+"</span>"+
+         '<span class="idname chip__name">'+esc(name)+"</span>"+
+         (showCode?'<span class="chip__code">'+esc(id)+"</span>":"")+
+         "</a>";
+}
+/* A cell of references. */
+function chipCell(ids,prefix){
+  const list=ids||[];
+  return list.length ? list.map(id=>chip(id,prefix)).join(" ") : '<span class="muted">—</span>';
+}
+/* The scope column: the document's words, with the concepts it names
+   drawn as chips. The cell is cut by the exporter, so the page never
+   looks for a name in a sentence. */
+function scopeColumn(inv){
+  const parts=inv.scope;
+  if(!Array.isArray(parts)) return cell(parts||"");
+  /* The id rides in the hint here, not in the chip: the cell already
+     names the thing, and the name is long enough. */
+  return parts.map(p=>p.id ? chip(p.id,p.prefix,{code:false}) : esc(p.text)).join("");
+}
+/* A cell that names states: the resolved ids, drawn as quiet chips. A
+   cell that names none keeps the document's own words. */
+function stateCell(ids,raw){
+  if(ids&&ids.length) return chipCell(ids,"ST");
+  return cell(raw||"");
+}
+/* The trigger, as the COMMANDS it names. The exporter resolved the
+   cell; the page draws it. A trigger that names no command keeps the
+   document's own words - it is fired by an event, not by a command. */
+function triggerCell(t){
+  const cmds=t.commands||[];
+  if(!cmds.length) return cell(t.trigger||"");
+  return cmds.map(id=>chip(id,"CMD")).join(" ");
+}
+/* What a legend would say, read from the same table the chips are
+   drawn from. A legend that lists its own facts is a second truth. */
+function legendRows(){
+  return Object.keys(KINDS).map(prefix=>{
+    const spec=KINDS[prefix];
+    return {prefix:prefix, kind:spec.kind, glyph:spec.glyph,
+            family:spec.family, code:CODE_SHOWN[spec.family]};
+  });
+}
+const IDX = {};                      /* id -> {id, name, series, tab, title, code} */
+function indexId(id,name,series,tab,title,code){
+  if(!id) return;
+  IDX[id] = {id:id, name:String(name==null?"":name).trim(),
+             series:series, tab:tab, title:String(title||name||""),
+             /* The id to show AFTER the name, when the name alone does
+                not say which thing it is. Two transitions can share a
+                trigger - the same command, two branches - so the name
+                needs the id to tell them apart. The id travels as
+                DATA, never as something to read back out of the text. */
+             code:String(code||"")};
+}
+/* Markdown punctuation in a name would show up raw in a link. */
+function plain(s){ return String(s==null?"":s).replace(/\*\*|__|`|\*/g,"").trim(); }
+function trimName(s,n){ const t=plain(s); return t.length>n ? t.slice(0,n-1)+"…" : t; }
+
+(D.catalogue||[]).forEach(e=>{
+  indexId(e.id, trimName(e.name,46), e.kind, "catalogue", plain(e.name));
+});
+(D.glossary||[]).forEach(g=>{
+  indexId(g.id, trimName(g.term||g.name,46), "Glossary term", "glossary", plain(g.term||g.name));
+});
+STATES.forEach(s=>indexId(s.id, trimName(s.name,40), "State", "machines", plain(s.name)));
+MACHINES.forEach(m=>indexId(m.id, trimName(m.name,40), "State machine", "machines", plain(m.name)));
+/* A transition is named by its trigger - and the id goes with it, in
+   brackets: "Submit (TR-004)". Two edges can share a trigger (the same
+   command, two branches), so the name alone does not say which edge a
+   reader is looking at. The document's own cell stays in the hint. */
+TRANSITIONS.forEach(t=>indexId(t.id, trimName(t.triggerName||t.trigger,40), "Transition",
+                               "machines", plain(t.trigger), t.id));
+INVARIANTS.forEach(i=>indexId(i.id, trimName(i.text,46), "Invariant", "invariants", plain(i.text)));
+FINDINGS.forEach(f=>indexId(f.id, trimName(f.title,46), "Finding", "findings", plain(f.title)));
+QUESTIONS.forEach(x=>indexId(x.id, trimName(x.question,46), "Question", "open", plain(x.question)));
+
+/* An id in the text. The PREFIXES come from the export's namespace, not
+   from a list written here: the format issues them, and an explorer that
+   writes them out can only ever read the document it was written for. The
+   document's own identifiers (D17, R1, OQ-07) are outside the scheme and
+   are deliberately not matched. */
+const ID_PREFIXES = (D.idSeries||[]).map(s=>s.prefix);
+const ID_PATTERN = ID_PREFIXES.length
+  ? "\\b(?:" + ID_PREFIXES.join("|") + ")-\\d{1,3}\\b"
+  : "\\b[A-Z]{2,4}-\\d{1,3}\\b";
+const ID_RE = new RegExp(ID_PATTERN, "g");
+
+/* Turn every id in a piece of HTML into a link that names it. Only the
+   text between tags is touched, so an id inside an attribute is left
+   alone. The link reads as the thing itself; the id it stands for is in
+   the hint, for the reader who needs the handle. */
+function linkify(html){
+  if(html==null) return "";
+  return String(html).split(/(<[^>]*>)/).map(part=>{
+    if(part.charAt(0)==="<") return part;
+    return part.replace(ID_RE, m=>{
+      const d=IDX[m];
+      if(!d) return m;
+      const label = d.name ? d.name : d.id;
+      const hint = d.title && d.title!==d.id ? d.id+" — "+d.title : d.id;
+      return '<a class="idlink" href="#'+esc(d.id)+'" data-id="'+esc(d.id)+'" title="'+esc(hint)+'">'+
+             '<span class="idname">'+esc(label)+"</span>"+
+             (d.code ? ' <span class="idcode">('+esc(d.code)+")</span>" : "")+
+             "</a>";
+    });
+  }).join("");
+}
+/* The text of a cell: escaped, markdown emphasised, ids linked. */
+function cell(t){
+  if(t==null) return "";
+  if(t.nodeType) return t;
+  return linkify(q(t));
+}
+
+/* A machine is named by its human title; its id is a handle. The human
+   title is what a reader recognises, so it is set in bold, and the id
+   follows in the regular face. */
+function machineTitle(id){
+  const m=machineById(id);
+  return m ? (m.name||id) : id;
+}
+function machineLabel(id){
+  const m=machineById(id);
+  if(!m) return '<span class="mtitle">'+esc(id)+'</span>';
+  return '<span class="mtitle">'+esc(m.name||id)+'</span> <span class="mcode">'+esc(id)+'</span>';
+}
+
+/* ------------------------------------------------------------------ tabs */
+const TABS = [
+  ["machines","State machines"],["transitions","Transitions"],["invariants","Invariants"],
+  ["reach","Reachability"],["couplings","Dependencies"],["findings","Findings"],
+  ["open","Open work"],["glossary","Glossary"],["catalogue","Catalogue"],
+  ["spec","Specification"]
+];
+const nav = $("#nav");
+function showTab(id){
+  const b=nav.querySelector("button[data-t='"+id+"']");
+  if(!b) return;
+  nav.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("on",s.id==="t-"+id));
+  /* The specification is drawn when it is first shown - it is the one
+     tab whose content is the document itself. */
+  if(id==="spec") renderSpec();
+}
+TABS.forEach(([id,label],i)=>{
+  const b = el("button", i===0?"on":"", label);
+  b.dataset.t = id;
+  b.onclick = ()=>showTab(id);
+  nav.appendChild(b);
+});
+
+/* ---------------------------------------------------------------- header */
+$("#hTitle").textContent = D.document || "Domain model";
+$("#hSub").innerHTML =
+  /* The export says what it is a model OF, and the page says it as it is
+     given - the words are the export's, not this page's. Hard-coding them
+     here would tie the page to one specification. */
+  "model of "+esc(D.modelOf||"the specification")+" · "+
+  num(D.statesVisited)+" reachable states · "+
+  num(D.counts.transitions)+" transitions · "+
+  num(D.counts.invariants)+" invariants · "+
+  num(D.counts.findings)+" findings · "+
+  /* The exploration is BOUNDED, not exhaustive, unless the engine says
+     otherwise. Saying so is not a weakness of the analysis; hiding it
+     tells the reader the counts are the whole truth. */
+  (D.frontierExhausted
+     ? "every reachable state enumerated"
+     : "exploration stopped at the "+num(D.maxStates)+"-state cap, so these counts are a property of that bound")+
+  ' · generated '+String(D.generated||"").replace("T"," ").replace(/[+-]\d\d:\d\d$/,"");
+
+/* --------------------------------------------------------- sortable table */
+const SORTS = {}, SOURCE = {};
+function cellText(tr,col){ return (tr.cells[col]?tr.cells[col].textContent:"").trim(); }
+function compareCells(a,b){
+  const na=parseFloat(a.replace(/[^0-9.\-]/g,"")), nb=parseFloat(b.replace(/[^0-9.\-]/g,""));
+  if(a!==""&&b!==""&&!isNaN(na)&&!isNaN(nb)) return na-nb;
+  return a.toLowerCase().localeCompare(b.toLowerCase());
+}
+function captureOrder(id){ const tb=document.getElementById(id).tBodies[0]; if(tb) SOURCE[id]=[...tb.rows]; }
+function sortTable(id,key){
+  const tbl=document.getElementById(id), tb=tbl.tBodies[0];
+  if(!tb) return;
+  const col=[...tbl.tHead.rows[0].cells].findIndex(th=>th.dataset.k===key);
+  if(col<0) return;
+  const st=SORTS[id]||(SORTS[id]={key:null,dir:1});
+  if(st.key!==key){ st.key=key; st.dir=1; } else { st.dir=-st.dir; }
+  const live=[...tb.rows];
+  const base=SOURCE[id];
+  const src=(base&&base.length===live.length&&base.every(r=>tb.contains(r)))?base:live;
+  const rows=src.slice().sort((a,b)=>compareCells(cellText(a,col),cellText(b,col))*st.dir);
+  rows.forEach(r=>tb.appendChild(r));
+  [...tbl.tHead.rows[0].cells].forEach((th,i)=>{
+    th.classList.toggle("asc",i===col&&st.dir===1); th.classList.toggle("desc",i===col&&st.dir===-1); });
+}
+function makeSortable(id){
+  const tbl=document.getElementById(id); if(!tbl) return;
+  tbl.querySelectorAll("th[data-k]").forEach(th=>{
+    th.onclick=()=>sortTable(id,th.dataset.k);
+  });
+}
+
+/* Build a table into a container. cols: [{k,label,cls}] */
+/* ------------------------------------------------------------ the table
+ *
+ * One component, used by every table on the page.
+ *
+ * A column declares its width. The table lays out with a fixed layout, so
+ * the columns keep their widths whatever the rows are. Under the default
+ * layout the browser hands the space to whichever column holds the
+ * longest unbroken text, and that set changes as rows come and go — so
+ * filtering a table used to reshape it, and a reader who filtered a
+ * table lost their place in it. The widths belong to the table, not to
+ * the data.
+ */
+function DataTable(host, spec){
+  host.innerHTML="";
+  const tbl=el("table");
+  tbl.id=spec.id;
+  const cols=spec.columns;
+  if(cols.some(c=>c.w)) tbl.style.tableLayout="fixed";
+  const thead=el("thead"), htr=el("tr");
+  cols.forEach(c=>{
+    const th=el("th",c.cls||"",c.label);
+    if(c.k) th.dataset.k=c.k;
+    if(c.w) th.style.width=c.w;
+    htr.appendChild(th);
+  });
+  thead.appendChild(htr); tbl.appendChild(thead);
+  const tb=el("tbody");
+  (spec.rows||[]).forEach(r=>{
+    const tr=el("tr");
+    r.forEach((v,i)=>{
+      const td=el("td",cols[i].cls||"");
+      if(cols[i].w) td.style.width=cols[i].w;
+      if(v && v.nodeType) td.appendChild(v); else td.innerHTML=v==null?"":v;
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb); host.appendChild(tbl);
+  captureOrder(spec.id); makeSortable(spec.id);
+  return tbl;
+}
+
+/* ==================================================== reading an expression
+   The document states a rule as a formal expression. The reader needs it in
+   words: what the rule says, and which state a state id stands for.
+
+   The vocabulary — the terms an expression may name, their types, and the
+   values they may take — comes from the document itself, so the wording
+   here is derived rather than invented. A term that may hold a state id is
+   read with the state's own name substituted for the id. */
+
+const VOCAB = (D.vocabulary||[]).map(v=>({
+  term:v.term, type:v.type, domain:v.domain||[]
+}));
+const VOCAB_BY_TERM = {};
+VOCAB.forEach(v=>VOCAB_BY_TERM[v.term]=v);
+
+/* The states, by id, so an id can be read as its name. */
+const STATE_BY_ID = {};
+STATES.forEach(s=>STATE_BY_ID[s.id]=s);
+
+/* The states of a machine, for the state ids a term may hold. */
+function stateName(id){
+  const s=STATE_BY_ID[id];
+  return s ? (s.name||"").split("(")[0].trim() : null;
+}
+
+/* Does this term hold a state id? The vocabulary says so by listing
+   state ids in its domain — as a RANGE ("ST-001 … ST-008"), so the range
+   is expanded to the states it spans. */
+function stateIdsOf(term){
+  const v=VOCAB_BY_TERM[term];
+  if(!v) return [];
+  const ids=[];
+  const add=id=>{ if(ids.indexOf(id)<0) ids.push(id); };
+  v.domain.forEach(d=>{
+    const all=String(d).match(/ST-\d{3}/g);
+    if(!all) return;
+    if(all.length===1){ add(all[0]); return; }
+    // A range: every state of the machine the range spans.
+    const from=Number(all[0].slice(3)), to=Number(all[all.length-1].slice(3));
+    STATES.forEach(s=>{
+      const n=Number(s.id.slice(3));
+      if(n>=from && n<=to) add(s.id);
+    });
+  });
+  return ids;
+}
+
+/* The words for a term. The document's own term is the label; the reader
+   sees it in the same words the document uses. */
+function termWords(term){
+  const v=VOCAB_BY_TERM[term];
+  if(!v) return term;
+  if(v.type==="flag") return "the "+term+" flag";
+  if(v.type==="set")  return "the "+term;
+  if(v.type==="number") return "the "+term;
+  return "the "+term;
+}
+
+/* The engine's own words: `state` is the current state of the machine the
+   transition belongs to, and `input` is the argument the command carries.
+   They are part of the expression language, not of the document's
+   vocabulary, so they are read in the reader's terms. */
+function keywordWords(word){
+  if(word==="state") return "the current state";
+  if(word==="input") return "the input";
+  if(word==="true") return "yes";
+  if(word==="false") return "no";
+  return null;
+}
+
+/* A value, read in words. A state id becomes the state's name, in bold.
+   An empty string is "empty", not "''". */
+function valueWords(value, term){
+  if(value===null || value===undefined) return "";
+  if(typeof value==="boolean") return value? "yes" : "no";
+  if(typeof value==="number") return String(value);
+  const s=String(value);
+  if(s==="") return "empty";
+  if(/^ST-\d{3}$/.test(s)){
+    const name=stateName(s);
+    return name ? "<b>"+esc(name)+"</b> ("+esc(s)+")" : esc(s);
+  }
+  // A value the vocabulary says a term may hold: say what it is.
+  const v=VOCAB_BY_TERM[term];
+  if(v && v.domain.length && v.domain.indexOf(s)>=0) return "<b>"+esc(s)+"</b>";
+  return "'"+esc(s)+"'";
+}
+
+/* The operator, in words. */
+function opWords(op){
+  switch(op){
+    case "==": return "is";
+    case "!=": return "is not";
+    case "<":  return "is less than";
+    case "<=": return "is at most";
+    case ">":  return "is greater than";
+    case ">=": return "is at least";
+    default:   return op;
+  }
+}
+
+/* ---- the tokenizer, matching the engine's grammar ----
+   A term may be several words ("legal business name"), so the vocabulary
+   terms are matched longest first and taken whole. */
+const VOCAB_TERMS = VOCAB.map(v=>v.term).filter(t=>t.length)
+  .sort((a,b)=>b.length-a.length);
+
+/* The engine's own words, which the expression language defines. */
+const KEYWORDS=["state","input","true","false"];
+
+function tokenize(text){
+  const out=[];
+  let i=0;
+  while(i<text.length){
+    const ch=text[i];
+    if(/\s/.test(ch)){ i++; continue; }
+    if(ch==="'"){
+      i++; let s="";
+      while(i<text.length && text[i]!=="'" && text[i]!=="\\") s+=text[i++];
+      if(text[i]==="\\"){ i++; s+=text[i++]; }
+      i++;
+      out.push({k:"str",v:s}); continue;
+    }
+    if(/[0-9]/.test(ch)){
+      let s="";
+      while(i<text.length && /[0-9.]/.test(text[i])) s+=text[i++];
+      out.push({k:"num",v:parseFloat(s)}); continue;
+    }
+    if(/[A-Za-z_]/.test(ch)){
+      let matched=null;
+      for(const term of VOCAB_TERMS){
+        if(text.substr(i,term.length).toLowerCase()!==term.toLowerCase()) continue;
+        const after=i+term.length;
+        if(after<text.length && /[A-Za-z0-9_]/.test(text[after])) continue;
+        matched=term; break;
+      }
+      if(matched){
+        out.push({k:"term",v:matched}); i+=matched.length; continue;
+      }
+      // A keyword of the expression language.
+      let s="";
+      while(i<text.length && /[A-Za-z0-9_]/.test(text[i])) s+=text[i++];
+      if(KEYWORDS.indexOf(s.toLowerCase())>=0) out.push({k:"term",v:s,keyword:true});
+      else out.push({k:"unknown",v:s});
+      continue;
+    }
+    if(ch==="("){ out.push({k:"("}); i++; continue; }
+    if(ch===")"){ out.push({k:")"}); i++; continue; }
+    if(ch==="."){ out.push({k:"."}); i++; continue; }
+    if(ch===","){ out.push({k:","}); i++; continue; }
+    // operators
+    const two=text.substr(i,2);
+    if(two==="&&"||two==="||"||two==="=="||two==="!="||two==="<="||two===">="){
+      out.push({k:"op",v:two}); i+=2; continue;
+    }
+    if("<>!=".indexOf(ch)>=0){ out.push({k:"op",v:ch}); i++; continue; }
+    i++; // anything else is not part of the grammar
+  }
+  return out;
+}
+
+/* ---- the parser ----
+   The same precedence the engine uses: || , then && , then ! , then a
+   comparison, then an operand. */
+function parseExpr(ts,i){
+  const r=parseOr(ts,i); return r;
+}
+function parseOr(ts,i){
+  let left=parseAnd(ts,i);
+  while(left.ok && ts[left.i] && ts[left.i].k==="op" && ts[left.i].v==="||"){
+    const right=parseAnd(ts,left.i+1);
+    left={ok:left.ok&&right.ok,node:{t:"or",l:left.node,r:right.node},i:right.i};
+  }
+  return left;
+}
+function parseAnd(ts,i){
+  let left=parseNot(ts,i);
+  while(left.ok && ts[left.i] && ts[left.i].k==="op" && ts[left.i].v==="&&"){
+    const right=parseNot(ts,left.i+1);
+    left={ok:left.ok&&right.ok,node:{t:"and",l:left.node,r:right.node},i:right.i};
+  }
+  return left;
+}
+function parseNot(ts,i){
+  if(ts[i] && ts[i].k==="op" && ts[i].v==="!"){
+    const inner=parseNot(ts,i+1);
+    return {ok:inner.ok,node:{t:"not",x:inner.node},i:inner.i};
+  }
+  return parseComparison(ts,i);
+}
+function parseComparison(ts,i){
+  const left=parseOperand(ts,i);
+  if(!left.ok) return left;
+  if(ts[left.i] && ts[left.i].k==="op" && ["==","!=","<","<=",">",">="].indexOf(ts[left.i].v)>=0){
+    const op=ts[left.i].v;
+    const right=parseOperand(ts,left.i+1);
+    return {ok:right.ok,node:{t:"cmp",op:op,l:left.node,r:right.node},i:right.i};
+  }
+  return left;
+}
+function parseOperand(ts,i){
+  const tk=ts[i];
+  if(!tk) return {ok:false,node:null,i:i};
+  if(tk.k==="("){
+    const inner=parseExpr(ts,i+1);
+    if(ts[inner.i] && ts[inner.i].k===")") return {ok:inner.ok,node:{t:"paren",x:inner.node},i:inner.i+1};
+    return {ok:false,node:null,i:inner.i};
+  }
+  if(tk.k==="term"||tk.k==="unknown"){
+    // an accessor may follow: .count , .contains('x') , .empty
+    let j=i+1;
+      if(ts[j] && ts[j].k==="."){
+        const acc=ts[j+1];
+        if(acc && (acc.k==="term"||acc.k==="unknown")){
+          j+=2;
+          let arg=null;
+          if(ts[j] && ts[j].k==="("){
+            const a=parseOperand(ts,j+1);
+            arg=a.node;
+            j=a.i+1;
+          }
+          return {ok:true,node:{t:"access",term:tk.v,acc:acc.v.toLowerCase(),arg:arg},i:j};
+        }
+      }
+    return {ok:true,node:{t:"term",term:tk.v,known:tk.k==="term",keyword:!!tk.keyword},i:j};
+  }
+  if(tk.k==="str") return {ok:true,node:{t:"str",v:tk.v},i:i+1};
+  if(tk.k==="num") return {ok:true,node:{t:"num",v:tk.v},i:i+1};
+  return {ok:false,node:null,i:i+1};
+}
+
+/* ---- the wording ---- */
+function wordNode(node,termCtx){
+  if(!node) return "";
+  switch(node.t){
+    case "paren": return wordNode(node.x,termCtx);
+    case "or":
+      return "("+wordNode(node.l,termCtx)+" or "+wordNode(node.r,termCtx)+")";
+    case "and":
+      return wordNode(node.l,termCtx)+" and "+wordNode(node.r,termCtx);
+    case "not":
+      return wordNode(node.x,termCtx)+" is not true";
+    case "cmp":
+      return wordNode(node.l,node.l&&node.l.term)+" "+opWords(node.op)+" "+
+             wordNode(node.r,node.l&&node.l.term);
+    case "term": {
+      if(node.keyword){
+        const kw=keywordWords(node.term.toLowerCase());
+        return esc(kw || node.term);
+      }
+      if(!node.known) return "<i>"+esc(node.term)+"</i>";
+      const ids=stateIdsOf(node.term);
+      if(ids.length){
+        /* A term that HOLDS a state may take several of them. Naming
+           only the endpoints would lose states, so all of them are named
+           - but in the hint rather than in the sentence. The sentence
+           already says what the term IS compared against; repeating the
+           whole range in front of it turns "the item credit is Open" into
+           something the reader has to parse. */
+        const plainNames=ids.map(i=>stateName(i)||i).join(" / ");
+        return '<span class="mayhold" title="may hold: '+esc(plainNames)+'">'+
+               esc(termWords(node.term))+"</span>";
+      }
+      return esc(termWords(node.term));
+    }
+    case "access": {
+      const t=node.term;
+      if(node.acc==="count") return "the number of "+esc(t);
+      if(node.acc==="empty") return esc(t)+" is empty";
+      if(node.acc==="contains"){
+        return esc(termWords(t))+" contains "+wordNode(node.arg,t);
+      }
+      return esc(t)+"."+esc(node.acc);
+    }
+    case "str": return valueWords(node.v,termCtx);
+    case "num": return String(node.v);
+  }
+  return "";
+}
+
+/* An expression, in words. Returns null when the expression cannot be
+   read — the reader is then shown the formal form alone, rather than a
+   translation that is not faithful. */
+function decypher(expression){
+  if(!expression) return null;
+  let text=String(expression).trim();
+  /* The document writes expressions in inline code, so they arrive wrapped
+     in backticks. Strip them before reading. Without this a constant-true
+     guard is tokenised as the keyword `true` and reads as the answer
+     "Yes" — a value — rather than as the absence of a condition. */
+  if(text.startsWith("`") && text.endsWith("`")) text=text.slice(1,-1).trim();
+  if(!text || text==="true") return "always true";
+  const ts=tokenize(text);
+  const p=parseExpr(ts,0);
+  if(!p.ok) return null;
+  const w=wordNode(p.node,null);
+  if(!w) return null;
+  // Capitalise the first letter of the sentence.
+  return w.charAt(0).toUpperCase()+w.slice(1);
+}
+
+
+/* ---- reading an effect ----
+   An effect is not a rule but a script: a list of statements, each of
+   which writes to the aggregate. The statements are read in the order the
+   document gives them, so the reader sees the same sequence the engine
+   applies. */
+
+function splitTop(text){
+  const out=[]; let depth=0, cur="", inStr=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inStr){ cur+=ch; if(ch==="'") inStr=false; continue; }
+    if(ch==="'"){ inStr=true; cur+=ch; continue; }
+    if(ch==="(") depth++;
+    if(ch===")") depth--;
+    if(ch===";" && depth===0){ out.push(cur); cur=""; continue; }
+    cur+=ch;
+  }
+  if(cur.trim().length) out.push(cur);
+  return out;
+}
+function indexOfTop(text,needle){
+  let depth=0, inStr=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inStr){ if(ch==="'") inStr=false; continue; }
+    if(ch==="'"){ inStr=true; continue; }
+    if(ch==="(") depth++;
+    if(ch===")") depth--;
+    if(depth===0 && text.substr(i,needle.length).toLowerCase()===needle.toLowerCase()) return i;
+  }
+  return -1;
+}
+function argsOf(statement){
+  const open=statement.indexOf("(");
+  const close=statement.lastIndexOf(")");
+  if(open<0||close<open) return [];
+  const inner=statement.slice(open+1,close);
+  const out=[]; let cur="", inStr=false;
+  for(let i=0;i<inner.length;i++){
+    const ch=inner[i];
+    if(inStr){ cur+=ch; if(ch==="'") inStr=false; continue; }
+    if(ch==="'"){ inStr=true; cur+=ch; continue; }
+    if(ch===","){ out.push(cur.trim()); cur=""; continue; }
+    cur+=ch;
+  }
+  if(cur.trim().length) out.push(cur.trim());
+  return out;
+}
+
+/* A term the effect writes to, named in the document's words. The engine's
+   arguments carry their quotes; they are the term's NAME, not a literal. */
+function effectTermWords(term){
+  const t=String(term).trim().replace(/^'(.*)'$/,"$1");
+  if(t==="input") return "the term the command names";
+  return esc(termWords(t));
+}
+function effectValueWords(value,term){
+  const raw=String(value).trim();
+  const v=raw.replace(/^'(.*)'$/,"$1");
+  if(raw!==v) return valueWords(v,term);
+  if(v==="true") return "yes";
+  if(v==="false") return "no";
+  if(v.toLowerCase()==="input") return "the input";
+  // A bare term or a number.
+  if(/^[0-9.]+$/.test(v)) return v;
+  return esc(termWords(v));
+}
+
+function readEffectStatement(statement){
+  const s=statement.trim();
+  if(!s) return "";
+  if(/^if\s/i.test(s)){
+    const thenAt=indexOfTop(s," then ");
+    if(thenAt<0) return "";
+    const cond=s.slice(3,thenAt).trim();
+    const rest=s.slice(thenAt+6).trim();
+    const condWords=decypher(cond);
+    const thenWords=readEffectStatement(rest);
+    if(!condWords) return "";
+    return "If "+lower(condWords)+", then "+thenWords;
+  }
+  const m=/^([a-z]+)\s*\(/i.exec(s);
+  if(!m) return "";
+  const verb=m[1].toLowerCase();
+  const args=argsOf(s);
+  switch(verb){
+    case "set": {
+      if(args.length<2) return "";
+      const term=args[0], value=args[1];
+      if(term.toLowerCase()==="input")
+        return "set "+effectValueWords(value,term)+" on the term the command names";
+      return "set "+effectTermWords(term)+" to "+effectValueWords(value,term);
+    }
+    case "clear":
+      if(!args.length) return "";
+      return "clear "+effectTermWords(args[0]);
+    case "add": {
+      if(args.length<2) return "";
+      return "add "+effectValueWords(args[1],args[0])+" to "+effectTermWords(args[0]);
+    }
+    case "remove": {
+      if(args.length<2) return "";
+      return "remove "+effectValueWords(args[1],args[0])+" from "+effectTermWords(args[0]);
+    }
+    case "apply":
+      return "write the edited field onto the application";
+    default:
+      return "";
+  }
+}
+function lower(s){
+  if(!s) return s;
+  return s.charAt(0).toLowerCase()+s.slice(1);
+}
+
+/* An effect, in words. Returns null when a statement cannot be read, so
+   the reader is shown the formal form alone rather than a partial
+   translation presented as complete. */
+function decypherEffect(expression){
+  if(!expression) return null;
+  let text=String(expression).trim();
+  if(text.startsWith("`") && text.endsWith("`")) text=text.slice(1,-1).trim();
+  if(!text) return null;
+  const parts=splitTop(text).map(readEffectStatement).filter(x=>x.length>0);
+  if(!parts.length) return null;
+  return parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join("; ")+".";
+}
+
+/* ========================================================== TAB 1: machines */
+let curMachine = MACHINES.length?MACHINES[0].id:"";
+let selState = null;          // the state the reader picked, if any
+let selTransition = null;      // the transition the reader picked, if any
+let stateTab = "incoming";    // which list the state detail shows
+
+/* How a state machine came to be, and the colour that says it.
+   An EXPLICIT machine is one the document names outright - a table of
+   states and their entry rules. An IMPLICIT one is assembled by the
+   analysis from prose that never claimed to be a state machine. That
+   difference is the reader's first question about any diagram, so the
+   chips carry it before the reader clicks anything. */
+const CLASSIFICATION = {
+  "explicit":            {tone:"ok",   hint:"the document names these states outright"},
+  "implicit":            {tone:"info", hint:"assembled by the analysis from prose that never claimed to be a state machine"},
+  "partially specified": {tone:"gap",  hint:"named in part; the rest is inferred"},
+  "candidate":           {tone:"mute", hint:"the document never calls this a lifecycle"},
+};
+function classificationOf(machineId){
+  const m=machineById(machineId);
+  const kind=String((m&&m.classification)||"").trim();
+  const known=CLASSIFICATION[kind.toLowerCase()];
+  return {kind:kind, tone:known?known.tone:"mute",
+          hint:known?known.hint:"how this machine was arrived at"};
+}
+function classificationBadge(machineId){
+  const c=classificationOf(machineId);
+  return '<span class="pill '+c.tone+'" title="'+esc(c.kind+(c.hint?" — "+c.hint:""))+'">'+
+         esc(c.kind||"unclassified")+"</span>";
+}
+const machTB=$("#machToolbar");
+MACHINES.forEach(m=>{
+  const l=el("label","chip");
+  const i=document.createElement("input"); i.type="radio"; i.name="mach"; i.value=m.id;
+  i.dataset.mach=m.id;
+  if(m.id===curMachine) i.checked=true;
+  i.onchange=()=>{ setMachine(m.id); };
+  l.appendChild(i);
+  l.insertAdjacentHTML("beforeend",machineLabel(m.id));
+  /* The chip says how the machine came to be, so the reader knows which
+     diagram is the document's and which is the analysis's. */
+  l.insertAdjacentHTML("beforeend",' <span class="cls">'+classificationBadge(m.id)+"</span>");
+  machTB.appendChild(l);
+});
+
+/* ======================================================== the matrix view
+   The same machine, as a grid: the states across, the states down, and in
+   each cell what the document says may happen between them. The graph
+   shows the shape; the matrix shows every PAIR - and the pairs the
+   document says nothing about, which is information too. */
+let machView = "graph";
+const START = "__start__";        // a transition with no from-state
+const UNSTATED = "__unstated__";  // a transition whose destination is unnamed
+{
+  const host=$("#machViews");
+  const grp=el("div","vswitch");
+  [["graph","Graph"],["matrix","Matrix"]].forEach(([v,label])=>{
+    const b=el("button",v===machView?"on":"",label);
+    b.dataset.v=v;
+    b.onclick=()=>setMachView(v);
+    grp.appendChild(b);
+  });
+  host.appendChild(grp);
+}
+function setMachView(view){
+  machView=view;
+  $("#machViews").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
+  const graph = view==="graph";
+  $("#sm").style.display = graph ? "" : "none";
+  $("#matrixBox").style.display = graph ? "none" : "block";
+  if(graph) drawMachine(); else renderMatrix();
+}
+/* The cells of the matrix: which transitions sit in each pair of states.
+   A transition that leaves several states appears in each of their rows,
+   because it is offered from each. */
+function matrixCells(machineId){
+  const m=machineById(machineId);
+  const states=(m&&m.states)||[];
+  const cells={};
+  TRANSITIONS.filter(t=>t.machine===machineId).forEach(t=>{
+    const froms=(t.fromStates&&t.fromStates.length)?t.fromStates:[START];
+    const tos=(t.toStates&&t.toStates.length)?t.toStates:[UNSTATED];
+    froms.forEach(f=> tos.forEach(to=>{
+      const k=f+"|"+to;
+      (cells[k]=cells[k]||[]).push(t);
+    }));
+  });
+  return {states:states, cells:cells};
+}
+function renderMatrix(){
+  const host=$("#matrixBox");
+  const m=machineById(curMachine);
+  if(!m){ host.innerHTML=""; return; }
+  const {states, cells}=matrixCells(curMachine);
+  const keys=Object.keys(cells);
+  const hasStart=keys.some(k=>k.indexOf(START+"|")===0);
+  const hasUnstated=keys.some(k=>k.endsWith("|"+UNSTATED));
+  const cols=states.concat(hasUnstated?[UNSTATED]:[]);
+  const rows=(hasStart?[START]:[]).concat(states);
+  const nameOf=id=>(stateById(id)||{}).name||id;
+
+  const cell=(f,to)=>{
+    const list=cells[f+"|"+to]||[];
+    if(!list.length) return '<td class="gap" data-from="'+esc(f)+'" data-to="'+esc(to)+'"></td>';
+    /* The CELL is the object: clicking it opens the transition. The
+       head NAMES what is in the cell, so it is a header and not a
+       second thing to click. */
+    const first=list[0];
+    const hint=list.length===1
+      ? first.id+" — "+(first.trigger||"")
+      : list.length+" transitions: "+list.map(t=>t.id).join(", ");
+    return '<td data-from="'+esc(f)+'" data-to="'+esc(to)+'" data-tr="'+esc(first.id)+'"'+
+      ' title="'+esc(hint)+'">'+list.map(t=>
+      '<div class="mcell">'
+      +'<span class="mcellhead">'+esc(t.triggerName||t.id)+"</span>"
+      +(t.actors||[]).map(a=>'<span class="mrole'+(a.resolved?"":" unresolved")+'" data-role="'
+        +esc(a.asNamed||a.name)+'" title="'
+        +esc(a.resolved ? (a.asNamed||a.name) : "the document does not name this as a role")+'">'
+        +esc(a.name)+(a.condition?' <em>'+esc(a.condition)+"</em>":"")+"</span>").join("")
+      +"</div>").join("")
+    +"</td>";
+  };
+  /* Every header carries the ID of the state it names, so the matrix can be
+     read - and checked - by identity and never by its wording. */
+  const colHead=c=>c===UNSTATED
+    ? '<th data-col="'+UNSTATED+'" title="the document does not name this destination">? not stated</th>'
+    : '<th data-col="'+esc(c)+'" data-st="'+esc(c)+'" title="'+esc(c)+'">'+esc(nameOf(c))+"</th>";
+  const rowHead=r=>r===START
+    ? '<th data-col="'+START+'" title="the transition has no from-state">▸ start</th>'
+    : '<th data-col="'+esc(r)+'" data-st="'+esc(r)+'" title="'+esc(r)+'">'+esc(nameOf(r))+"</th>";
+
+  host.innerHTML='<table class="matrix"><thead><tr>'
+    +'<th class="corner"><span class="maxis">↓ from &nbsp; to →</span></th>'
+    +cols.map(colHead).join("")
+    +"</tr></thead><tbody>"
+    +rows.map(r=>"<tr>"+rowHead(r)+cols.map(c=>cell(r,c)).join("")+"</tr>").join("")
+    +"</tbody></table>";
+
+  host.querySelectorAll("td[data-tr]").forEach(td=>{
+    td.onclick=()=>showTransition(td.dataset.tr);
+  });
+  host.querySelectorAll("th[data-st]").forEach(th=>{
+    th.onclick=()=>showState(th.dataset.st);
+  });
+}
+/* Change the machine without the reader touching the toolbar.
+   The selection belongs to the machine it was made in: a state of one
+   machine means nothing in another, and leaving it set would dim the
+   whole of the new diagram. So switching clears it. */
+function syncMachineChips(id){
+  machTB.querySelectorAll("input[data-mach]").forEach(i=>{ i.checked=(i.dataset.mach===id); });
+}
+function setMachine(id){
+  if(!id) return;
+  curMachine=id;
+  selState=null; selTransition=null;
+  syncMachineChips(id);
+  drawMachine();
+  if(machView==="matrix") renderMatrix();
+}
+/* The state's invariants, as a table: what the rule says, whether it was
+   checked, and how many of the enumerated states break it. The list is the
+   export's - the exporter resolved the document's sentence, and the page
+   reads ids. */
+function renderStateInvariants(host,s,ids){
+  const list=ids||[];
+  if(!list.length){
+    host.innerHTML='<div class="muted small" style="padding:8px 2px">'+
+      "This state names no invariant.</div>";
+    return;
+  }
+  const violBy={}; (D.violations||[]).forEach(v=>violBy[v.id]=v.states);
+  const rows=list.map(id=>{
+    const it=byId(INVARIANTS,id);
+    if(!it) return ['<span class="handle">'+esc(id)+"</span>","—","—","—"];
+    return [
+      '<span class="handle">'+esc(id)+"</span>",
+      chip(id,"INV",{code:false}),
+      it.checkable
+        ? '<span class="pill ok" title="checked against the aggregate">checked</span>'
+        : '<span class="pill gap" title="'+esc(it.reason||"not checked")+'">unchecked</span>',
+      violBy[id]!=null
+        ? '<span title="'+num(violBy[id])+' of the enumerated aggregate states">'+num(violBy[id])+"</span>"
+        : "—"
+    ];
+  });
+  /* The document's own sentence, above the table it was resolved into.
+     Its words, not the linkifier's: the sentence names ids, and turning
+     them into names would make it unreadable. */
+  const note = s.invariants
+    ? '<div class="muted small" style="padding:2px 2px 7px">'+esc(s.invariants)+"</div>"
+    : "";
+  host.innerHTML=note+'<div id="stateInvTable"></div>';
+  DataTable($("#stateInvTable"),{
+    id:"tStateInv",
+    columns:[
+      {k:"id",label:"ID",cls:"id",w:"16%"},
+      {k:"inv",label:"Invariant",w:"50%"},
+      {k:"checked",label:"Checked",w:"16%"},
+      {k:"viol",label:"Violated in",cls:"num",w:"18%"}],
+    rows:rows
+  });
+}
+const tip=$("#smTip");
+function showTip(html,e){ tip.innerHTML=html; tip.style.display="block";
+  tip.style.left=Math.min(e.clientX+14,window.innerWidth-360)+"px";
+  tip.style.top=Math.max(8,e.clientY-10)+"px"; }
+function hideTip(){ tip.style.display="none"; }
+
+function drawMachine(){
+  const svg=$("#sm"); svg.innerHTML="";
+  const m = machineById(curMachine); if(!m) return;
+  const NS="http://www.w3.org/2000/svg";
+  const mk=(t,a)=>{ const n=document.createElementNS(NS,t); for(const k in a) n.setAttribute(k,a[k]); return n; };
+
+  /* ---- the transitions of this machine, as the export resolves them ----
+     The engine resolves the document's cells and ships the result: a
+     transition arrives with the states its From and To cells name, already
+     turned into ids. The page does not parse the document's text.
+
+     A From cell may name SEVERAL states — the transition may fire from
+     any of them — and the To cell names one, or names two as two
+     readings. The edge is drawn from the LAST source named, because that
+     is the state the transition leads away from, and the reader follows
+     the drawn edge. */
+  const HIER = (D.hierarchy||[]).find(h=>h.machine===curMachine);
+  const HIER_STATES = (HIER&&HIER.states)||[];
+  /* The states of this machine, in the order the document lists them —
+     taken from the export's hierarchy rather than re-derived. */
+  const states = HIER_STATES.map(h=>stateById(h.id)).filter(Boolean);
+
+  /* The state a transition's edge is drawn from, and the one it is drawn
+     to. Null when the document does not name one. */
+  function edgeEnds(t){
+    const from = (t.fromStates||[]);
+    const to = (t.toStates||[]);
+    return {
+      from: from.length?from[from.length-1]:null,
+      to: to.length?to[to.length-1]:null,
+    };
+  }
+
+  /* ---- the grid ----
+     One or two columns of boxes. Every edge is routed through a gutter
+     that no box occupies, so no edge can cross a box:
+       - a same-column edge runs in the OUTER gutter of its column;
+       - a cross-column edge runs in the MIDDLE gutter;
+       - a self-loop pokes into its column's outer gutter.
+     Edges to a destination the document does not name run down the outer
+     gutter into a band below the grid. */
+  const NW=152, NH=52, GX=88, GY=58, GUT=84, RIGHT=84, BAND=64, LANE=9;
+  const nCols = states.length>4?2:1;
+  const perCol = Math.ceil(states.length/nCols);
+  const pos={}, colOf={};
+  states.forEach((s,i)=>{
+    const col=Math.floor(i/perCol), row=i%perCol;
+    colOf[s.id]=col;
+    pos[s.id]={x:GUT+col*(NW+GX), y:44+row*(NH+GY), w:NW, h:NH};
+  });
+  const gridRight = GUT+(nCols-1)*(NW+GX)+NW;
+  const gridBottom = 44+perCol*(NH+GY);
+
+  const edges=[];
+  TRANSITIONS.filter(t=>t.machine===curMachine).forEach(t=>{
+    const kind = kindOf(byId(FINDINGS,t.id)||{kind:""});
+    const ends=edgeEnds(t);
+    edges.push({id:t.id,kind:kind,t:t,
+      from:ends.from, to:ends.to,
+      rawFrom:t.from||"", rawTo:t.to||""});
+  });
+
+  /* Synthetic nodes for the ends the document does not name: a
+     destination that names more than one state of this machine, and the
+     "(initial)" pseudo-state, which is a position in the flow rather than
+     a state of the machine. */
+  const synth={}; let synthN=0;
+  function synthFor(key,label,raw,kind){
+    if(!synth[key]) synth[key]={id:"UN-"+(++synthN), label:label, raw:raw, kind:kind};
+    return synth[key];
+  }
+  const isInitial = s => /initial/i.test(String(s||""));
+  edges.forEach(e=>{
+    /* A transition whose end the document does not name still belongs to the
+       diagram: it is drawn to a marker, never dropped. An end that names NO
+       state is a different fact from an end that names several, and the
+       marker says which it is — the JSON model says the first with an empty
+       end and the exporter's flag, the old cell form said the second. */
+    if(!e.to) e.synthTo = isInitial(e.rawTo)
+      ? synthFor("init","(initial)",e.rawTo,"init")
+      : synthFor("to:"+(e.rawTo||e.id), e.rawTo||"not stated", e.rawTo, "unstated");
+    if(!e.from) e.synthFrom = (e.t.fromIsInitial||isInitial(e.rawFrom))
+      ? synthFor("init","(initial)",e.rawFrom,"init")
+      : synthFor("from:"+(e.rawFrom||e.id), e.rawFrom||"not stated", e.rawFrom, "unstated");
+  });
+  const synthList=Object.keys(synth).map(k=>synth[k]);
+  const bandY = gridBottom + BAND;
+
+  /* Place the synthetic nodes. The "(initial)" marker sits above the
+     grid, where the flow starts; an unstated destination sits in the band
+     below, where the document's omission is visible. */
+  const initNodes=synthList.filter(s=>s.kind==="init");
+  const unstatedNodes=synthList.filter(s=>s.kind==="unstated");
+  initNodes.forEach((sn,i)=>{ sn.x = GUT+i*(NW+40); sn.y = -34; sn.w=104; sn.h=42; });
+  unstatedNodes.forEach((sn,i)=>{
+    sn.x = 40 + (i%3)*(NW+30);
+    sn.y = bandY + Math.floor(i/3)*54;
+    sn.w=176; sn.h=42;
+  });
+
+  /* ---- gutters and lanes ---- */
+  const lanes={};
+  function lane(key){
+    const n = lanes[key]||0; lanes[key]=n+1; return n;
+  }
+  const gutterX = {
+    L: col => GUT-26-lane("L"+col)*17,
+    M: col => GUT+NW+26+lane("M"+col)*17,
+    R: col => gridRight+26+lane("R"+col)*17
+  };
+  function outerKey(col){ return col===0?"L":"R"; }
+  function outerX(col,L){ return col===0 ? GUT-16-L*LANE : gridRight+16+L*LANE; }
+
+  /* ---- the paths ---- */
+  function pathOf(e){
+    const fromBox = e.from ? pos[e.from] : null;
+    const toBox   = e.to   ? pos[e.to]   : null;
+
+    if(e.from && e.from===e.to && fromBox){
+      // a self-loop, in the column's outer gutter, within the row's band
+      const left = colOf[e.from]===0;
+      const x0=left?fromBox.x:fromBox.x+fromBox.w;
+      const s=left?-1:1;
+      const bulge=x0+s*52;
+      const y1=fromBox.y+20, y2=fromBox.y+40;
+      return "M "+x0+" "+y1+" C "+bulge+" "+y1+", "+bulge+" "+y2+", "+x0+" "+y2;
+    }
+
+    if(fromBox && toBox){
+      const cf=colOf[e.from], ct=colOf[e.to];
+      const fy=fromBox.y+fromBox.h/2, ty=toBox.y+toBox.h/2;
+      if(cf===ct){
+        // same column: out through the column's outer gutter
+        const L=lane("o"+cf);
+        const gx=outerX(cf,L);
+        const x0=cf===0?fromBox.x:fromBox.x+fromBox.w;
+        const x1=cf===0?toBox.x:toBox.x+toBox.w;
+        return "M "+x0+" "+fy+" C "+gx+" "+fy+", "+gx+" "+ty+", "+x1+" "+ty;
+      }
+      // cross column: through the middle gutter, entering and leaving on
+      // the gutter-facing sides
+      const L=lane("m"+cf+ct);
+      const gx=GUT+NW+26+L*17;
+      if(cf<ct){
+        const x0=fromBox.x+fromBox.w, x1=toBox.x;
+        return "M "+x0+" "+fy+" C "+gx+" "+fy+", "+gx+" "+ty+", "+x1+" "+ty;
+      }
+      const x0=fromBox.x, x1=toBox.x+toBox.w;
+      return "M "+x0+" "+fy+" C "+gx+" "+fy+", "+gx+" "+ty+", "+x1+" "+ty;
+    }
+
+    // an edge with an unstated end
+    const box = fromBox||toBox;
+    if(!box) return null;
+    const col = colOf[fromBox?e.from:e.to];
+    const sn = e.synthTo||e.synthFrom;
+    if(!sn) return null;
+    const snCx = sn.x+sn.w/2;
+
+    if(sn.kind==="init"){
+      // from the start marker down into the first state
+      const x1=col===0?box.x:box.x+box.w;
+      const sx = snCx;
+      return "M "+sx+" "+(sn.y+sn.h)+
+             " C "+sx+" "+(sn.y+sn.h+18)+", "+x1+" "+(box.y-30)+", "+x1+" "+box.y;
+    }
+    if(fromBox && !toBox){
+      /* Down the column's outer gutter to the band, then along the band
+         to the node. The horizontal run is below every box, so it cannot
+         cross one; the vertical run is in a gutter, so it cannot either. */
+      const L=lane("s"+col);
+      const gx=outerX(col,L);
+      const x0=col===0?box.x:box.x+box.w;
+      const y0=box.y+box.h/2;
+      return "M "+x0+" "+y0+
+             " C "+gx+" "+y0+", "+gx+" "+(bandY-46)+", "+gx+" "+(bandY-46)+
+             " L "+snCx+" "+(bandY-46)+
+             " L "+snCx+" "+sn.y;
+    }
+    /* From a band node up into a real state: up to the band line, along
+       it to the gutter, then up the gutter into the box. */
+    const L=lane("s"+col);
+    const gx=outerX(col,L);
+    const x1=col===0?box.x:box.x+box.w;
+    const y1=box.y+box.h/2;
+    return "M "+snCx+" "+sn.y+
+           " L "+snCx+" "+(bandY-46)+
+           " L "+gx+" "+(bandY-46)+
+           " C "+gx+" "+(bandY-46)+", "+gx+" "+y1+", "+gx+" "+y1+
+           " L "+x1+" "+y1;
+  }
+
+  const defs=mk("defs",{});
+  defs.innerHTML =
+    '<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'+
+    '<path d="M0,0 L10,5 L0,10 z" fill="#5c6675"/></marker>'+
+    '<marker id="ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'+
+    '<path d="M0,0 L10,5 L0,10 z" fill="#b91c1c"/></marker>'+
+    '<marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'+
+    '<path d="M0,0 L10,5 L0,10 z" fill="#b45309"/></marker>';
+  svg.appendChild(defs);
+
+  const gEdges=mk("g",{}), gNodes=mk("g",{}), gLabels=mk("g",{}), gLead=mk("g",{});
+  const gAll=mk("g",{});
+  svg.appendChild(gAll); gAll.appendChild(gLead); gAll.appendChild(gEdges);
+  gAll.appendChild(gNodes); gAll.appendChild(gLabels);
+
+  /* Clicking the empty canvas clears the selection. The click is caught on
+     the SVG itself, and a click that landed on a node or an edge stopped
+     before it reached here. */
+  svg.onclick=(ev)=>{
+    if(ev.target!==svg && ev.target!==gAll) return;
+    if(!selState && !selTransition) return;
+    selState=null; selTransition=null;
+    drawMachine(); showMachine();
+  };
+
+  const paths={};
+  edges.forEach(e=>{
+    const d=pathOf(e);
+    if(!d) return;
+    /* The selected edge gets a halo drawn beneath it, so the accent never
+       covers the edge itself and the edge keeps its own kind colour and
+       dash pattern. */
+    if(e.id===selTransition) gEdges.appendChild(mk("path",{class:"edgehalo",d:d}));
+    /* An edge is dimmed when something else is selected and the edge does
+       not belong to it: a selected transition dims the rest, and a
+       selected state dims the transitions that do not touch it.
+
+       "Touches it" means the edge's drawn ends. A transition may name
+       several states in its From cell ("ST-001 Draft, ST-002, ST-003,
+       ST-004, ST-005"), but the edge is drawn from one of them, and that
+       is the end the reader sees. Dimming follows the drawing. */
+    const other = selTransition
+      ? (e.id!==selTransition)
+      : (selState ? !(e.from===selState || e.to===selState) : false);
+    const p=mk("path",{class:"edge"+(e.kind==="def"?" def":e.kind==="gap"?" gap":"")+
+        (e.id===selTransition?" sel":(other?" dim":"")),
+      d:d,"marker-end":e.kind==="def"?"url(#ahd)":e.kind==="gap"?"url(#ahg)":"url(#ah)"});
+    p.dataset.id=e.id;
+    p.addEventListener("mouseenter",ev=>showTip("<b>"+esc(e.t.id)+"</b> "+q(e.t.trigger)+
+      "<br><span style='color:#cbd5e1'>"+esc(e.t.actor||"")+"</span>",ev));
+    p.addEventListener("mousemove",ev=>showTip(tip.innerHTML,ev));
+    p.addEventListener("mouseleave",hideTip);
+    p.addEventListener("click",()=>{ selTransition=e.t.id; drawMachine(); showTransition(e.t.id); });
+    gEdges.appendChild(p); paths[e.id]=p;
+  });
+
+  /* ---- the boxes ---- */
+  function box(g,x,y,w,h,cls){
+    const b=mk("g",{class:"nbox"+(cls?" "+cls:"")});
+    b.appendChild(mk("rect",{x:x,y:y,width:w,height:h,rx:8}));
+    return b;
+  }
+  states.forEach(s=>{
+    const p=pos[s.id];
+    /* When a state is selected, the other states and the transitions that
+       do not belong to it are dimmed, so the reader sees what the
+       selection reaches. */
+    const dim = selState && s.id!==selState ? " dim" : "";
+    const g=box(gNodes,p.x,p.y,p.w,p.h, s.id===selState?"sel":dim);
+    const t1=mk("text",{x:p.x+10,y:p.y+22,class:"sname"});
+    t1.textContent=(s.name||"").split("(")[0].trim();
+    const t2=mk("text",{x:p.x+10,y:p.y+40,class:"sid"});
+    t2.textContent=s.id;
+    g.appendChild(t1); g.appendChild(t2);
+    g.style.cursor="pointer";
+    g.addEventListener("click",()=>{ selState=s.id; selTransition=null; drawMachine(); showState(s.id); });
+    gNodes.appendChild(g);
+  });
+  synthList.forEach(sn=>{
+    const w=sn.w||176, h=sn.h||42;
+    const g=box(gNodes,sn.x,sn.y,w,h,sn.kind==="init"?"start":"unstated");
+    const t=mk("text",{x:sn.x+9,y:sn.y+(sn.kind==="init"?26:25)});
+    t.textContent = sn.kind==="init" ? "start"
+      : "? "+plain(String(sn.label).split("(")[0].trim().slice(0,22));
+    g.appendChild(t);
+    g.style.cursor="pointer";
+    g.addEventListener("click",()=>{
+      $("#machDetail").innerHTML = sn.kind==="init"
+        ? "<h3>Start</h3><p class='prose'>The document marks this as the beginning of the "+
+          "flow — a position, not a state of the machine. It is drawn as a marker rather than "+
+          "as a state.</p>"
+        : "<h3>Unstated destination</h3><p class='prose'>"+
+          (sn.raw
+            ? "The document does not name a single state for this transition. It says <b>"+
+              esc(sn.raw)+"</b>, which names more than one state of this machine — so the "+
+              "transition's destination is not determined by the document, and the edge is "+
+              "drawn to this marker rather than to a state that was guessed."
+            : "The document names no destination for this transition. Its destination is not "+
+              "determined by the document, and the edge is drawn to this marker rather than to "+
+              "a state that was guessed.")+
+          "</p>";
+    });
+    gNodes.appendChild(g);
+  });
+
+  /* ---- the labels ----
+     A label belongs to its edge's curve, so it is placed ON the curve: a
+     candidate point along the curve is tried, and the first that clears
+     the boxes and the labels already placed is taken.
+
+     The collision maths is done in SCREEN pixels, because that is the
+     space the reader reads in. The text is sized in screen pixels, so a
+     label's size on the screen is known without knowing the diagram's
+     scale — and the scale is not known until the drawing's extent is,
+     which the labels affect. So the layout is iterated: extent, then
+     scale, then labels, until the scale stops moving. */
+  const labelSpecs=[];
+  Object.keys(paths).forEach(id=>{
+    const e=edges.find(x=>x.id===id);
+    labelSpecs.push({e:e, path:paths[id], L:paths[id].getTotalLength(),
+      txt:e.t.id, wPx:e.t.id.length*6.4+8, hPx:14, dx:0, dy:0});
+  });
+  const FRACTIONS=[0.5,0.42,0.58,0.34,0.66,0.26,0.74,0.18,0.82,0.1,0.9];
+
+  /* The width of a label on the screen, measured rather than guessed:
+     the text is rendered off-screen and its box is read. */
+  const measure=document.createElement("span");
+  measure.style.cssText="position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre;font-weight:400";
+  document.body.appendChild(measure);
+  function labelWidthPx(txt){
+    measure.textContent=txt;
+    measure.style.fontSize="11px";
+    return measure.getBoundingClientRect().width+4;
+  }
+  labelSpecs.forEach(sp=>{ sp.wPx=labelWidthPx(sp.txt); });
+
+  function placeLabels(scale){
+    const obs=Object.values(pos).map(o=>({x:o.x*scale,y:o.y*scale,w:o.w*scale,h:o.h*scale}));
+    synthList.forEach(sn=>obs.push({x:sn.x*scale,y:sn.y*scale,
+      w:(sn.w||176)*scale,h:(sn.h||42)*scale}));
+    const taken=[];
+    labelSpecs.forEach(sp=>{
+      let spot=null;
+      for(const f of FRACTIONS){
+        const pt=sp.path.getPointAtLength(sp.L*f);
+        const sx=pt.x*scale, sy=pt.y*scale;
+        const inBox=obs.some(o=> sx-sp.wPx/2<o.x+o.w && o.x<sx+sp.wPx/2 &&
+                                   sy-sp.hPx/2<o.y+o.h && o.y<sy+sp.hPx/2);
+        if(inBox) continue;
+        const inLabel=taken.some(p=> Math.abs(sx-p.sx)<(sp.wPx+p.wPx)/2+4 &&
+                                       Math.abs(sy-p.sy)<(sp.hPx+p.hPx)/2+2);
+        if(inLabel) continue;
+        spot={sx:sx,sy:sy}; break;
+      }
+      if(!spot){
+        const pt=sp.path.getPointAtLength(sp.L*0.5);
+        spot={sx:pt.x*scale, sy:pt.y*scale};
+      }
+      sp.sx=spot.sx; sp.sy=spot.sy;
+      taken.push({sx:spot.sx,sy:spot.sy,wPx:sp.wPx,hPx:sp.hPx});
+    });
+    /* Whatever could not be placed cleanly is separated by a sweep, which
+       pushes each label down past the ones above it. */
+    const sorted=labelSpecs.slice().sort((a,b)=>a.sy-b.sy);
+    for(let i=1;i<sorted.length;i++){
+      const l=sorted[i];
+      for(let j=0;j<i;j++){
+        const p=sorted[j];
+        if(Math.abs(l.sx-p.sx)<(l.wPx+p.wPx)/2+4 && Math.abs(l.sy-p.sy)<(l.hPx+p.hPx)/2+2){
+          l.sy = p.sy + (l.hPx+p.hPx)/2+2;
+        }
+      }
+    }
+    labelSpecs.forEach(sp=>{ sp.dx=sp.sx/scale; sp.dy=sp.sy/scale; });
+  }
+
+  function drawLabels(){
+    gLabels.innerHTML="";
+    labelSpecs.forEach(sp=>{
+      const other = selTransition
+        ? (sp.e.id!==selTransition)
+        : (selState ? !(sp.e.from===selState || sp.e.to===selState) : false);
+      const tx=mk("text",{class:"elabel"+(sp.e.id===selTransition?" sel":(other?" dim":"")),
+        x:sp.dx,y:sp.dy,"text-anchor":"middle"});
+      tx.textContent=sp.txt;
+      tx.style.cursor="pointer";
+      tx.addEventListener("click",()=>{ selTransition=sp.e.t.id; drawMachine(); showTransition(sp.e.t.id); });
+      gLabels.appendChild(tx);
+      const path=paths[sp.e.id], PL=path.getTotalLength();
+      let best=null, bd=1e9;
+      for(let k=0;k<=40;k++){
+        const pt=path.getPointAtLength(PL*k/40);
+        const d=Math.hypot(pt.x-sp.dx,pt.y-sp.dy);
+        if(d<bd){bd=d;best=pt;}
+      }
+      if(best && bd>=12){
+        gLead.appendChild(mk("line",{class:"leader",x1:sp.dx,y1:sp.dy,x2:best.x,y2:best.y}));
+      }
+    });
+  }
+
+  /* ---- fit the canvas to what was actually drawn ----
+     The viewBox is taken from the rendered bounding box, so nothing can
+     be drawn outside the canvas however the labels were moved.
+
+     The diagram is SCALED TO FIT the panel rather than drawn at natural
+     size and scrolled. A reader who has to scroll a diagram to find a
+     state is reading a diagram badly; the whole machine should be visible
+     at once.
+
+     The text is sized in SCREEN pixels: the scale the browser applies is
+     worked out, and the font sizes are divided by it, so the labels stay
+     the same size on screen whatever the diagram's width. Without this, a
+     wide machine's labels shrink to nothing.
+
+     The extent is measured from the GEOMETRY, not from the rendered text.
+     A text element's box grows as its font grows, so measuring the
+     extent with the text in it and then growing the text inflates the
+     drawing without bound. The boxes and the edges are what the extent
+     has to cover; the labels sit on the edges. */
+  function fitCanvas(){
+    /* The extent is measured from the GEOMETRY — the boxes and the edges —
+       not from the rendered text. A text element's box grows as its font
+       grows, so measuring the extent with the text in it and then growing
+       the text inflates the drawing without bound. The labels sit on the
+       edges, so the edges' extent covers them. */
+    let bb=null;
+    try{
+      const boxBB=gNodes.getBBox();
+      const edgeBB=gEdges.getBBox();
+      const x=Math.min(boxBB.x,edgeBB.x), y=Math.min(boxBB.y,edgeBB.y);
+      const w=Math.max(boxBB.x+boxBB.width,edgeBB.x+edgeBB.width)-x;
+      const h=Math.max(boxBB.y+boxBB.height,edgeBB.y+edgeBB.height)-y;
+      bb={x:x,y:y,width:w,height:h};
+    }catch(err){}
+    if(!bb || bb.width<=0){
+      svg.setAttribute("viewBox","0 0 "+(gridRight+GUT)+" "+(bandY+90));
+      svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+      svg.style.width="100%"; svg.style.height="100%";
+      return 1;
+    }
+    const pad=18;
+    const vw=bb.width+2*pad, vh=bb.height+2*pad;
+    svg.setAttribute("viewBox",(bb.x-pad)+" "+(bb.y-pad)+" "+vw+" "+vh);
+    svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+    svg.style.width="100%"; svg.style.height="100%";
+    /* The scale the browser will apply: the drawing is fitted to the
+       panel, whichever of width and height binds first. */
+    const r=svg.getBoundingClientRect();
+    const scale = (r.width&&r.height) ? Math.min(r.width/vw, r.height/vh) : 1;
+    const setFont=(sel,px)=>{
+      svg.querySelectorAll(sel).forEach(t=>{ t.style.fontSize=(px/scale)+"px"; });
+    };
+    setFont("text.sname",12);
+    setFont("text.sid",10);
+    setFont("text.elabel",11);
+    return scale;
+  }
+
+  let scale=1;
+  for(let round=0; round<4; round++){
+    scale=fitCanvas();
+    placeLabels(scale);
+    drawLabels();
+  }
+  /* The last round placed the labels against a scale that the labels
+     themselves may have changed, so the canvas is fitted once more. */
+  scale=fitCanvas();
+
+  const reach = (D.byState||[]).filter(b=>b.machine===curMachine);
+  /* Only the markers that stand for a destination the document does not
+     name are counted here. The start marker is a position in the flow, not a
+     destination, and counting it would report a destination that is not
+     missing. */
+  const unstatedCount = synthList.filter(s=>s.kind==="unstated").length;
+  showMachine(reach, unstatedCount);
+}
+
+/* The machine overview: what the machine is, and what the reader can
+   reach from it. */
+function showMachine(reach, unstatedCount){
+  const m=machineById(curMachine); if(!m) return;
+  reach = reach || (D.byState||[]).filter(b=>b.machine===curMachine);
+  unstatedCount = (unstatedCount===undefined)
+    ? (D.transitions||[]).filter(t=>t.machine===curMachine && !(t.toStates||[]).length).length
+    : unstatedCount;
+  const cls=classificationOf(curMachine);
+  $("#machDetail").innerHTML =
+    "<h3>"+esc(m.name)+"</h3>"+
+    "<div class='muted small' style='margin-bottom:8px'>"+esc(m.id)+"</div>"+
+    /* How this machine came to be, said plainly and apart from the
+       reason: the reader's first question about a diagram is whether the
+       document states it or the analysis assembled it. */
+    "<div class='clsline'>"+
+      "<span class='clslabel'>This machine is</span>"+
+      "<span class='pill "+cls.tone+"'>"+esc(cls.kind||"unclassified")+"</span>"+
+      "<span class='muted small'>"+esc(cls.hint)+"</span>"+
+    "</div>"+
+    "<dl>"+
+    "<dt>Concept</dt><dd>"+q(m.concept||"")+"</dd>"+
+    "<dt>Dimensions</dt><dd>"+q(m.dimensions||"")+"</dd>"+
+    "<dt>Why</dt><dd class='prose'>"+q(m.classificationReason||"—")+"</dd>"+
+    "<dt>Initial</dt><dd>"+q(m.initialState||"")+"</dd>"+
+    "<dt>Terminal</dt><dd>"+q(m.terminalStates||"")+"</dd>"+
+    "<dt>Confidence</dt><dd>"+q(m.confidence||"")+"</dd>"+
+    "<dt>Reachable</dt><dd>"+reach.map(r=>esc(r.state)+" ("+num(r.total)+")").join(", ")+"</dd>"+
+    (unstatedCount?"<dt>Unstated</dt><dd>"+unstatedCount+" destination(s) the document does not name</dd>":"")+
+    "</dl>"+
+    "<p class='muted small' style='margin-top:9px'>Click a node or an edge for its detail. "+
+    "Red dashed = a confirmed defect; amber = a spec gap; ? = a destination the document "+
+    "does not name.</p>";
+}
+
+/* The trigger's NAME is the export's: the exporter reads the trigger once
+   and ships both the words and the name, so the page strips nothing. */
+function showState(id){
+  const s=stateById(id); if(!s) return;
+  /* The incoming and outgoing lists come from the export's hierarchy: the
+     engine knows which transitions leave and enter each state, including
+     the ones whose From cell names several states. */
+  const hier=(D.hierarchy||[]).find(h=>h.machine===curMachine);
+  const hs=((hier&&hier.states)||[]).find(x=>x.id===id)||{outgoing:[],incoming:[]};
+  const incoming=(hs.incoming||[]).map(tid=>byId(TRANSITIONS,tid)).filter(Boolean);
+  const outgoing=(hs.outgoing||[]).map(tid=>byId(TRANSITIONS,tid)).filter(Boolean);
+  const list = stateTab==="incoming" ? incoming : outgoing;
+  /* The invariants this state holds, as the export resolved them. */
+  const invIds = s.invariantIds || [];
+  /* The id is the HANDLE and the trigger is the NAME, so the trigger is
+     what the reader recognises and the trigger is what is clickable. The
+     id goes in the hint. The guard is READ, not shown as an expression:
+     the reading is what the reader can act on, and the source expression
+     stays in the cell's hint and in the export behind it. */
+  /* The trigger names its command by code and by name - "CMD-001 Create
+     application". The code is a handle, so it goes in the hint and the
+     cell shows the name the reader recognises. */
+  const rows = list.map(t=>{
+    const words = t.guardNotExpressible ? null : decypher(t.guardExpression);
+    return [
+      '<span class="handle">'+esc(t.id)+"</span>",
+      chip(t.id,"TR",{tr:true}),
+      esc(t.actor||""),
+      words
+        ? '<span class="written" title="'+esc(t.guardExpression||"")+'">'+words+"</span>"
+        : '<span class="mono">'+esc(t.guardExpression||"")+"</span>"
+    ];
+  });
+
+  $("#machDetail").innerHTML =
+    '<button class="backlink" id="backToMachine">&larr; Back to the machine</button>'+
+    "<h3>"+esc(s.name)+"</h3>"+
+    "<div class='muted small' style='margin-bottom:8px'>"+esc(s.id)+" &middot; "+esc(s.machine)+
+      " &middot; "+esc(machineTitle(s.machine))+"</div>"+
+    "<dl>"+
+    "<dt>Kind</dt><dd>"+esc(s.kind||"")+"</dd>"+
+    "<dt>Meaning</dt><dd class='prose'>"+q(s.meaning||"")+"</dd>"+
+    "<dt>Source</dt><dd>"+citationCell(s.source)+"</dd>"+
+    "</dl>"+
+    '<div class="dtabs">'+
+      '<button data-st="incoming" class="'+(stateTab==="incoming"?"on":"")+'">Incoming ('+incoming.length+')</button>'+
+      '<button data-st="outgoing" class="'+(stateTab==="outgoing"?"on":"")+'">Outgoing ('+outgoing.length+')</button>'+
+      '<button data-st="invariants" class="'+(stateTab==="invariants"?"on":"")+'">Invariants ('+invIds.length+')</button>'+
+    "</div>"+
+    '<div id="stateList" class="dscroll"></div>';
+
+  const host=$("#stateList");
+  if(stateTab==="invariants"){
+    renderStateInvariants(host, s, invIds);
+  }else if(!rows.length){
+    host.innerHTML='<div class="muted small" style="padding:8px 2px">'+
+      (stateTab==="incoming"?"No transition leads into this state.":"No transition leaves this state.")+"</div>";
+  }else{
+    /* The SAME table for both lists, so the columns do not move when the
+       reader switches between them. */
+    DataTable($("#stateList"),{
+      id: "tStateList",
+      columns: [
+        {k:"id",label:"Transition",cls:"id",w:"14%"},
+        {k:"trigger",label:"Trigger",w:"30%"},
+        {k:"actor",label:"Actor",w:"16%"},
+        {k:"guard",label:"Guard",w:"40%"}],
+      rows: rows
+    });
+  }
+  host.querySelectorAll("a[data-tr]").forEach(a=>{
+    a.onclick=(ev)=>{ ev.preventDefault(); showTransition(a.dataset.tr); };
+  });
+  $("#machDetail").querySelectorAll("[data-st]").forEach(b=>{
+    b.onclick=()=>{ stateTab=b.dataset.st; showState(id); };
+  });
+  $("#backToMachine").onclick=()=>{ selState=null; selTransition=null; drawMachine(); showMachine(); };
+}
+function showTransition(id){
+  const t=byId(TRANSITIONS,id); if(!t) return;
+  const f=FINDINGS.find(x=>x.id===id);
+  /* The rule in words, above the rule in symbols. */
+  const inWords = t.guardNotExpressible ? null : decypher(t.guardExpression);
+  const effWords = decypherEffect(t.effectExpression);
+  /* The state names come from the export's resolved lists, not from
+     parsing the document's cell. */
+  const fromIds=t.fromStates||[], toIds=t.toStates||[];
+  const fromName = fromIds.length ? (stateById(fromIds[fromIds.length-1])||{}).name : null;
+  const toName   = toIds.length   ? (stateById(toIds[toIds.length-1])||{}).name   : null;
+  const nameOf=(ids)=>ids.map(i=>{
+    const s=stateById(i); return s ? (s.name||i) : i;
+  }).join(", ");
+  $("#machDetail").innerHTML =
+    '<button class="backlink" id="backFromTransition">&larr; Back</button>'+
+    "<h3>"+esc(t.trigger||t.id)+"</h3>"+
+    "<div class='muted small' style='margin-bottom:8px'>"+esc(t.id)+" &middot; "+
+      esc(machineTitle(t.machine))+"</div>"+
+    "<dl>"+
+    "<dt>From</dt><dd>"+(fromName?esc(nameOf(fromIds))+" ("+esc(t.from)+")":esc(t.from||"") )+"</dd>"+
+    "<dt>To</dt><dd>"+(toName?esc(nameOf(toIds))+" ("+esc(t.to)+")":esc(t.to||"") )+"</dd>"+
+    "<dt>Actor</dt><dd>"+esc(t.actor||"")+"</dd>"+
+    "<dt>Guard</dt><dd>"+q(t.guard||"")+"</dd>"+
+    (inWords
+      ? "<dt>In words</dt><dd><div class='written'>"+inWords+"</div></dd>"
+      : "<dt>In words</dt><dd class='muted small'>this guard names something the expression "+
+        "vocabulary does not define, so it is not translated</dd>")+
+    "<dt>Guard expr</dt><dd><span class='mono'>"+esc(t.guardExpression||"")+"</span></dd>"+
+    (effWords
+      ? "<dt>Effect in words</dt><dd><div class='written'>"+effWords+"</div></dd>"
+      : "")+
+    "<dt>Effect expr</dt><dd><span class='mono'>"+esc(t.effectExpression||"")+"</span></dd>"+
+    "<dt>Evidence</dt><dd>"+citationCell(t.evidence)+"</dd>"+
+    (f?"<dt>Finding</dt><dd>"+probeOf(f.id)?probePill(f.id):'<span class="pill mute">—</span>'+
+        " "+esc(f.id)+" "+q(f.title)+"</dd>":"")+
+    "</dl>";
+  const back=$("#backFromTransition");
+  if(back) back.onclick=()=>{
+    if(selState) showState(selState); else showMachine();
+  };
+}
+/* ======================================================= TAB 2: transitions */
+const transTB=$("#transToolbar");
+let transMachine="", transSearch="", transKind="all";
+function machineChips(host,get,set,label){
+  const all=el("label","chip");
+  const i=document.createElement("input");
+  i.type="radio"; i.name=label; i.value=""; i.checked=true;
+  i.onchange=()=>{ set(""); render(); };
+  all.appendChild(i); all.appendChild(el("span","lab","All machines"));
+  host.appendChild(all);
+  MACHINES.forEach(m=>{
+    const l=el("label","chip"); const r=document.createElement("input");
+    r.type="radio"; r.name=label; r.value=m.id;
+    r.onchange=()=>{ set(m.id); render(); };
+    l.appendChild(r);
+    l.insertAdjacentHTML("beforeend",machineLabel(m.id));
+    /* The same chip as the State machines tab: the machine's name, its id,
+       and how the machine was arrived at. One control, one look. */
+    l.insertAdjacentHTML("beforeend",' <span class="cls">'+classificationBadge(m.id)+"</span>");
+    host.appendChild(l);
+  });
+}
+function searchBox(host,get,set){
+  const l=el("label",""); l.appendChild(el("span","","search"));
+  const i=document.createElement("input"); i.type="search"; i.placeholder="id, trigger, guard…";
+  i.oninput=()=>{ set(i.value); render(); };
+  l.appendChild(i); host.appendChild(l);
+}
+machineChips(transTB,()=>transMachine,v=>transMachine=v,"transm");
+searchBox(transTB,()=>transSearch,v=>transSearch=v);
+function renderTrans(){
+  const qy=transSearch.toLowerCase();
+  const rows=TRANSITIONS.filter(t=>{
+    if(transMachine && t.machine!==transMachine) return false;
+    if(qy && !(t.id+" "+t.trigger+" "+t.guard+" "+t.to).toLowerCase().includes(qy)) return false;
+    return true;
+  });
+  DataTable($("#transTable"),{
+    id: "tTrans",
+    columns: [
+      {k:"id",label:"ID",cls:"id",w:"4%"},{k:"machine",label:"Machine",w:"11%"},
+      {k:"trigger",label:"Trigger",w:"18%"},{k:"from",label:"From",w:"9%"},{k:"to",label:"To",w:"9%"},
+      {k:"guard",label:"Guard",w:"16%"},{k:"actor",label:"Actor",w:"8%"},
+      {k:"guardExpression",label:"Guard expression",w:"18%"},{k:"evidence",label:"Evidence",w:"7%"}],
+    rows: rows.map(t=>[esc(t.id),machineLabel(t.machine),triggerCell(t),
+      stateCell(t.fromStates,t.from),stateCell(t.toStates,t.to),
+      cell(t.guard||""),cell(t.actor||""),
+      '<span class="mono">'+cell(t.guardExpression||"")+"</span>",citationCell(t.evidence)])});
+}
+
+/* ======================================================== TAB 3: invariants */
+const invTB=$("#invToolbar");
+let invKind="all";
+const invKinds=[["all","All"],["checkable","Checked"],["unchecked","Unchecked"],["violated","Violated"]];
+invKinds.forEach(([v,l])=>{
+  const el2=el("label","chip"); const i=document.createElement("input");
+  i.type="radio"; i.name="invk"; i.value=v; if(v==="all") i.checked=true;
+  i.onchange=()=>{ invKind=v; renderInv(); };
+  el2.appendChild(i); el2.appendChild(el("span","",l));
+  invTB.appendChild(el2);
+});
+const violBy={}; (D.violations||[]).forEach(v=>violBy[v.id]=v.states);
+/* Where an invariant holds. The cell is made of the ids the export
+   ships: the states the rule holds in, then the transitions it guards.
+   Each id is a link to what it names, so the cell says what the
+   analysis says - and the document's own cell is not quoted, because
+   the page cannot read it. */
+function scopeCell(inv){
+  const a=inv.appliesTo||{};
+  /* The states first, then the transitions - each a reference, drawn
+     the same way it is drawn everywhere else. */
+  const states=chipCell(a.states,"ST");
+  const moves=chipCell(a.transitions,"TR");
+  if(states==='<span class="muted">—</span>' && moves==='<span class="muted">—</span>')
+    return '<span class="muted">—</span>';
+  return [states,moves].filter(s=>s.indexOf('muted')<0).join(" ");
+}
+/* The invariants tab's rows. */
+function renderInv(){
+  const rows=INVARIANTS.filter(i=>{
+    if(invKind==="checkable" && !i.checkable) return false;
+    if(invKind==="unchecked" && i.checkable) return false;
+    if(invKind==="violated" && !violBy[i.id]) return false;
+    return true;
+  });
+  DataTable($("#invTable"),{
+    id: "tInv",
+    columns: [
+      {k:"id",label:"ID",cls:"id",w:"5%"},{k:"text",label:"Invariant",w:"22%"},
+      {k:"scope",label:"Scope",w:"12%"},{k:"appliesTo",label:"Holds in",w:"13%"},
+      {k:"expression",label:"In words",w:"12%"},{k:"machine",label:"Machine",w:"8%"},
+      {k:"violating",label:"Violated in",cls:"num",w:"6%"},{k:"register",label:"Register",w:"16%"},
+      {k:"checkable",label:"Checked",w:"7%"}],
+    rows: rows.map(i=>{
+      const v=violBy[i.id];
+      /* The expression in words, and the source expression in the hint:
+         the reading is what the reader can act on, and the symbols are
+         there for the reader who needs them. */
+      const expr=String(i.expression||"").trim();
+      const words=i.notExpressible ? null : decypher(expr);
+      return [esc(i.id),cell(i.text||""),scopeColumn(i),scopeCell(i),
+        words
+          ? '<span class="written" title="'+esc(expr)+'">'+words+"</span>"
+          : '<span class="mono">'+cell(expr)+"</span>",
+        esc(i.machine||""),
+        v?num(v):"—",cell(i.register||""),
+        i.checkable
+          ? '<span class="pill ok" title="checked against the aggregate">checked</span>'
+          : '<span class="pill gap" title="'+esc(i.reason||"not checked")+'">unchecked</span>'];
+    })});
+}
+
+/* ====================================================== TAB 4: reachability */
+const reachTB=$("#reachToolbar");
+let reachMachine="";
+machineChips(reachTB,()=>reachMachine,v=>reachMachine=v,"reach");
+function renderReach(){
+  const stats=$("#reachStats");
+  const rows=(D.byState||[]).filter(b=>!reachMachine||b.machine===reachMachine);
+  const total=rows.reduce((s,r)=>s+r.total,0);
+  const viol=rows.reduce((s,r)=>s+r.violating,0);
+  const box=el("div","stats");
+  box.style.padding="0"; box.style.flex="1";
+  const st=(b,v,cls)=>{ const d=el("div","stat"+(cls?" "+cls:""));
+    d.appendChild(el("b","",String(v))); d.appendChild(el("span","",b)); return d; };
+  box.appendChild(st("reachable states",num(total)));
+  box.appendChild(st("violating",num(viol),viol?"bad":"ok"));
+  box.appendChild(st("states with no violation",num(total-viol),total-viol?"":"ok"));
+  box.appendChild(st("machines",MACHINES.length));
+  box.appendChild(st("bound", D.maxStates ? num(D.maxStates)+" states" : "—"));
+  box.appendChild(st("frontier",D.frontierExhausted?"exhausted":"not exhausted",D.frontierExhausted?"ok":"warn"));
+  stats.innerHTML=""; stats.appendChild(box);
+  DataTable($("#reachTable"),{
+    id: "tReach",
+    columns: [
+      {k:"machine",label:"Machine",cls:"id",w:"13%"},{k:"state",label:"State",cls:"id",w:"13%"},
+      {k:"name",label:"Name",w:"44%"},{k:"total",label:"Reachable",cls:"num",w:"10%"},
+      {k:"violating",label:"Violating",cls:"num",w:"10%"},{k:"pct",label:"%",cls:"num",w:"10%"}],
+    rows: rows.map(b=>[esc(b.machine),esc(b.state),esc(b.name||""),num(b.total),num(b.violating),
+      b.total?((b.violating/b.total*100).toFixed(1)+"%"):"—"])});
+}
+
+/* ======================================================= TAB 5: dependencies */
+function renderCoup(){
+  DataTable($("#coupTable"),{
+    id: "tCoup",
+    columns: [
+      {k:"source",label:"Source machine",cls:"id",w:"14%"},{k:"trigger",label:"Trigger",w:"13%"},
+      {k:"target",label:"Target machine",cls:"id",w:"14%"},{k:"effect",label:"Expected effect",w:"25%"},
+      {k:"ordering",label:"Ordering",w:"26%"},{k:"synchronous",label:"Sync",w:"8%"}],
+    rows: COUPLINGS.map(c=>[chip(c.source,"SM",{code:false}),cell(c.trigger||""),
+      chip(c.target,"SM",{code:false}),cell(c.effect||""),
+      cell(c.ordering||""),c.synchronous?'<span class="pill info">sync</span>':'<span class="pill mute">async</span>'])});
+  DataTable($("#ctxTable"),{
+    id: "tCtx",
+    columns: [
+      {k:"pair",label:"Upstream → Downstream",w:"18%"},{k:"relationship",label:"Candidate relationship",w:"18%"},
+      {k:"evidenceFor",label:"Evidence for",w:"20%"},{k:"evidenceAgainst",label:"Evidence against",w:"20%"},
+      {k:"whatWouldSettle",label:"What would settle it",w:"24%"}],
+    rows: (D.contexts||[]).map(c=>[cell(c.pair||""),cell(c.relationship||""),cell(c.evidenceFor||""),
+      cell(c.evidenceAgainst||""),cell(c.whatWouldSettle||"")])});
+}
+
+/* ========================================================== TAB 6: findings */
+const findTB=$("#findToolbar");
+let findKind="all", findProbe="all";
+/* Two independent choices, so two groups. Each is a radio group of its own,
+   labelled, so the reader can see that choosing a kind does not choose a
+   probe and the two are ANDed. */
+const kindGrp=el("div","grp");
+kindGrp.appendChild(el("span","glabel","Kind"));
+[["all","All"],["def","Confirmed defect"],["gap","Spec gap"]].forEach(([v,l])=>{
+  const e=el("label","chip"); const i=document.createElement("input");
+  i.type="radio"; i.name="fk"; i.value=v; if(v==="all") i.checked=true;
+  i.onchange=()=>{ findKind=v; renderFind(); };
+  e.appendChild(i); e.appendChild(el("span","",l));
+  kindGrp.appendChild(e);
+});
+findTB.appendChild(kindGrp);
+const probeGrp=el("div","grp");
+probeGrp.appendChild(el("span","glabel","Reachability probe"));
+[["all","All"],["REPRODUCED","Reproduced"],["NOT REPRODUCED","Not reproduced"],["NOT PROBED","Not probed"]]
+  .forEach(([v,l])=>{
+  const e=el("label","chip"); const i=document.createElement("input");
+  i.type="radio"; i.name="fp"; i.value=v; if(v==="all") i.checked=true;
+  i.onchange=()=>{ findProbe=v; renderFind(); };
+  e.appendChild(i); e.appendChild(el("span","",l));
+  probeGrp.appendChild(e);
+});
+findTB.appendChild(probeGrp);
+function renderFind(){
+  const rows=FINDINGS.filter(f=>{
+    if(findKind!=="all" && kindOf(f)!==findKind) return false;
+    const p=probeOf(f.id);
+    if(findProbe!=="all" && (!p||p.status!==findProbe)) return false;
+    return true;
+  });
+  DataTable($("#findTable"),{
+    id: "tFind",
+    columns: [
+      {k:"id",label:"ID",cls:"id",w:"5%"},{k:"title",label:"Finding",w:"18%"},
+      {k:"kind",label:"Kind",cls:"id",w:"9%"},{k:"probe",label:"Probe",cls:"id",w:"10%"},
+      {k:"detail",label:"Detail",w:"22%"},{k:"evidence",label:"Evidence",w:"18%"},
+      {k:"impact",label:"Impact",w:"18%"}],
+    rows: rows.map(f=>{
+      const p=probeOf(f.id);
+      return [esc(f.id),cell(f.title||""),
+        '<span class="pill '+kindOf(f)+'">'+esc(kindLabel(f))+"</span>",
+        probePill(f.id),
+        p?(p.status==="NOT PROBED"?cell(p.detail):cell(p.detail)+(p.examplePath&&p.examplePath.length?
+          '<div class="muted small" style="margin-top:4px">path: '+esc(p.examplePath.join(" → "))+"</div>":"")):
+          '<span class="muted">—</span>',
+        citationCell(f.evidence),cell(f.impact||"")];
+    })});
+}
+
+/* =========================================================== TAB 7: open work */
+const openTB=$("#openToolbar");
+let openPriority="", openSearch="";
+{
+  /* The priorities are the document's own, so the filter is built from
+     the values the data actually carries, in the order it carries them. */
+  const seen=[], counts={};
+  QUESTIONS.forEach(x=>{
+    const p=String(x.priority||"").trim();
+    if(!p) return;
+    if(seen.indexOf(p)<0) seen.push(p);
+    counts[p]=(counts[p]||0)+1;
+  });
+  const grp=el("div","grp");
+  grp.appendChild(el("span","glabel","Priority"));
+  const all=el("label","chip"); const ai=document.createElement("input");
+  ai.type="radio"; ai.name="opk"; ai.value=""; ai.checked=true;
+  ai.onchange=()=>{ openPriority=""; renderOpen(); };
+  all.appendChild(ai); all.appendChild(el("span","","All"));
+  grp.appendChild(all);
+  seen.forEach(p=>{
+    const e=el("label","chip"); const i=document.createElement("input");
+    i.type="radio"; i.name="opk"; i.value=p;
+    i.onchange=()=>{ openPriority=p; renderOpen(); };
+    e.appendChild(i); e.appendChild(el("span","",p+" ("+counts[p]+")"));
+    grp.appendChild(e);
+  });
+  openTB.appendChild(grp);
+}
+{
+  const l=el("label",""); l.appendChild(el("span","","search"));
+  const i=document.createElement("input"); i.type="search";
+  i.placeholder="question, what it blocks…";
+  i.oninput=()=>{ openSearch=i.value.toLowerCase(); renderOpen(); };
+  l.appendChild(i); openTB.appendChild(l);
+}
+function renderOpen(){
+  const un=D.uncheckedInvariants||[];
+  const qy=openSearch;
+  const rows=QUESTIONS.filter(x=>{
+    if(openPriority && String(x.priority||"").trim()!==openPriority) return false;
+    if(qy && !(x.id+" "+x.question+" "+x.blocks+" "+x.related).toLowerCase().includes(qy)) return false;
+    return true;
+  });
+  DataTable($("#openTable"),{
+    id: "tOpen",
+    columns: [
+      {k:"id",label:"ID",cls:"id",w:"7%"},{k:"question",label:"Open question",w:"44%"},
+      {k:"priority",label:"Priority",cls:"id",w:"10%"},{k:"blocks",label:"What it blocks",w:"20%"},
+      {k:"related",label:"Related findings",cls:"id",w:"19%"}],
+    rows: rows.map(x=>[esc(x.id),cell(x.question||""),
+      '<span class="pill '+(x.priority==="Critical"?"def":x.priority==="High"?"gap":"info")+'">'+
+        esc(x.priority||"—")+"</span>",
+      cell(x.blocks||""),'<span class="clamp">'+cell(x.related||"")+"</span>"])});
+  DataTable($("#coverageTable"),{
+    id: "tCov",
+    columns: [
+      {k:"id",label:"ID",cls:"id",w:"10%"},{k:"text",label:"Invariant",w:"42%"},
+      {k:"machine",label:"Machine",cls:"id",w:"12%"},{k:"reason",label:"Why not checked",w:"36%"}],
+    rows: un.map(x=>[esc(x.id),cell(x.text||""),esc(x.machine||""),cell(x.reason||"")])});
+}
+
+/* ============================================ TAB: the specification itself
+   The document the analysis was read from, cut into paragraphs by the
+   exporter. The reader navigates it by paragraph: the outline names the
+   sections, the body shows every paragraph, and the references the
+   document makes to itself are drawn as chips - so a link is a link to
+   a paragraph that exists, and the page never looks for a reference in
+   a sentence. */
+const SPEC = D.spec||[];
+const SPEC_BY_ID = {};
+SPEC.forEach(p=>{SPEC_BY_ID[p.id]=p;});
+/* The SOURCE specification: the document the analysis was read from, as
+   a TREE of sections. The evidence cites its sections, and a section is
+   addressed by the source id and its number path - SRC-001/6.3. The
+   tree is the document's structure, not a list's order: a reader walks
+   to the section it names. */
+const SOURCE_SPEC = D.sourceSpec||null;
+
+/* An evidence cell: the document's own words, and the sections it
+   cites. The exporter cut it, so the page never has to recognise a
+   section number in a sentence - and a chip is a link to a section
+   that exists. */
+function citationCell(parts){
+  if(!Array.isArray(parts)) return cell(parts||"");
+  if(!parts.length) return "";
+  return parts.map(p=>{
+    if(!p.id) return linkify(q(String(p.text||"")));
+    /* Every citation is grounded in the source specification, and the
+       chip says the section it names. */
+    return specChip(p.id,p.label||p.id);
+  }).join("");
+}
+/* A section of the source specification, as a chip: the section's own
+   mark, and the words the citation was written with. */
+function specChip(id,label){
+  return '<a class="idlink chip chip--definitions" href="#'+esc(id)+
+         '" data-spec="'+esc(id)+'" title="'+esc(id+" — "+label)+'">'+
+         '<span class="chip__icon">¶</span>'+
+         '<span class="idname chip__name">'+esc(label)+"</span></a>";
+}
+/* One paragraph, drawn: its words, and the references it makes. */
+function specParts(p){
+  /* A table is drawn AS a table. The rows were cut by the exporter,
+     so the page draws cells and never splits a row itself. */
+  if(p.kind==="table"&&p.rows&&p.rows.length){
+    let h="<table><thead><tr>";
+    (p.rows[0]||[]).forEach(c=>{ h+="<th>"+q(c)+"</th>"; });
+    h+="</tr></thead><tbody>";
+    p.rows.slice(1).forEach(row=>{
+      h+="<tr>";
+      row.forEach(c=>{ h+="<td>"+q(c)+"</td>"; });
+      h+="</tr>";
+    });
+    return h+"</tbody></table>";
+  }
+  let html="";
+  (p.parts||[]).forEach(part=>{
+    if(part.reference){
+      /* A reference the document makes to another of its sections. */
+      html+=specChip(part.reference,part.label||part.reference);
+      return;
+    }
+    const t=String(part.text||"");
+    html+=(p.kind==="code")
+      ? '<span class="specpre">'+esc(t)+"</span>"
+      : q(t);
+  });
+  return html;
+}
+function renderSpec(){
+  const outline=$("#specOutline"), body=$("#specBody");
+  if(!outline||!body) return;
+  if(!SOURCE_SPEC){ outline.innerHTML=""; body.innerHTML=""; return; }
+  /* The outline: the sections, nested as the document nests them. */
+  let o="";
+  const walkOutline=(node,depth)=>{
+    (node.sections||[]).forEach(s=>{
+      o+='<div class="specitem" data-spec="'+esc(s.id)+'" style="padding-left:'+
+         (6+depth*12)+'px"><span class="specnum">'+esc(s.number||"")+
+         '</span>'+esc(s.title)+"</div>";
+      walkOutline(s,depth+1);
+    });
+  };
+  walkOutline(SOURCE_SPEC,0);
+  outline.innerHTML=o;
+  /* The document: every section, with its own content and its
+     subsections under it. */
+  let b="";
+  const walkBody=(node,depth)=>{
+    if(depth>0){
+      b+='<div class="specp spechead" id="'+esc(node.id)+'"><h3>'+
+         (node.number?esc(node.number)+" · ":"")+esc(node.title)+"</h3></div>";
+    }
+    (node.paragraphs||[]).forEach(p=>{
+      const inner=specParts(p);
+      b+='<div class="specp" id="'+esc(p.id)+'">'+inner+"</div>";
+    });
+    (node.sections||[]).forEach(s=>walkBody(s,depth+1));
+  };
+  walkBody(SOURCE_SPEC,0);
+  body.innerHTML=b;
+  /* The outline goes to a section BY ITS ID - never by where it
+     happens to sit on the page. */
+  outline.querySelectorAll("[data-spec]").forEach(a=>{
+    a.onclick=(ev)=>{ ev.preventDefault(); gotoSpec(a.dataset.spec); };
+  });
+}
+function gotoSpec(id){
+  /* A citation chip may sit in another tab, and the specification is
+     drawn when it is first shown - so the reader goes to the
+     specification FIRST, and the paragraph is looked up after it is
+     there. */
+  const tab=document.querySelector("main>section#t-spec");
+  if(tab&&!tab.classList.contains("on")) showTab("spec");
+  const target=document.getElementById(id);
+  if(target) target.scrollIntoView({block:"start"});
+}
+/* =========================================================== TAB 8: glossary
+   The ubiquitous language: every term the document defines, what it means,
+   where it came from, and whether the document settles it. */
+const GLOSSARY = D.glossary||[];
+const glTB=$("#glossaryToolbar");
+let glStatus="all", glSearch="";
+/* The status column carries the document's own wording, which varies.
+   The filter is derived from the data: the distinct leading states it
+   takes, not a list written from memory. */
+function glStatusKind(s){
+  const t=String(s||"").replace(/\*/g,"").trim();
+  if(/^Undefined/i.test(t)) return "Undefined";
+  if(/^Pending/i.test(t)) return "Pending";
+  if(/Defined \(partial\)/i.test(t)) return "Partly defined";
+  if(/Overloaded/i.test(t)) return "Overloaded";
+  if(/^Defined/i.test(t)) return "Defined";
+  return "Other";
+}
+const GL_KINDS=["Defined","Partly defined","Overloaded","Undefined","Pending","Other"];
+/* The status cell of the document is a sentence: the status, and then
+   sometimes a note about it. "Defined (partial) — start point Conflicting,
+   see F-03". The status and the note are separate things, so they are
+   read apart: the status in the chip, the note after it, with the ids in
+   the note turned into links like everywhere else.
+   The chip carries the document's own word for the status, so the cell
+   says what the document says and says it once. */
+function splitStatus(s){
+  const raw=String(s==null?"":s);
+  const i=raw.indexOf("—");
+  if(i<0) return {word:raw.trim(), note:""};
+  return {word:raw.slice(0,i).trim(), note:raw.slice(i+1).trim()};
+}
+function glPillClass(kind){
+  return kind==="Defined" ? "ok"
+       : kind==="Partly defined" ? "info"
+       : kind==="Undefined" ? "def"
+       : kind==="Pending" ? "gap" : "mute";
+}
+const glKindGrp=el("div","grp");
+glKindGrp.appendChild(el("span","glabel","Status"));
+[["all","All"]].concat(GL_KINDS.map(k=>[k,k])).forEach(([v,l])=>{
+  if(v!=="all"){
+    const n=GLOSSARY.filter(g=>glStatusKind(g.status)===v).length;
+    if(!n) return;
+  }
+  const e=el("label","chip"); const i=document.createElement("input");
+  i.type="radio"; i.name="glk"; i.value=v; if(v==="all") i.checked=true;
+  i.onchange=()=>{ glStatus=v; renderGlossary(); };
+  e.appendChild(i);
+  e.appendChild(el("span","", v==="all" ? "All" : l+" ("+GLOSSARY.filter(g=>glStatusKind(g.status)===v).length+")"));
+  glKindGrp.appendChild(e);
+});
+glTB.appendChild(glKindGrp);
+{
+  const l=el("label",""); l.appendChild(el("span","","search"));
+  const i=document.createElement("input"); i.type="search";
+  i.placeholder="term, definition…";
+  i.oninput=()=>{ glSearch=i.value.toLowerCase(); renderGlossary(); };
+  l.appendChild(i); glTB.appendChild(l);
+}
+function renderGlossary(){
+  const qy=glSearch;
+  const rows=GLOSSARY.filter(g=>{
+    if(glStatus!=="all" && glStatusKind(g.status)!==glStatus) return false;
+    if(qy && !(g.term+" "+g.definition+" "+g.context).toLowerCase().includes(qy)) return false;
+    return true;
+  });
+  DataTable($("#glossaryTable"),{
+    id: "tGlos",
+    columns: [
+      {k:"term",label:"Term",w:"12%"},{k:"definition",label:"Definition",w:"24%"},
+      {k:"status",label:"Status",w:"20%"},{k:"context",label:"Context",w:"15%"},
+      {k:"id",label:"ID",cls:"id",w:"6%"},{k:"evidence",label:"Evidence",w:"23%"}],
+    rows: rows.map(g=>{
+      const kind=glStatusKind(g.status);
+      const st=splitStatus(g.status);
+      return [
+      '<b>'+esc(g.term)+"</b>",
+      cell(g.definition||""),
+      '<span class="pill '+glPillClass(kind)+'" title="'+esc(plain(g.status))+'">'+
+          esc(plain(st.word))+"</span>"+
+        (st.note ? ' <span class="muted small">'+cell(st.note)+"</span>" : ""),
+      cell(g.context||""),
+      esc(g.id||""),
+      citationCell(g.evidence)];})});
+}
+
+/* ========================================================== TAB 9: catalogue
+   The definitions the document issues: the sources it was read from, the
+   entities, value objects, aggregates, bounded contexts, commands, events,
+   policies, scenarios and role-rewritten rules. Every id in the page
+   points here. */
+const CATALOGUE = D.catalogue||[];
+const CAT_AGG = D.catalogueAggregates||[];
+const CAT_SCN = D.catalogueScenarios||[];
+const CAT_N = D.catalogueNamedRules||[];
+/* The catalogue is FLAT: one record per identifier, each carrying the
+   series it belongs to. The series the reader can filter by come from the
+   export's namespace — the format's list, with the counts the document
+   happens to hold. */
+const CAT_SERIES = D.idSeries||[];
+const catTB=$("#catToolbar");
+let catSeries="", catSearch="";
+{
+  const grp=el("div","grp");
+  grp.appendChild(el("span","glabel","Series"));
+  const all=el("label","chip"); const ai=document.createElement("input");
+  ai.type="radio"; ai.name="catk"; ai.value=""; ai.checked=true;
+  ai.onchange=()=>{ catSeries=""; renderCat(); };
+  all.appendChild(ai);
+  /* The name of the series. Not the id code, and not the count: the
+     reader is choosing a filter, and the records themselves carry both. */
+  all.appendChild(el("span","","All"));
+  grp.appendChild(all);
+  CAT_SERIES.forEach(s=>{
+    const e=el("label","chip"); const i=document.createElement("input");
+    i.type="radio"; i.name="catk"; i.value=s.prefix;
+    i.onchange=()=>{ catSeries=s.prefix; renderCat(); };
+    e.appendChild(i);
+    e.appendChild(el("span","",s.kind));
+    grp.appendChild(e);
+  });
+  catTB.appendChild(grp);
+}
+{
+  const l=el("label",""); l.appendChild(el("span","","search"));
+  const i=document.createElement("input"); i.type="search";
+  i.placeholder="id, name, definition…";
+  i.oninput=()=>{ catSearch=i.value.toLowerCase(); renderCat(); };
+  l.appendChild(i); catTB.appendChild(l);
+}
+let catSelected=null;
+function catEntries(){
+  return CATALOGUE
+    .filter(e=>!catSeries || e.series===catSeries)
+    .map(e=>({series:e.series, kind:e.kind, entry:e}));
+}
+function renderCat(){
+  const qy=catSearch;
+  const rows=catEntries().filter(r=>{
+    if(!qy) return true;
+    const e=r.entry;
+    return (e.id+" "+e.name+" "+e.detail+" "+e.extra).toLowerCase().includes(qy);
+  });
+  const tbl=DataTable($("#catTable"),{
+    id: "tCat",
+    columns: [
+      {k:"id",label:"ID",cls:"id",w:"7%"},{k:"name",label:"Name",w:"16%"},
+      {k:"kind",label:"Kind",cls:"id",w:"11%"},{k:"detail",label:"Definition",w:"26%"},
+      {k:"extra",label:"Also",w:"20%"},{k:"evidence",label:"Evidence",w:"20%"}],
+    rows: rows.map(r=>[esc(r.entry.id),
+      '<b>'+esc(plain(r.entry.name))+"</b>",
+      esc(r.kind),
+      cell(r.entry.detail||""),
+      cell(r.entry.extra||""),
+      citationCell(r.entry.evidence)])});
+  /* Clicking a row shows the entry's own detail, including the parts the
+     document gives it. */
+  tbl.querySelectorAll("tbody tr").forEach((tr,i)=>{
+    tr.style.cursor="pointer";
+    tr.onclick=(ev)=>{
+      if(ev.target.closest("a.idlink")) return;
+      catSelected=rows[i].entry.id;
+      showCatDetail(catSelected);
+      tbl.querySelectorAll("tbody tr").forEach(x=>x.classList.remove("rowsel"));
+      tr.classList.add("rowsel");
+    };
+  });
+  if(catSelected) showCatDetail(catSelected);
+  else showCatDetail(null);
+}
+/* The catalogue quotes the document. An EXPRESSION, though, is shown the
+   way the page shows expressions everywhere else - read, with the source
+   in the hint - so the reader is not asked to learn two rules. A marker
+   is not read at all: the export says so. */
+function docText(text,notExpressible){
+  const s=String(text||"").trim();
+  if(!s) return "";
+  const BT=String.fromCharCode(96);
+  if(!notExpressible && s.startsWith(BT) && s.endsWith(BT)){
+    const words=decypher(s);
+    if(words) return '<span class="written" title="'+esc(s)+'">'+words+"</span>";
+  }
+  return cell(s);
+}
+/* The guard an identifier carries, where the flat catalogue record has no
+   room for it: the precondition of a command, the condition of a policy,
+   the predicate a finding's reachability claim was tested against. */
+function guardOf(id){
+  const cmd=COMMANDS.find(c=>c.id===id);
+  if(cmd) return {label:"Preconditions", text:cmd.guards};
+  const pol=POLICIES.find(p=>p.id===id);
+  if(pol) return {label:"Condition", text:pol.condition};
+  const pr=PROBES.find(p=>p.id===id);
+  if(pr) return {label:"Reachability probe", text:pr.predicate};
+  return null;
+}
+function showCatDetail(id){
+  const host=$("#catDetail");
+  if(!id){ host.innerHTML='<p class="muted">Pick an entry to read what the document says about it.</p>'; return; }
+  const entry=null;
+  let found=null, series=null;
+  CATALOGUE.forEach(e=>{ if(e.id===id){ found=e; series={series:e.series, kind:e.kind}; } });
+  if(!found){ host.innerHTML='<p class="muted">Nothing is indexed under '+esc(id)+'.</p>'; return; }
+  /* An invariant's marker is the export's to say, not the page's to read. */
+  const invRec = byId(INVARIANTS, found.id);
+  const d=IDX[id]||{};
+  let extra="";
+  /* The guard the flat record dropped: what the document requires before
+     this thing may happen. */
+  const g=guardOf(id);
+  if(g){
+    extra='<h3 style="margin-top:11px">The guard</h3><dl>'+
+      "<dt>"+esc(g.label)+"</dt><dd class='prose'>"+(docText(g.text)||"—")+"</dd></dl>"+extra;
+  }
+  const agg=CAT_AGG.find(a=>a.id===id);
+  if(agg){
+    extra='<h3 style="margin-top:11px">Aspects</h3><dl>'+
+      agg.aspects.map(a=>"<dt>"+esc(a.aspect)+"</dt><dd>"+cell(a.content)+
+        (a.evidence?'<div class="muted small">'+citationCell(a.evidence)+"</div>":"")+"</dd>").join("")+"</dl>";
+  }
+  const scn=CAT_SCN.find(s=>s.id===id);
+  if(scn){
+    extra='<h3 style="margin-top:11px">The scenario</h3><dl>'+
+      scn.parts.map(p=>"<dt>"+esc(p.label)+"</dt><dd>"+cell(p.text)+"</dd>").join("")+"</dl>";
+  }
+  const n=CAT_N.find(x=>x.id===id);
+  if(n){
+    extra='<h3 style="margin-top:11px">Rewritten around the role</h3><dl>'+
+      "<dt>As written</dt><dd>"+cell(n.name)+"</dd>"+
+      "<dt>Rewritten</dt><dd>"+cell(n.rewritten)+"</dd></dl>";
+  }
+  host.innerHTML=
+    "<h3>"+esc(found.id)+" — "+esc(plain(found.name))+"</h3>"+
+    "<dl>"+
+    "<dt>Kind</dt><dd>"+esc(series.kind)+"</dd>"+
+    "<dt>Definition</dt><dd class='prose'>"+docText(found.detail||"", invRec&&invRec.notExpressible)+"</dd>"+
+    (found.extra?"<dt>Also</dt><dd class='prose'>"+cell(found.extra)+"</dd>":"")+
+    "<dt>Evidence</dt><dd>"+citationCell(found.evidence)+"</dd>"+
+    "</dl>"+extra;
+}
+
+/* ------------------------------------------------------------- rendering */
+function render(){
+  renderTrans(); renderInv(); renderReach(); renderCoup(); renderFind(); renderOpen();
+  renderGlossary(); renderCat();
+}
+drawMachine();
+render();
+
+/* ==================================================== going to an id
+ *
+ * A link carries the id it names. Clicking it takes the reader to the
+ * place that id lives, with the row or the node selected — the link is
+ * a way in, not just a decoration. */
+function highlightRow(tableId,id){
+  const tbl=document.getElementById(tableId);
+  if(!tbl) return false;
+  let hit=null;
+  tbl.querySelectorAll("tbody tr").forEach(tr=>{
+    const t=tr.cells[0]?tr.cells[0].textContent.trim():"";
+    tr.classList.remove("rowsel");
+    if(t===id){ hit=tr; }
+  });
+  if(!hit) return false;
+  hit.classList.add("rowsel");
+  hit.scrollIntoView({block:"center"});
+  return true;
+}
+function gotoId(id){
+  const d=IDX[id];
+  if(!d) return;
+  showTab(d.tab);
+  if(d.tab==="catalogue"){
+    catSeries=""; catSearch="";
+    catTB.querySelectorAll("input[name=catk]").forEach(i=>{ i.checked=(i.value===""); });
+    const sb=catTB.querySelector("input[type=search]"); if(sb) sb.value="";
+    renderCat();
+    const tbl=document.getElementById("tCat");
+    if(tbl) tbl.querySelectorAll("tbody tr").forEach(tr=>{
+      const t=tr.cells[0]?tr.cells[0].textContent.trim():"";
+      tr.classList.remove("rowsel");
+      if(t===id){
+        tr.classList.add("rowsel");
+        tr.scrollIntoView({block:"center"});
+        catSelected=id; showCatDetail(id);
+      }
+    });
+    return;
+  }
+  if(d.tab==="glossary"){ renderGlossary(); highlightRow("tGlos",id); return; }
+  if(d.tab==="invariants"){
+    if(invKind!=="all"){ invKind="all";
+      invTB.querySelectorAll("input[name=invk]").forEach(i=>{ i.checked=(i.value==="all"); }); }
+    renderInv(); highlightRow("tInv",id); return;
+  }
+  if(d.tab==="findings"){
+    if(findKind!=="all"){ findKind="all";
+      findTB.querySelectorAll("input[name=fk]").forEach(i=>{ i.checked=(i.value==="all"); }); }
+    if(findProbe!=="all"){ findProbe="all";
+      findTB.querySelectorAll("input[name=fp]").forEach(i=>{ i.checked=(i.value==="all"); }); }
+    renderFind(); highlightRow("tFind",id); return;
+  }
+  if(d.tab==="open"){ renderOpen(); highlightRow("tOpen",id); return; }
+  if(d.tab==="machines"){
+    const st=stateById(id);
+    if(st){
+      curMachine=st.machine; selState=id; selTransition=null;
+      syncMachineChips(st.machine); drawMachine(); showState(id); return;
+    }
+    const tr=byId(TRANSITIONS,id);
+    if(tr){
+      curMachine=tr.machine; selTransition=id; selState=null;
+      syncMachineChips(tr.machine); drawMachine(); showTransition(id); return;
+    }
+    const m=machineById(id);
+    if(m){ setMachine(id); }
+  }
+}
+document.addEventListener("click", ev=>{
+  const a=ev.target.closest && ev.target.closest("a.idlink");
+  if(!a) return;
+  ev.preventDefault();
+  /* A chip that names a PARAGRAPH leads to the paragraph - in the
+     specification, wherever the chip itself sits. */
+  const spec=a.getAttribute("data-spec");
+  if(spec){ gotoSpec(spec); return; }
+  gotoId(a.getAttribute("data-id"));
+});
+
+/* A machine change redraws the diagram only. */
+const machOrig = machTB.onchange;
+window.addEventListener("resize",()=>{ drawMachine(); });
+</script>
+</body>
+</html>

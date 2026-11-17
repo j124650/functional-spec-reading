@@ -1,0 +1,11 @@
+# Build output.
+bin/
+obj/
+
+# Build artifacts of the explorer. The page is regenerated from the
+# template and the export; the export itself is a build output.
+explorer/explorer-data.json
+model/Onboarding.Model/explorer-data.json
+
+# A lock file left behind by an editor.
+.~lock.*

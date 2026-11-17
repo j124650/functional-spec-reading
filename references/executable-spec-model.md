@@ -797,8 +797,10 @@ credibility of everything else:
 
 ## Run the commands
 
-The paths below are one project's layout. Use whatever your project uses, and make the
-commands discoverable from the model's own README.
+**This skill ships the engine it describes.** The traversal, the expression language and
+the export it all live in `model/Onboarding.Model` in this repository, and the page they
+feed lives in `explorer/`. The paths below are one project's layout - this one - and the
+commands are discoverable from the repository's README.
 
 ```bash
 cd <model project>
