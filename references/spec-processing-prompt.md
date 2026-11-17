@@ -39,14 +39,19 @@ They are written down here, in this skill:
   evaluate it, and what a reachability claim must be based on.
 - **`references/expression-reading.md`** — the expression language: what evaluates,
   what does not, and what the engine reports for each.
+- **`references/gates.md`** — what each of the nine gates asks of the deliverable:
+  how each one matches, what its failure means, and what to fix. The gates are the
+  pass criteria, and this file is what they ask.
 
-**Read these two before you write the behaviour keys** — `transitions`,
+**Read these three before you write the behaviour keys** — `transitions`,
 `invariants`, `stateMachines`, `scenarios`, `issues`. They are shorter than the
-engine's source and they say the same thing.
+engine's source and the gate scripts, and they say the same thing.
 
-**Do not read the engine's source code.** It is not the specification of what the
-engine does, it is the implementation of it, and reading it costs a turn and tells
-you less. The two references above are the specification.
+**Do not read the engine's source code, and do not read the gate scripts.** The
+first is the implementation rather than the specification; the second is the same
+content as `references/gates.md` in a worse form. Reading either costs turns and
+tells you less. When a gate rejects something, its own output names the record and
+the rule that rejected it — that is the whole repair loop.
 
 ### 1.2 How a reference names where it comes from
 

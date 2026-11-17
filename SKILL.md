@@ -208,11 +208,16 @@ the document has to satisfy that engine, so its rules are part of what you produ
   to it, how a scope resolves, and what an effect must look like to be evaluable.
 - **`references/expression-reading.md`** — the expression language: what
   evaluates, what does not, and what the engine reports for each.
+- **`references/gates.md`** — what each of the nine gates asks of the deliverable:
+  how each one matches, what its failure means, and what to fix.
 
-**Read those two, and not the engine's source.** The source is the implementation,
-not the specification; it costs a turn and says less. This is measured, not
-assumed: a run that went to the source instead spent forty of its ninety minutes
-reading `Program.cs`, `Scope.cs` and `Aggregate.cs`.
+**Read those three, and not the engine's source and not the gate scripts.** The
+source is the implementation rather than the specification; the gate scripts are
+the same content as `references/gates.md` in a worse form. Reading either costs
+turns and says less. This is measured, not assumed: a run that went to the source
+instead spent forty of its ninety minutes reading `Program.cs`, `Scope.cs` and
+`Aggregate.cs`, and another spent seven minutes reading the nine gate scripts
+before writing its first record.
 - **`references/ddd-modeling-guidelines.md`** — the distinctions that prevent
   modelling errors: domain model vs data model, entity vs value object, when
   something is a bounded context, and the humility rules for thin evidence.

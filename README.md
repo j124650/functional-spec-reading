@@ -90,6 +90,7 @@ The pipeline has eight passes, and the order matters — later passes depend on 
 | `references/evidence-and-traceability.md` | Evidence classes, the `SRC-###` scheme, `PAR-###` paragraph locators, traceability matrix columns. |
 | `references/evidence-extraction.md` | Getting quotable text out of a source document and citing it. |
 | `references/executable-spec-model.md` | Building the traversal, the state key, and the probes. |
+| `references/gates.md` | What each of the nine gates asks of the deliverable — how it matches, what a failure means, what to fix. |
 | `references/interactive-diagrams.md` | The self-contained HTML explorer's rules and generator. |
 | `references/export-contract.md` | The contract between the exporter and the explorer, and the three obligations it binds. |
 | `templates/domain-model-template.json` | The skeleton of the deliverable — every key, every field, in order. |
