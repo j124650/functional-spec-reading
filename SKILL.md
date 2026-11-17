@@ -194,12 +194,7 @@ and what the words mean.
   `transitions`, `invariants` — and each holds an array of records with the fields
   §8.1 fixes. A consumer reads the file and finds the domain in it; there is no
   second rendering of the same fact to disagree with it.
-- **`references/ddd-vocabulary.md`** — the authority for what the output
-  *means*. The definitions and the 45 patterns of the DDD Reference (Eric Evans,
-  2015, CC BY 4.0), plus a mapping from each required output onto the patterns
-  that ground it.
-
-**And two more, before the behaviour keys.** The deliverable is checked by an
+**And three more, before the behaviour keys.** The deliverable is checked by an
 engine that parses it, resolves every scope and evaluates every guard and effect;
 the document has to satisfy that engine, so its rules are part of what you produce.
 
@@ -218,41 +213,29 @@ turns and says less. This is measured, not assumed: a run that went to the sourc
 instead spent forty of its ninety minutes reading `Program.cs`, `Scope.cs` and
 `Aggregate.cs`, and another spent seven minutes reading the nine gate scripts
 before writing its first record.
-- **`references/ddd-modeling-guidelines.md`** — the distinctions that prevent
-  modelling errors: domain model vs data model, entity vs value object, when
-  something is a bounded context, and the humility rules for thin evidence.
-- **`references/aggregate-design-guidelines.md`** — how to derive an aggregate
-  boundary from invariants rather than from proximity, and the mistakes to avoid.
-- **`references/state-machine-modeling.md`** — what qualifies as a state
-  machine, how to separate state dimensions, trigger vs guard vs postcondition,
-  and the completeness checks.
-- **`references/evidence-and-traceability.md`** — the evidence classes with
-  their required treatment, the `SRC-###` source-reference scheme, the shape of a
-  citation object, and the `traceability` array.
-- **`references/reference-material-extraction.md`** — how to get quotable,
-  structurally parseable text out of a published book or paper: look for the
-  upstream typesetting source before parsing a PDF, repair the artefacts a PDF
-  text layer leaves behind, parse into structured data and generate the
-  reference from it, and carry the licence with the quote.
-- **`references/explorer-rendering.md`** — how the explorer page draws a reference
-  to an identifier: the chip (mark, name, id), the four colour families, the one
-  look a component must have, the rule that nothing in a rendered label is
-  ever read back as data, how a field holding a LIST of pieces is drawn (with
-  the piece renderer, never the escaping helper, which renders a list of
-  objects as `[object Object]`), and how the graph draws an end the document
-  does not name — to a marker, never by dropping the transition.
-- **`references/export-contract.md`** — the contract between the verifier's
-  exporter and the explorer page: what the export must carry, what each field
-  *means*, and how the page renders it. Both sides are bound by one file, and a
-  machine checks the binding — so a renamed field breaks the build instead of
-  rendering an empty table. Read it before changing either side. It also covers
-  the case this arrangement exists for: **a document cell that carries two
-  shapes** becomes an object with a list per shape, and the
-  flat field is replaced rather than kept beside it.
-- **`references/expression-reading.md`** — how the page renders the document's
-  formal rules in English: unwrapping the inline-code decoration before the tokenizer
-  sees it, the vocabulary matcher, the parser's precedence, the effect reader, and
-  the audit that finds every expression-bearing field the reader never reached.
+
+### Everything else in `references/` is loaded on demand
+
+The list above is the library, and a run that reads the library reads **twenty
+files** — for a 119-line specification that is the whole cost of the run, before
+a single record is written. Measured: a run spent **10 minutes and 26 tool calls
+reading twenty files** and reached the first model content.
+
+So the mandatory set is **six files** — this one, the prompt, the template, the
+specification, and the three engine references before the behaviour keys — and
+everything else is conditional:
+
+| read it | when |
+|---|---|
+| `references/ddd-vocabulary.md` | a term's status, or a pattern's grounding, is in doubt. The prompt fixes the closed sets; the vocabulary is the authority behind them, and it is consulted, not preloaded |
+| `references/ddd-modeling-guidelines.md` | the modelling decision itself is ambiguous — model or data, entity or value object, is this a context |
+| `references/aggregate-design-guidelines.md` | an aggregate boundary has to be derived and the derivation is not obvious |
+| `references/state-machine-modeling.md` | a lifecycle does not resolve to a state machine, or a machine has more than one dimension |
+| `references/evidence-and-traceability.md` | the shape of a citation or of a `traceability` row is unclear |
+| `references/reference-material-extraction.md` | the source is a published book or PDF, not a document to convert |
+| `references/explorer-rendering.md`, `references/export-contract.md`, `references/interactive-diagrams.md` | the reader asked for the interactive page. **That page is optional and is not part of producing the model** |
+
+Consulting a reference costs one read. Preloading the library costs the run.
 
 **The template and the contract are two copies of one shape, and they must agree.**
 `templates/domain-model-template.json` is the skeleton of the deliverable — every key,
@@ -317,11 +300,60 @@ Absence is a finding only after a complete reading.
 
 See `references/evidence-and-traceability.md`.
 
+### 2c. The write phase — one file per key, in dependency order
+
+The procedure above is ordered as **passes over the source**. The deliverable is
+ordered as **keys**. Two orders, and the run has to map one onto the other — and
+it maps it by reading, which is where the time goes.
+
+So the write phase is stated here, and it is the phase that produces the artifact.
+
+**One file per key, in a `fragments/` directory, named `NN-<key>.json`** — the
+number is the order below, the name is the key exactly as the template spells it.
+Then:
+
+```
+node scripts/assemble.js <fragments-dir> <the deliverable .json>
+```
+
+builds the deliverable, in the contract's key order, and refuses to write one
+that does not fit the contract. The assembler is what puts the keys in the
+contract's order, so **the order you write in is the order the dependencies
+run in**, and it need not be the template's.
+
+| | keys, in the order to write them | why here |
+|---|---|---|
+| 1 | `document`, `sources` | the header and the file's own id; every citation carries it |
+| 2 | `referencedButNotSupplied`, `sourceLocatorRegister` | what the source points at but does not supply, and where each paragraph lives |
+| 3 | `glossary`, `overloadedTerms`, `undefinedTerms` | **the language first** — every later record names things, so the names come first |
+| 4 | `roleRewrittenRules`, `domainConcepts` | the spec's rules as roles, and the concepts they are about |
+| 5 | `entities`, `valueObjects`, `boundedContexts`, `contextMap`, `aggregates`, `nonAggregateCandidates` | the structure the rules apply to |
+| 6 | `expressionVocabulary` | **after the things it names** — a vocabulary term that no entity or aggregate field introduces is a term with nothing behind it |
+| 7 | `commands`, `domainEvents`, `policies` | what the structure does |
+| 8 | `stateMachines`, `states`, `transitions`, `invariants` | the behavioural core, written against the vocabulary that is now fixed |
+| 9 | `crossMachineDependencies`, `scenarios`, `completenessFindings`, `issues`, `questions` | what spans machines, what the source's own examples do, what is missing |
+| 10 | `roles`, `traceability`, `idRegistry` | the closing books, all derived from what is already written |
+
+**Each key is written once.** A gate that names a record is repaired by editing
+**that one record inside its own file**, and the assembler rebuilds. Re-emitting a
+whole key to fix one record is the single largest avoidable cost in a run: the
+prepatch control spent **2.7× the deliverable** in output tokens, and most of the
+excess was keys written twice.
+
+**And the file is the job.** The deliverable is the artifact; the fragments are
+how it is written, and the page is a view of it. Everything else is optional and
+comes after it.
+
 ### 3. Pass 1 — the glossary, term by term, verified across occurrences
 
 For each domain term: what the spec defines it as, where that definition lives, and what
-happens to the term **everywhere else it appears**. A term is only verified when you have
-checked its other occurrences, not when you have read its definition.
+happens to the term **everywhere else it appears** in the sections you have read.
+A term is only verified when you have checked its other occurrences, not when you
+have read its definition.
+
+**The specification stays in context for the whole run. Do not re-read it.** Every
+re-read is a turn that changes nothing: the source is 119 lines and it is already
+in front of you.
 
 Give each entry a status: `Defined` · `Defined (partial)` · `Conflicting` (two sections give
 incompatible meanings) · `Overloaded` (one word, several meanings) · `Undefined` (used as if
@@ -360,8 +392,9 @@ not modelled is a rule the model cannot see — model the specification's own ru
 submit adds, what an approval removes, what the licensing match computes, and what the
 ship-to realisation adds before you claim a guard holds.
 
-The prose sections are where contradictions live, because no section was written against the
-others. Cross-read the same concept across *every* section it appears in.
+The prose sections are where contradictions live, because no section was written against
+the others. Cross-check the same concept across **every section it appears in** —
+in the source you have already read, which is still in context.
 
 ### 6. Pass 4 — invariants, in three registers
 
@@ -604,10 +637,16 @@ The separate glossary/context/state-machine/issues files are working notes; the
 consolidated file is the artifact, and its `traceability` array is what lets a
 reviewer follow a claim back to the spec.
 
-**The file is the whole job.** Everything below is optional and comes after it:
-an interactive page is a *view* of the deliverable, for a reviewer who would rather
-explore than scroll. Build one only if the reader asks. See
-`references/interactive-diagrams.md`.
+**The file is the whole job.** The deliverable is the artifact; an interactive page
+is a *view* of it, for a reviewer who would rather explore than scroll. Build one
+only if the reader asks — see *Optional: the interactive page*, at the end of this
+procedure.
+
+## Optional: the interactive page
+
+**The page is a view of the deliverable, never a prerequisite for it.** Build one
+only if the reader asks, and build it after the deliverable exists. Everything in
+this section is optional, and a run that produces only the model never needs it.
 
 **The HTML carries every value it shows in ONE embedded JSON document.** A figure
 typed into the page goes stale the moment the model changes, and the artifact then
@@ -654,11 +693,6 @@ spec.md     ──resolve─────────> cited section text spec-ow
 analysis    ──parse──────────> findings + issues    document-owned claims
                           └─> explorer-content.json ──embed──> explorer.html
 ```
-
-**The page is optional.** It is a *view* of the deliverable, for a reviewer who wants
-to explore rather than scroll. It never replaces the consolidated document, and it is
-never a prerequisite for producing one. If the reader wants only the document, the
-document is the whole job.
 
 **A citation is a pointer; resolve it to the spec's own words.** When a column cites
 a section, the reader does not have the document open, so the artifact should carry the
