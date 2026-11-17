@@ -561,3 +561,80 @@ Now the aggregate invariants must be *visible* as their own list:
 
 The exporter never learns what a tab is. The explorer never learns what a section is. Each side
 knows its own, and the contract is where they meet.
+
+---
+
+## Pitfalls: the export contract
+
+The export is the only thing the engine and the page share. These are the ways that contract has been broken.
+
+- **The export must carry what the page needs to READ the document, not only what
+  it needs to COUNT it.** A page that reads an expression in words needs the
+  vocabulary — the terms, their types, and the values they may hold — in the export,
+  because the page cannot parse the document and the vocabulary is what turns
+  `state != 'ST-006'` into "the current state is not Approved". A count-only export
+  forces the page to hardcode the document's terms, which is the per-spec leak the
+  engine rules forbid, one level up.
+  **The same holds for the document's identifiers: the export must carry every series
+  the document issues, with the name each id carries.** That catalogue is what lets the
+  page turn `VO-004` into "setup information" instead of showing a bare handle. A
+  series the export omits has nothing to decode into, so the page shows the id as an
+  unexplained token — and the reader cannot tell whether the analysis skipped it or
+  the id is meaningless.
+  **It must also carry the document's STRUCTURE, resolved.** When the page re-parses
+  a From/To cell to work out which state a transition belongs to, the document's
+  structure lives in two places — the engine's parse and the page's re-parse — and
+  they drift: a cell naming five states was resolved to five by the engine and to one
+  by the page. Ship the resolved ids (`fromStates`, `toStates`) and the hierarchy
+  (machine → states → outgoing/incoming),  so there is one resolution of the
+  document's structure and the page never parses a cell.
+  **The rule is not about structure alone: the page may not DERIVE anything from a
+  document cell's text.** A cell may be shown; it may not be interpreted. Whatever
+  the cell holds — a name beside a code, ids written as a range, a marker where a
+  value would be, two shapes in one column — the exporter resolves it once and the
+  page reads the result. **A cell that mixes two shapes is shipped as one list per
+  shape**, the flat field is REPLACED rather than kept beside it, a scope that
+  covers EVERYTHING is written out as the list it covers, and the resolution is the
+  ENGINE'S — the same result the rule was judged by, so the export and the analysis
+  cannot disagree. `references/export-contract.md` states each of these in full,
+  with the mechanism behind each.
+
+- **The contract between an instrument and what it consumes must be written down.**
+  The export JSON is the only thing the engine and the page share: the engine emits
+  a field, the page reads a name. **Put a schema version and a required-field list
+  in the export, and have the consumer assert them.** The same rule
+  governs anything an instrument reads: the shape it depends on is stated, and the
+  thing that consumes it checks.
+  **A contract that describes the consumer needs a checker against the consumer too.**
+  A contract that names the page's tabs, columns and filters drifts from the page's
+  code exactly as it drifts from the data, and nothing notices until a reader meets a
+  column the contract does not have.
+  **And the consumer must DERIVE what it knows from the contract, not from a list
+  written by hand.** The identifier scheme is a property of the OUTPUT FORMAT: the
+  explorer defines it, so every document that goes through it comes out with the same
+  prefixes and different content, and a literal list of prefixes in the page is a
+  legitimate statement of the format, not a leak. What is not legitimate is writing
+  that list again in the engine, again in the page and again in the checks — three
+  copies drift and nothing reports it. The export already carries the catalogue, so
+  derive the pattern from it. A status vocabulary or a tab list IS document-specific:
+  build the filter's options from the values the data carries, because a filter whose
+  buckets are written from memory collapses into one useless bucket on the next
+  document.
+  **The CHECKS are a second consumer, and they leak the same way.** An assertion
+  that says "the header mentions the specification" hardcodes one document's word in
+  the one file whose job is to work for any document — and the export already
+  carries what the export is a model OF, so the assertion compares the page against
+  that instead. The page must read the document's words from the export for the
+  same reason: a literal in the page is a per-spec leak one level up from the
+  engine's, and a check that names the document's words passes on this document
+  and fails on the next one — or is quietly edited each time the document changes,
+  until nobody is left holding the rule.
+
+- **When the contract's vocabulary cannot express what the page does, WIDEN the
+  vocabulary — do not reshape the page to fit the vocabulary it already has.** A
+  detail panel whose tables are ALTERNATIVES (tabs the reader switches between) is
+  not two tables side by side, so the contract's left/right pair would be a lie; the
+  contract gained a per-table column map for exactly that case. The same applies to a
+  field the page reads and the contract does not name, and to a column the page
+  renders and the contract does not list. The contract is format-level and is meant
+  to be widened; the page is the artifact the reader asked for.

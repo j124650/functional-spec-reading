@@ -881,3 +881,115 @@ model-only claim as a product claim.
 8. The export that emits the computed result for the diagram to consume.
 9. Iterate until `check` passes, every probe agrees with its finding, and the traversal
    exhausts its frontier.
+
+---
+
+## Pitfalls: the engine
+
+The engine is an instrument. These are the ways it has lied, and the ways it has leaked the document it verifies.
+
+- **Every field an invariant or action can read must be in the traversal's state key.**
+  A field left out makes two different states collide in the visited-set, and the second
+  is then never explored — so the violation it would have revealed disappears with no
+  error. A missing field in the key hid an entire invariant class.
+
+- **The state space must stay bounded or the frontier never closes.** An action that
+  appends without limit makes the traversal hit its cap, and a truncated frontier is an
+  asserted result wearing a computed result's clothes. Enforce the spec's own
+  cardinality rules in the effect, and report whether the frontier was exhausted.
+  **An engine's own boolean must be a property of the engine, not a reading of its own
+  output.** A field reporting on the engine's behaviour — did the frontier close, was the
+  bound reached — is computed by asking the engine. A substring test over the log it
+  printed is true on every branch when the branches mention the word, so the field was
+  permanently true while the log beside it said the opposite, and the page repeated the
+  false claim to the reader. Expose the boolean; let the export read it.
+  **And the bound travels with the count.** A figure reached under a cap is a property of
+  the cap, so the export carries the bound and the page shows it beside the number —
+  a reader who cannot tell a bound artifact from a genuine defect inherits the doubt on
+  every number on the page.
+
+- **A violation count is not a finding count.** The bound that keeps the frontier
+  closing also shapes WHICH states the traversal reaches: it edits one field at a
+  time, so the reachable set includes half-filled forms. An invariant about a
+  completed form — "the customer type is one of the ERP list values" — then fails in
+  every one of those states, and the count is a property of the BOUND, not of the
+  specification. Say in the report which violations the bound accounts for and which
+  survive in a state where the bound could have reached further: a reader who cannot
+  tell a bound artifact from a genuine defect inherits the doubt on every number in
+  the report. `references/executable-spec-model.md` has the diagnostic.
+
+- **A tool that writes must never be able to write over the file it reads.** An export
+  command whose first argument is BOTH the input document and the output path replaces
+  the deliverable with its own output on the first run — and nothing recovers it, because
+  the deliverable was hand-built, unique, and not under version control. Take the input
+  and the output as separate arguments and refuse when they resolve to the same file.
+  Before any instrument runs against the deliverable, put the deliverable under version
+  control: a hand-built document with no copy and no history is one typo from gone, and
+  the recovery is reconstruction rather than restoration.
+
+---
+
+## Building the engine: the decisions that are made once
+
+These were moved out of the skill's procedure, because they govern the instrument and
+not the model — a run that produces only the deliverable never reads them.
+
+**The instrument must hold no entity of the document it verifies.** The test is whether it
+runs against a *second* document with no code change. An aggregate with a property per
+entity, a key struct per machine, a context table listing which fields each machine
+reads, a rule layer whose predicates name this document's fields — each of those fails
+that test, and each of them works perfectly on the one document in front of you. When the
+document lacks a field the model needs, **fix the format** — the generation rules, then
+the document — not the engine: a workaround in the engine is invisible in the document,
+so the next reader cannot tell which rules came from the specification and which from
+the author of the model. And when you notice such a leak in your own work, say so at
+the moment you find it; a silent defect presented as a finished result is worse than the
+defect.
+
+**A per-spec constant is a leak, and so is a per-spec *file*.** Hardcoding one
+document's state ids, term names, or entity names into the engine fails the same test,
+and it usually arrives disguised: a `const` class of one document's state ids, a
+helper that builds one document's initial aggregate, a table of one document's
+machines. A file whose name says which document it serves is the loudest signal of
+all — if the engine cannot be pointed at a second document, the file named after the
+first one is the proof. **Delete the per-spec file rather than generalising it in
+place**, because generalising it in place is how a file named after one document comes
+to contain the rules of another.
+
+**Decide abstract-vs-concrete BEFORE writing the engine, and never drift.** The
+question "is this verifier abstract or concrete?" has one answer, and it is decided by
+whether the engine names any entity of the document. If it does, the fix is to remove
+the names — not to rename the offending variables and call the result universal. An
+engine that has been through a refactor and still mentions one document's terms is
+concrete with better manners, and every renaming round reintroduces the leak in a form
+that is harder to see. When a rewrite is requested, the acceptance test is the second
+document, not the first one's results.
+
+**The shape of the model is a decision too, and it is made once.** How many state
+spaces the traversal runs over, what a state key holds, where an invariant is checked
+— each has one right answer for a given document, and each is a change that ripples
+through the parser, the key, the checker and the export. Settle them from the
+document before writing the traversal, and when the reader has already ruled on one,
+take that ruling as settled: re-deriving it mid-build is the churn that leaves the
+engine half-migrated across two incompatible shapes, with neither of them building.
+When a shape turns out to be wrong, change it in one pass across every file that
+depends on it — a key, a checker and an explorer that disagree about the state space
+produce numbers that are individually plausible and jointly meaningless.
+
+**Build the model over ONE aggregate, not one traversal per machine.** The document's
+machines are dimensions of a single aggregate, so the traversal runs once over it and
+the report groups the result per machine afterwards. A per-machine traversal starves
+every machine whose guard reads a term another machine's transition sets — it reports
+one reachable state and an exhausted frontier, which looks like a healthy result. And
+the obvious repair, walking the source machine's transitions inside the target's
+traversal, makes the coupling closure the whole document and the frontier stops
+closing.
+
+**State the decision you made and why, in one line, at the moment you make it.** The
+reader asked "is the verifier abstract or concrete?" and the answer had to be
+reconstructed from the diff. When a load-bearing choice has two defensible answers —
+transcribed model or document-driven, an expression column or a hand-written rule
+layer — say which one you took and what it costs, before building. Then do not reopen
+it mid-task: re-deriving an agreed decision is the loop the reader is paying for, and
+switching modes after the engine is half-written is what produces a file that is
+concrete in the parts you forgot to generalise.

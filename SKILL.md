@@ -108,8 +108,12 @@ produce one, the existing one is in scope, and you say which reading you took.
 
 ### 1. Convert the input to Markdown
 
-**This is the front door of the whole pipeline. Do it first, and do it with the
-bundled conversion skill — never by hand.**
+**If the input is already Markdown, skip this stage.** The source is read as it is.
+The stage exists for `.docx`, `.pdf` and `.xlsx`, where the document's structure —
+headings, lists, tables — has to be recovered before anything can cite it.
+
+**Otherwise, this is the front door of the whole pipeline. Do it first, and do it
+with the bundled conversion skill — never by hand.**
 
 **Default instruction set: [`github/awesome-copilot`](https://github.com/github/awesome-copilot)
 (41k stars), Microsoft's own.** Install the skill for the input format and
@@ -425,70 +429,16 @@ transitions carry a **guard expression and an effect expression**, §15's invari
 **formal expression**, and §3.1 declares the **vocabulary** those expressions draw on.
 Build the model after the document, against the rules the document already states.
 
-**The instrument must hold no entity of the document it verifies.** The test is whether it
-runs against a *second* document with no code change. An aggregate with a property per
-entity, a key struct per machine, a context table listing which fields each machine
-reads, a rule layer whose predicates name this document's fields — each of those fails
-that test, and each of them works perfectly on the one document in front of you. When the
-document lacks a field the model needs, **fix the format** — the generation rules, then
-the document — not the engine: a workaround in the engine is invisible in the document,
-so the next reader cannot tell which rules came from the specification and which from
-the author of the model. And when you notice such a leak in your own work, say so at
-the moment you find it; a silent defect presented as a finished result is worse than the
-defect.
-
-**A per-spec constant is a leak, and so is a per-spec *file*.** Hardcoding one
-document's state ids, term names, or entity names into the engine fails the same test,
-and it usually arrives disguised: a `const` class of one document's state ids, a
-helper that builds one document's initial aggregate, a table of one document's
-machines. A file whose name says which document it serves is the loudest signal of
-all — if the engine cannot be pointed at a second document, the file named after the
-first one is the proof. **Delete the per-spec file rather than generalising it in
-place**, because generalising it in place is how a file named after one document comes
-to contain the rules of another.
-
-**Decide abstract-vs-concrete BEFORE writing the engine, and never drift.** The
-question "is this verifier abstract or concrete?" has one answer, and it is decided by
-whether the engine names any entity of the document. If it does, the fix is to remove
-the names — not to rename the offending variables and call the result universal. An
-engine that has been through a refactor and still mentions one document's terms is
-concrete with better manners, and every renaming round reintroduces the leak in a form
-that is harder to see. When a rewrite is requested, the acceptance test is the second
-document, not the first one's results.
-
-**State the decision you made and why, in one line, at the moment you make it.** The
-reader asked "is the verifier abstract or concrete?" and the answer had to be
-reconstructed from the diff. When a load-bearing choice has two defensible answers —
-transcribed model or document-driven, an expression column or a hand-written rule
-layer — say which one you took and what it costs, before building. Then do not reopen
-it mid-task: re-deriving an agreed decision is the loop the reader is paying for, and
-switching modes after the engine is half-written is what produces a file that is
-concrete in the parts you forgot to generalise.
-
-**The shape of the model is a decision too, and it is made once.** How many state
-spaces the traversal runs over, what a state key holds, where an invariant is checked
-— each has one right answer for a given document, and each is a change that ripples
-through the parser, the key, the checker and the export. Settle them from the
-document before writing the traversal, and when the reader has already ruled on one,
-take that ruling as settled: re-deriving it mid-build is the churn that leaves the
-engine half-migrated across two incompatible shapes, with neither of them building.
-When a shape turns out to be wrong, change it in one pass across every file that
-depends on it — a key, a checker and an explorer that disagree about the state space
-produce numbers that are individually plausible and jointly meaningless.
+**How to build the instrument is in `references/executable-spec-model.md`** — the leak
+test (an instrument that holds no entity of the document it verifies), the decisions
+that are made once (abstract or concrete, the shape of the model, one aggregate rather
+than one traversal per machine). It is an optional instrument, so it is read only when
+the reader asked for it.
 
 **Run the model's own check before trusting anything it says.** It resolves every
 expression in the document against the document's own vocabulary. A failure means an
 expression names a term the document does not define — a defect in the document, fixed
 in the document.
-
-**Build the model over ONE aggregate, not one traversal per machine.** The document's
-machines are dimensions of a single aggregate, so the traversal runs once over it and
-the report groups the result per machine afterwards. A per-machine traversal starves
-every machine whose guard reads a term another machine's transition sets — it reports
-one reachable state and an exhausted frontier, which looks like a healthy result. And
-the obvious repair, walking the source machine's transitions inside the target's
-traversal, makes the coupling closure the whole document and the frontier stops
-closing. `references/executable-spec-model.md` has the shape and the reasons.
 
 The distinction is load-bearing. A model that visits hand-built states and prints a count
 has **asserted** reachability; a model that starts from one initial state and applies
@@ -528,51 +478,27 @@ cause and one fix; one issue per bug loses that.
 
 ### 9. Pass 7 — red-team your own output
 
-Dispatch an adversarial reviewer against your deliverable with the source file and a
-be-nastily-specific brief: find factual errors, overclaims, missed defects, internal
-inconsistency, and anything a non-technical reviewer could not act on. A second independent
-pass over the same source finds materially more than one pass does.
+**First, the machine's own verdict.** Two reports say what a re-read would only
+guess at: `check-source-coverage.js` names every row of the source's tables the model
+does not account for, and `check-section-accountability.js` names every section of the
+source nobody cites. Read both, and fix what they name, before anything else.
 
-**Dispatch it early, then keep working.** The reviewer runs in the background and its
-result arrives later; do not block on it. Fire it as soon as the analysis documents are
-written, then build the model and the diagram while it runs, and fold its findings in at
-the end. Point it at the documents it audits — a reviewer handed a diagram cannot say
-anything about a claim in a findings file.
+**Then, an independent reviewer — when the reader asked for one.** A second pass over
+the same source finds materially more than one pass does, and it is worth a second
+agent when the source is large enough to hide something. It is not free: the reviewer
+reads the source and the deliverable again, so dispatch it only when the reader wants
+a review, or when the source is long enough that the risk justifies the cost.
 
-**Hand the reviewer the harness and the source line numbers**, and tell it to RUN the
-model rather than reason about it. A reviewer given only the prose cannot tell that a
-claim of mechanical reproduction was hand-asserted, and it cannot check whether a cited
-line number resolves. Give it the commands to run and ask it to report the output it
-got.
+**Point it at the deliverable, not at a diagram.** The reviewer gets the JSON
+deliverable, the source, and a be-nastily-specific brief: find factual errors,
+overclaims, missed defects, internal inconsistency, and anything a non-technical
+reviewer could not act on. A reviewer handed a picture cannot say anything about a
+claim in the record that carries it.
 
-**When the reviewer has already found something, hand the corrector the findings, not
-the raw critic.** The second agent's job is to APPLY the corrections, so it should
-receive: the specific finding IDs with their subjects, the authoritative list of IDs
-that exist (so it repoints a reference instead of inventing one), the verified numbers
-already computed, and the instruction not to re-derive them. A corrector told to
-"check the numbers first" will spend its whole budget re-running the harness, and will
-poll a long command waiting for a state change that already happened — then die with
-nothing written. Give it the numbers, name the output file it should read, and say
-plainly that the data is already computed.
-
-**Give each corrector a disjoint set of files.** Two agents editing the same document
-overwrite each other's work. Split the documents across agents, and tell each agent
-which files are off-limits.
-
-**State the environment's hard constraints in the brief.** A child agent inherits
-neither your memory nor your profile, so a constraint you hold as standing knowledge
-— this language is unavailable here, that directory is out of bounds — is invisible
-to it unless the brief says so. A child that quietly writes its helper scripts in a
-prohibited language has produced work the reviewer cannot run, and the porting lands
-on you. Put those constraints in the brief as rules, not as hints, and check the
-child's output against them before folding it in.
-
-**Dispatch the corrector on the default model unless there is a reason not to.** A
-pinned model that the provider has withdrawn fails the child with a provider error
-rather than anything to do with the task, and the child's output is lost. If a
-delegated agent dies on a provider error, the fallback chain is the first thing to
-check — a chain entry pointing at a model the provider no longer serves turns any
-transient error into a fatal one.
+**Hand it the commands, and ask for the output it got.** A reviewer given only the
+prose cannot tell that a claim of mechanical reproduction was hand-asserted, and it
+cannot check whether a cited section resolves. Give it the gates, the engine's check,
+and the source, and ask it to report what came back.
 
 ### 10. Pass 8 — deliver the consolidated file
 
@@ -805,194 +731,13 @@ as "nothing to say", and a blank is how ambiguity hides.
 
 ## Pitfalls
 
-**THE EXPLORER'S OWN UI RULES LIVE IN `references/interactive-diagrams.md`** — filters,
-sorting, the generator, layout, escaping, and the browser harness. They are stated
-there once and in full; the rules below are the ones that reach past the explorer.
+The rules that keep the model honest. Each one was paid for.
 
-- **Unwrap Markdown decoration BEFORE comparing a cell to a sentinel value AND before
-  reading it as an expression.** A cell
-  reading `` `not expressible` `` is the sentinel `not expressible` — the backticks
-  are decoration, and a comparison made against the raw cell misses them, so every
-  unexpressible condition is reported as evaluable and the whole unchecked set
-  silently becomes a checked one. Strip the decoration first, then compare, then
-  read. This is a rule about the SOURCE's cells: the deliverable states the kind
-  outright — `expression.kind` is `notExpressible` — so nothing in it carries
-  decoration to unwrap.
-  parse; the order is the difference between an honest coverage report and a wrong
-  one.
-  **The reader on the page side has the same defect, and it is quieter.** The
-  decoration is stripped before a comparison but not before a TOKENIZER, whose
-  default branch discards the characters outside the grammar — so the backticks
-  vanish and `` `true` `` reaches the keyword reader as the literal `true`, which
-  is read as the answer "Yes". A constant-true guard then says yes/no instead of
-  saying there is no condition, and every such guard in the document is wrong the
-  same way. Unwrap once at the top of the reader, and give every reader of the same
-  language the same unwrap — a fix applied to one and not the other is a defect
-  waiting for the other call site.
-- **A Markdown table parser must skip separator rows.** A header edit that adds a
-  column without removing the old separator leaves two separator rows, and the
-  parser that skips only the second row reads the first one as data — a phantom
-  record whose fields are dashes. It reaches the output as a finding, a term, or a
-  transition, and it counts toward a total the reader trusts. Reject any row whose
-  cells are only dashes and colons, whatever its position.
-- **A record's heading is not always numbered like its section.** A document that
-  puts its scenarios under `### SCN-001 — …` while its other headings carry a
-  section number (`### 7.1 AGG-001 — …`) defeats a parser whose heading regex
-  requires a digit-led number: the scenario heading never enters the branch that
-  collects it, and the series comes back EMPTY with no error anywhere — a missing
-  series that a catalogue check then reports as a series the export omitted.
-  Match each heading on the shape it actually has — the id pattern, the section
-  number, or both — rather than on the one the first example used. Check a
-  collected series for being empty before believing it was absent from the
-  document.
-- **One section can hold two different tables.** A section whose first table is a
-  role inventory and whose second is a set of numbered rules parses as one table,
-  and every rule row lands in the role records or is dropped. Route a row by what
-  it CONTAINS — a cell holding an id of the series being collected — not by which
-  section it is in.
-- **A record whose body is structured content must keep that structure.** An
-  aggregate's aspect table and a scenario's labelled bullet list are not one
-  paragraph each: flattening them to a string loses the breakdown the reader
-  consults, and the page then shows "Content" instead of the root, the members
-  and the consistency expectation. Parse the aspects and the parts as records and
-  carry them through the export — the detail panel shows what the document says,
-  not a summary of it.
-- **The export must carry what the page needs to READ the document, not only what
-  it needs to COUNT it.** A page that reads an expression in words needs the
-  vocabulary — the terms, their types, and the values they may hold — in the export,
-  because the page cannot parse the document and the vocabulary is what turns
-  `state != 'ST-006'` into "the current state is not Approved". A count-only export
-  forces the page to hardcode the document's terms, which is the per-spec leak the
-  engine rules forbid, one level up.
-  **The same holds for the document's identifiers: the export must carry every series
-  the document issues, with the name each id carries.** That catalogue is what lets the
-  page turn `VO-004` into "setup information" instead of showing a bare handle. A
-  series the export omits has nothing to decode into, so the page shows the id as an
-  unexplained token — and the reader cannot tell whether the analysis skipped it or
-  the id is meaningless.
-  **It must also carry the document's STRUCTURE, resolved.** When the page re-parses
-  a From/To cell to work out which state a transition belongs to, the document's
-  structure lives in two places — the engine's parse and the page's re-parse — and
-  they drift: a cell naming five states was resolved to five by the engine and to one
-  by the page. Ship the resolved ids (`fromStates`, `toStates`) and the hierarchy
-  (machine → states → outgoing/incoming),  so there is one resolution of the
-  document's structure and the page never parses a cell.
-  **The rule is not about structure alone: the page may not DERIVE anything from a
-  document cell's text.** A cell may be shown; it may not be interpreted. Whatever
-  the cell holds — a name beside a code, ids written as a range, a marker where a
-  value would be, two shapes in one column — the exporter resolves it once and the
-  page reads the result. **A cell that mixes two shapes is shipped as one list per
-  shape**, the flat field is REPLACED rather than kept beside it, a scope that
-  covers EVERYTHING is written out as the list it covers, and the resolution is the
-  ENGINE'S — the same result the rule was judged by, so the export and the analysis
-  cannot disagree. `references/export-contract.md` states each of these in full,
-  with the mechanism behind each.
-- **Gather what a step needs once, then act.** Re-reading files already read in the
-  same session is not diligence; it is a loop, and the reader waits through every
-  turn of it. Read what the step needs, keep the facts, and make the change.
-- **The explorer's rendering rules live in `references/explorer-rendering.md`** — how
-  a reference is drawn, the marks and the families, the legend read from the same
-  table the chips are drawn from, and the traps the no-regex rule walks into.
-- **A cell that QUOTES the document and a cell that INTERPRETS it must not share a
-  class.** The page marks a cell that carries a reading with its own class, and the
-  checks select cells by that class to assert the reading — so a cell showing the
-  document's own words with the reading in its HINT, given the same class, is found
-  first by every check that looks for a reading, and the suite fails on a change
-  that broke nothing. Give each kind of cell its own class and let the check name it.
-- **A consumer identifies a thing by its ID, and never by recovering the ID from the
-  text it rendered.** A check that strips the id back out of a rendered label with a
-  pattern is guessing identity by string: it mis-reads the label the moment the
-  rendering changes, and it cannot fail on the thing it exists to protect. Where a
-  name is not unique on its own — two transitions can share a trigger, because one
-  command has two branches — the rendering carries the id beside the name ("Submit
-  (TR-004)") and carries it as DATA: the id travels in its own element, so the
-  consumer reads the id from the markup and compares it with the id it already knows.
-  This holds wherever an id is written down — in the export, in the markup, in the
-  checks, in the matrix. Identity is a fact the data states, never a shape the text
-  suggests.
-- **An assertion must not forbid what the document actually says.** When the export
-  resolves a cell and the result is EMPTY, that is usually a fact about the document
-  — it named something the document does not have — not a defect in the export.
-  Assert that the page REVEALS the emptiness; asserting that the resolution succeeded
-  forbids the export from reporting a real gap, and the gap it hid was the finding.
-- **Read what you need in one batched pass, then act on it.** Re-reading a file to
-  re-derive a fact already in hand is the loop, not the thoroughness: the context is
-  what the next edit needs, and a second pass over the same file only delays it.
-- **Identity is an id, and it travels as data.** A component that names a thing
-  carries that id in a data attribute, and the checks compare ids with ids. Never
-  infer an id from a rendered label: that guesses at identity by string.
-- **Do not re-read a file whose contents are already in context.** Batch the
-  reconnaissance into one call, then act on what you know.
-- **`references/explorer-rendering.md`** — how a reference is drawn.
-- **The contract between an instrument and what it consumes must be written down.**
-  The export JSON is the only thing the engine and the page share: the engine emits
-  a field, the page reads a name. **Put a schema version and a required-field list
-  in the export, and have the consumer assert them.** The same rule
-  governs anything an instrument reads: the shape it depends on is stated, and the
-  thing that consumes it checks.
-  **A contract that describes the consumer needs a checker against the consumer too.**
-  A contract that names the page's tabs, columns and filters drifts from the page's
-  code exactly as it drifts from the data, and nothing notices until a reader meets a
-  column the contract does not have.
-  **And the consumer must DERIVE what it knows from the contract, not from a list
-  written by hand.** The identifier scheme is a property of the OUTPUT FORMAT: the
-  explorer defines it, so every document that goes through it comes out with the same
-  prefixes and different content, and a literal list of prefixes in the page is a
-  legitimate statement of the format, not a leak. What is not legitimate is writing
-  that list again in the engine, again in the page and again in the checks — three
-  copies drift and nothing reports it. The export already carries the catalogue, so
-  derive the pattern from it. A status vocabulary or a tab list IS document-specific:
-  build the filter's options from the values the data carries, because a filter whose
-  buckets are written from memory collapses into one useless bucket on the next
-  document.
-  **The CHECKS are a second consumer, and they leak the same way.** An assertion
-  that says "the header mentions the specification" hardcodes one document's word in
-  the one file whose job is to work for any document — and the export already
-  carries what the export is a model OF, so the assertion compares the page against
-  that instead. The page must read the document's words from the export for the
-  same reason: a literal in the page is a per-spec leak one level up from the
-  engine's, and a check that names the document's words passes on this document
-  and fails on the next one — or is quietly edited each time the document changes,
-  until nobody is left holding the rule.
-- **An instrument's consumer must cover every section the instrument carries, and an
-  empty section is still a section.** The export carried the divergences and the
-  executable gaps; the page rendered neither. Both were empty, so nothing was lost
-  that day — and the page would have dropped them silently the day one was not
-  empty, because there was never a view to hold them. **A check of the form "the
-  table's row count equals the array's length" passes against a page with no table
-  at all**, because zero equals zero: assert the VIEW exists and says so when the
-  data is empty, then assert it holds everything when it is not.
-  **Audit the FIELDS the export carries, not the tabs the page has.** The gaps
-  appear where a field exists in the export and the page renders it in symbols, or
-  renders it nowhere. Enumerate the export's fields whose value is an expression,
-  then find each one's render site and ask whether it is read in words, shown in
-  symbols, or missing: a field shown in symbols where the reader would have read it
-  is a visible gap, and a field rendered NOWHERE is worse, because the reader is
-  told a rule applies and is never shown it.
-- **The gate's coverage depends on a convention in the page, so a page that breaks
-  the convention loses the gate silently.** The contract-vs-page checker finds tables
-  by their call site — `DataTable($("#someId"), { id: "tName", … })` — so a table
-  rendered through a VARIABLE (`DataTable(host, {…})`) is never seen: its columns are
-  never compared with the contract's, and its absence is never reported. The gate
-  stays green over a table nobody checks. Write every table's host as a literal, and
-  when the gate names a table no view claims, DECLARE it in the contract rather than
-  reshaping the page until the checker stops noticing — a gate satisfied by hiding
-  from it is not a gate.
-- **When the contract's vocabulary cannot express what the page does, WIDEN the
-  vocabulary — do not reshape the page to fit the vocabulary it already has.** A
-  detail panel whose tables are ALTERNATIVES (tabs the reader switches between) is
-  not two tables side by side, so the contract's left/right pair would be a lie; the
-  contract gained a per-table column map for exactly that case. The same applies to a
-  field the page reads and the contract does not name, and to a column the page
-  renders and the contract does not list. The contract is format-level and is meant
-  to be widened; the page is the artifact the reader asked for.
-- **An assertion that compares what the page SHOWS with the document's RAW string
-  must render the expectation through the page's own helper.** The page renders
-  Markdown emphasis — `**or**` becomes bold — so the raw source keeps the asterisks
-  and the comparison fails on any emphasised text, and the failure reads as "the
-  field is missing" when the field is on screen. Build the expectation by passing
-  the source through the page's own cell renderer and reading its text, so the
-  assertion compares like with like.
+**Gather what a step needs once, then act.** Re-reading files already read in the
+same session is not diligence; it is a loop, and the reader waits through every
+turn of it. Read what the step needs, keep the facts, and make the change. The
+source stays in context for the whole run: do not re-read it.
+
 - **A document that lists ids as a RANGE with a reference to another record means
   that record's ids within the span.** "INV-001…INV-011 as in Draft" says the
   invariants DRAFT holds whose numbers fall in that span — not every id between the
@@ -1065,41 +810,9 @@ there once and in full; the rules below are the ones that reach past the explore
   it *as this run's result* is not, and the reader cannot tell the difference.
   Searching the tree and its history for such an artifact is the same error one step
   earlier: reconnaissance nobody asked for, spent before the first real step.
-- **Convert the input with the skill; never hand-roll an extractor.** The
-  conversion stage is the front door of the whole pipeline, and it is where the
-  document's structure is decided. Microsoft's `github/awesome-copilot`
-  instruction set (`convert-word-to-md` / `convert-pdf-to-md` /
-  `convert-excel-to-md`) runs MarkItDown and produces what the analysis needs:
-  real headings, real lists, and **tables as Markdown tables**. A hand-rolled
-  unzip-and-strip flattens the spec's tables into one loose word per line — and
-  a spec's tables are evidence. Flattened, they are unreadable and uncitable.
-  See `references/evidence-extraction.md`.
-- **The Hermes venv has no `pip`.** The conversion skill needs Python 3.10+ and
-  `markitdown`; use `uv` with an isolated environment rather than assuming
-  `python -m pip` works:
-  `uv venv "$TMPDIR/mdvenv" --python 3.12` then
-  `uv pip install --python "$TMPDIR/mdvenv/Scripts/python.exe" "markitdown[docx]>=0.1.0"`.
-  Put the venv in the scratch directory — a bare `mdvenv` path creates it in the
-  working directory, beside the source document and the deliverable, where it reads as
-  part of the output.
-- **A folder of mixed input needs ALL the sibling skills.** `.docx`, `.pdf` and
-  `.xlsx` each have their own conversion skill; invoking only one silently
-  skips the others.
 - **Do not widen the scope to find the system.** Sweeping sibling paths for "the real app" is
   the single most reliable way to lose the user's trust on a document-reading task. The
   document is the scope.
-- **Re-read what you already have before you build a reader.** When a request names a
-  column or a field ("show the evidence texts from the Evidence column"), the text is
-  usually already in the artifact you built, and the citation in that cell points at
-  section text sitting in the extract you already parsed. Writing a second extractor
-  for the source format duplicates a source of truth and is work the task never asked
-  for. Reach for the file you have, then for the extract you already made, and only
-  then consider parsing the original.
-- **Read the region you are about to change; do not survey the file to re-derive what
-  you already know.** When the artifact's format is fixed by rules you have read, a
-  grep that re-establishes what the file contains returns nothing and costs a turn.
-  Read the lines the next edit touches — `read_file` with an offset — or the whole file
-  once when it is small, then act on what you read.
 - **A definition is not a verification.** Reading a term's definition once proves nothing;
   the term's other occurrences are where it changes meaning. Check them.
 - **Cite the doc's own sections as the anchor.** `§` numbers are what the author wrote and
@@ -1123,204 +836,10 @@ there once and in full; the rules below are the ones that reach past the explore
   constructed by hand proves only that your construction was possible, not that the
   spec's rules permit it — a state reached by writing a field directly bypasses every
   guard. Compute the reachable set by traversal and report the paths.
-- **Every field an invariant or action can read must be in the traversal's state key.**
-  A field left out makes two different states collide in the visited-set, and the second
-  is then never explored — so the violation it would have revealed disappears with no
-  error. A missing field in the key hid an entire invariant class.
 - **Probe the findings; do not narrate them.** Encode each reachability claim as a
   question against the computed set. A probe that answers NOT REACHABLE is the mechanism
   that catches an overclaimed path — and a probe that contradicts a finding you were
   confident about is usually pointing at a missing field or a missing guard.
-- **The state space must stay bounded or the frontier never closes.** An action that
-  appends without limit makes the traversal hit its cap, and a truncated frontier is an
-  asserted result wearing a computed result's clothes. Enforce the spec's own
-  cardinality rules in the effect, and report whether the frontier was exhausted.
-  **An engine's own boolean must be a property of the engine, not a reading of its own
-  output.** A field reporting on the engine's behaviour — did the frontier close, was the
-  bound reached — is computed by asking the engine. A substring test over the log it
-  printed is true on every branch when the branches mention the word, so the field was
-  permanently true while the log beside it said the opposite, and the page repeated the
-  false claim to the reader. Expose the boolean; let the export read it.
-  **And the bound travels with the count.** A figure reached under a cap is a property of
-  the cap, so the export carries the bound and the page shows it beside the number —
-  a reader who cannot tell a bound artifact from a genuine defect inherits the doubt on
-  every number on the page.
-- **A violation count is not a finding count.** The bound that keeps the frontier
-  closing also shapes WHICH states the traversal reaches: it edits one field at a
-  time, so the reachable set includes half-filled forms. An invariant about a
-  completed form — "the customer type is one of the ERP list values" — then fails in
-  every one of those states, and the count is a property of the BOUND, not of the
-  specification. Say in the report which violations the bound accounts for and which
-  survive in a state where the bound could have reached further: a reader who cannot
-  tell a bound artifact from a genuine defect inherits the doubt on every number in
-  the report. `references/executable-spec-model.md` has the diagnostic.
-- **Do not leave the deliverable half-migrated.** A layout rewrite that changes the
-  markup but not the scripts that read it leaves a broken page. When the structure
-  changes, change the markup and the code that drives it in the same pass and re-verify
-  in the browser before moving on.
-- **When the reader redirects a placement, offer concrete options in ONE question.**
-  "I want to place them differently" names a decision, not an answer — guessing the
-  intended arrangement costs a rebuild and then a correction. Give three or four
-  concrete placements in a single question, each a sentence saying where the thing
-  lands and what the reader sees, so one reply settles it. Rebuilding to the first
-  plausible reading is the expensive way to ask the same question.
-- **Answer the question that was asked.** A question about the workflow, the method, or
-  what a deliverable looks like is answered by the method — not by building the thing.
-  When the reader asks "what are we developing?", answer that; do not start writing
-  scaffolding. When they ask how to invoke this in a fresh session, give the invocation
-  and stop.
-  **The frame the reader states narrows the question.** "We are talking about the
-  contract" is not one topic among several — it IS the question. An answer that works
-  on a different layer (a different file, a different phase, a different design) reads
-  as not having heard them, and costs a turn to be told. Take the frame as the
-  question, answer inside it, and put anything outside it in one line or not at all.
-  **Deliver the shape that was asked for.** A request for a list gets a list — items, one
-  line each, grouped under the headings that organise them, with no paragraphs arguing
-  the case around them. A request for a plan gets steps; a request for a feasibility
-  answer gets a measured fact and its named consequence. The shape is part of the ask,
-  and prose wrapped around a list reads as padding an answer the reader did not want.
-- **Execute the agreed plan instead of re-deriving it.** Once the reader has approved a
-  plan, the remaining turns are that plan's steps — not a fresh analysis of whether it
-  is still the right plan. Restating it, asking which step comes first, or announcing
-  what the next step will be reads as looping and spends the budget the execution
-  needs. When the budget is tight, spend what is left on the fix and its verification:
-  a summary describing an unexecuted plan is worth less than one line of state.
-  **The reconnaissance is spent, not renewed.** The reads that informed the
-  questions are the reads; answering the questions does not invalidate them. A
-  turn that re-opens files already read — to re-confirm a signature, re-check a
-  shape, re-establish what a file holds — spends a step of the implementation and
-  reads as hesitation to a reader who asked for the work and is watching it not
-  start. When the answers name the shape, the next action is the edit.
-- **One task at a time, and finish the one you were given.** When the reader narrows
-  the ask — "one task at a time", "fix the verifier", "verifier first, then the UI" —
-  that narrowing is the plan. Do not start the next task while the current one is
-  unfinished, and do not widen the current one to include it. A half-finished
-  verifier plus a half-built page is two broken things instead of one finished one,
-  and the reader has to re-establish which of them is actually in progress.
-  **And when the named task IS finished, stop and wait for the next instruction.**
-  Rolling into the improvement you spotted instead of delivering the ask makes the
-  reader interrupt you to get the thing they asked for; state what landed, what is
-  verified, and what is deliberately not committed, then wait.
-  **An operational instruction is executed literally, on the next call.** "Regenerate
-  the UI", "commit", "run the tests", "rebuild" — the command is known, so run it and
-  report what it returned. Do not spend turns reading adjacent files to decide what
-  else the instruction might license, and do not fold a self-assigned improvement
-  it: a rebuild that becomes a feature plan is a rebuild the reader did not ask for,
-  and the drift surfaces as the reader asking why you are stuck.
-  **And a terse reply to YOUR question is an answer only when it names the question.**
-  "Regenerate the UI" after you asked "implement these six promises, or weaken the
-  contract?" is an instruction to regenerate — not a decision to implement. The reader
-  answers in the register they use for instructions, and an instruction that names an
-  action is that action. Read it as what it says, and put the still-open question back
-  in one line rather than inferring an approval that was never given.
-- **A blocked task is a blocker to name, not a reason to re-plan.** When the current
-  task cannot proceed, say what blocks it and what would unblock it, and stop. Do not
-  start a neighbouring task, re-derive the architecture, or widen the scope to fill
-  the gap — each reads as derailing, and the reader asked for one task because the
-  budget only covers one.
-- **Stop the background work when the reader says stop.** A dispatched reviewer,
-  corrector, or helper keeps running and keeps spending budget after the reader
-  has said to stop or to narrow the task. Stop what is running, and say what you stopped.
-  A subagent that completes after the task was narrowed returns a result nobody
-  asked for, and folding it in re-opens settled ground. **And stop the reconnaissance,
-  not only the background jobs.** A restatement of the task after a stop is a narrowed
-  plan, not permission to resume the wider sweep that was interrupted: the narrower ask
-  is the whole remaining work, and everything outside it waits its turn.
-- **Ground a design proposal in a measurement, and answer the feasibility question with
-  facts.** When the reader asks whether something is possible — "explain me is it
-  possible", "what needs to be done" — the answer is a measured fact and a named
-  consequence: the size of the export, the count of records a view would have to
-  render, the field that is missing, the number of places a list is written down. Not
-  a menu of architectures with invented names for the options, and not a preference
-  dressed as a finding. A proposal whose premises are assumed reads as invention, and
-  the reader spends a turn telling you which invented parts to drop. Measure first —
-  read the shape of the data, count what is in it, and let the constraint choose the
-  design; then state the design as a decision with its cost.
-- **Do not report a fact you have not verified, and do not dress a guess as a
-  finding.** A claim that a document's cell is truncated, that an expression is
-  malformed, that a state count is too low — each needs the mechanism shown. When a
-  diagnostic tool reports a discrepancy, check the tool before you believe it: a
-  splitter that treats every `|` as a cell boundary will "prove" a healthy row is
-  corrupt, and reporting that costs the reader a rewrite of a correct document. Say
-  what you checked and what it showed. **Verify the tool's own output before
-  concluding the tool is wrong too**: a naive cell splitter reports a row as
-  truncated when the row simply contains the language's `||`, and believing it sends
-  you to repair a correct document. Dump the raw bytes of the suspect cell and read
-  them before naming a defect.
-- **Price written-but-unrun code as written, not as working.** When asked how far
-  along a build is, an honest percentage discounts code that has never been compiled
-  or executed, and says so — the reader is budgeting the remaining work, and a number
-  that counts unrun code as done is a number that misleads them. Give the percentage,
-  the per-component breakdown, and the discount with its reason in one line each; a
-  reader who needs the detail can ask for it. Do not round up to reassure, and do not
-  hide the unrun work behind a summary that reads as finished.
-- **Do not report a defect you already know how to fix.** Finish the fix and re-verify
-  it, then report. A report that names a known defect and hands it back to the reader
-  is a delivery in name only, and it reads as "the work stopped here" — the reader
-  then has to ask for the rest. If a defect genuinely needs a decision the user has
-  not made, say so and ask; but a defect whose fix you are already holding is yours
-  to finish before you summarise. And say it the moment you find it: a defect you
-  noticed and stayed silent about is a defect you chose to ship.
-- **A summary that says "X is still wrong" is an unfinished task, not a report.** When
-  you know the next command and the next file, the work is not done — the reader is
-  paying for the fix, not for a map of it. End the turn with the change landed and
-  verified. When the budget genuinely runs out mid-fix, name the one command that
-  continues it, so the next turn starts from the fix rather than from the diagnosis.
-  **A feature that spans layers is delivered in all of them or not delivered.** When
-  the ask spans the engine, the export and the page, building the engine half and
-  listing the page half under "what remains" is a partial delivery wearing a
-  summary's clothes: the reader has to ask for the rest, and the next turn opens by
-  rebuilding the context for work that was already agreed.
-- **A layout assertion must be shown to fail.** A check that passes against the
-  broken build is measuring the wrong thing — the headless default window is small
-  enough that the overflow cannot happen. Set a desktop viewport in the harness, then
-  revert the fix and confirm the assertion catches it.
-- **An assertion that measures an element must put it on screen first.** A hidden
-  element's rectangle is all zeros, so a comparison against it passes trivially —
-  "the checked column is narrower than the widest" holds for every column in the page
-  when nothing was measured. Open the tab, assert the measurement is non-zero, and
-  only then compare. A check that cannot fail is worse than no check, because it
-  reports the defect as absent. Judge the layout at the reference viewport too: a
-  column that fits at the harness's desktop width genuinely clips in a narrow
-  interactive window, and the small window is not the reader's.
-- **A view that is present in the DOM is not a view the reader can see.** Assert
-  visibility, not presence: exactly one section on screen at a time, and the primary
-  panel's rectangle inside the viewport. A stacked layout, a panel pushed below the
-  fold, and a canvas whose content sits outside its `viewBox` all leave every
-  element-count check passing while the artifact the reader came for is not on
-  screen — and the screenshot shows a complete-looking page with the graph missing.
-  **Look at the screenshot of the whole page**, not only of the diagram's crop: a
-  missing primary artifact is invisible to an assertion that counts elements and
-  obvious in a picture.
-- **The CSS selector and the script that toggles classes must name the same class.**
-  When the stylesheet hides `section.on` and the script toggles a different class,
-  no section ever gains the class the stylesheet watches, every section keeps its
-  default display, and they stack — pushing the primary panel off-screen while the
-  page still looks alive. Hide by default, reveal with one class, and use that class
-  in both places.
-- **A NEGATIVE TEST WHOSE MUTATION DID NOT APPLY IS NOT A PASSING TEST.** To prove a
-  comparison script can fail, break a copy of the artifact and confirm the script
-  rejects it — and confirm the mutation actually landed before believing the
-  result. A `replace()` that finds no match changes nothing and reports success,
-  so the "failing" case passes for the wrong reason and the script looks correct
-  while never having failed. Print or assert that the file changed. The same
-  applies to any negative case: a renamed ID, a downgraded severity, a removed
-  row — each must be caught, and the catch must name the disagreement.
-- **`String.replace()` with one argument inserts the string `"undefined"`.**
-  `s.replace(/^### /)` coerces the missing replacement to that string, so every parsed
-  title renders as `undefinedISS-01`. The file parses and looks fine until a title is
-  actually read; grep for one-argument `.replace(` before shipping a generator.
-- **A duplicate declaration is fatal and blanks every view.** When data moves out of
-  the program into a document, the old declarations must go in the same pass — a
-  duplicate `const` is a parse error that empties the page without a visible cause.
-  The same collision happens between two *features* that each own a piece of view
-  state: a new panel's selection variable must not reuse a name an existing feature
-  already holds, or the whole script dies at parse time and every view goes blank.
-  Grep before declaring: `grep -n '\bfSel\b' explorer.html`.
-- **Re-dispatch a failed child on the default model; do not repair the user's global
-  config inside the task.** A delegated child that dies on a provider error is fixed
-  by re-dispatching it unpinned. Editing the agent's own provider chain is a change
-  to the user's environment, outside the task's scope — flag it and let them decide.
 - **A defect test that asserts your own recommended fix is circular.** If the test
   demands behaviour the spec never states, its failure proves your recommendation is
   absent, not that the spec contradicts itself. Label every defect test by kind —
@@ -1343,52 +862,20 @@ there once and in full; the rules below are the ones that reach past the explore
 - **Never quote a rule with a person's name where the team reasons in roles.** Rewrite it.
 - **Group fixes by root cause.** An issue that carries several findings is the unit that
   closes; one issue per finding is bookkeeping, not engineering.
-- **Never end a turn silently when the tool budget runs out.** Name the file, the error,
-  and what is left. A silent stop reads as "done" and hides a broken artifact the user
-  cannot see — they will find it themselves and stop trusting the rest of the report.
-  When a rework lands halfway, say plainly which parts are wired up and which are not,
-  and say if the artifact is currently broken. **End with the next command, not with a
-  summary of the plan** — "here is what is broken" without "here is the command that
-  fixes it" still leaves the reader choosing, and a restated plan reads as a stop.
 - **Verify each artifact the moment you write it.** A defect introduced in the last
   twenty minutes of a long session is invisible to a summary written from memory, and
   a summary that claims more than was checked is worse than one that admits the gap.
-- **Apply the known fixes together, then rebuild and test once.** When several defects
-  are already diagnosed, patching them one at a time and re-running the whole build
-  between each spends the budget on repetition and leaves the artifact unverified when
-  it runs out. Batch the independent edits into as few passes as the tooling allows,
-  then rebuild, re-export and re-test once. The corollary: a status-only turn — one
-  that reports what is broken without changing anything — costs a turn and delivers
-  nothing, so when the next command is known, run it.
-- **Check whether the deliverable is still current against its source.** An artifact
-  rebuilt from hand-entered numbers drifts from the model the moment the model changes.
-  Compare timestamps and the figures themselves before reporting that the deliverable
-  reflects the latest analysis — the question "is this based on the most recent data?"
-  deserves a real check, not an assurance.
-  **The deliverable must not misdescribe the analysis that produced it.** The document
-  states its own coverage — what was checked, what was found, what the model could not
-  reach — and those statements are claims like any other. A document that says no
-  executable model was built, or quotes a figure from an earlier run, tells the reader
-  something false about the very artifact they are holding, and no checker compares the
-  document's self-description against the instrument.
-- **A tool that writes must never be able to write over the file it reads.** An export
-  command whose first argument is BOTH the input document and the output path replaces
-  the deliverable with its own output on the first run — and nothing recovers it, because
-  the deliverable was hand-built, unique, and not under version control. Take the input
-  and the output as separate arguments and refuse when they resolve to the same file.
-  Before any instrument runs against the deliverable, put the deliverable under version
-  control: a hand-built document with no copy and no history is one typo from gone, and
-  the recovery is reconstruction rather than restoration.
-- **The skill's own rules live in a repository; commit them there.** When a skill's
-  references, templates or scripts are changed, the change belongs in the skill's
-  repository, committed and pushed — not only in the local profile directory, where a
-  reinstall or a curator pass discards it and no diff survives. Check the repository
-  before concluding that a skill is unversioned: a local `git` probe that finds no
-  repository says nothing about a remote that holds it. The installed copy and the
-  clone drift apart, so diff them before pushing and carry the changes across — and
-  diff on CONTENT, not on bytes: a checkout and an installed copy can disagree on
-  line endings alone, which reports every file as changed and hides a real edit in
-  the noise.
+
+**The other rules live with the thing they are about.** The page and the export
+have their own pitfalls, and the instrument has its own; they are not repeated
+here, because a rule that governs one artifact does not govern another:
+
+- the **page** and its checks — `references/explorer-rendering.md`
+- the **export** contract — `references/export-contract.md`
+- the **engine** — `references/executable-spec-model.md`
+- the **conversion** stage — section 1, and `references/evidence-extraction.md`
+- **working with the reader** — `references/working-with-the-reader.md`
+
 ## Verification
 
 ### The feedback loop, while the model is still being written

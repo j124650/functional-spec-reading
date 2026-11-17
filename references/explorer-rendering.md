@@ -277,3 +277,144 @@ marker is a position in the flow, not a destination the document failed to
 name, so a count taken over every synthetic marker reports a destination that
 is not missing — and the machine overview's figure then contradicts the
 diagram beside it.
+
+---
+
+## Pitfalls: the page, the export and the checks that read them
+
+These govern the interactive page and the checks that read it. They are stated here, once, and in full.
+
+- **A record whose body is structured content must keep that structure.** An
+  aggregate's aspect table and a scenario's labelled bullet list are not one
+  paragraph each: flattening them to a string loses the breakdown the reader
+  consults, and the page then shows "Content" instead of the root, the members
+  and the consistency expectation. Parse the aspects and the parts as records and
+  carry them through the export — the detail panel shows what the document says,
+  not a summary of it.
+
+- **The explorer's rendering rules live in `references/explorer-rendering.md`** — how
+  a reference is drawn, the marks and the families, the legend read from the same
+  table the chips are drawn from, and the traps the no-regex rule walks into.
+
+- **A cell that QUOTES the document and a cell that INTERPRETS it must not share a
+  class.** The page marks a cell that carries a reading with its own class, and the
+  checks select cells by that class to assert the reading — so a cell showing the
+  document's own words with the reading in its HINT, given the same class, is found
+  first by every check that looks for a reading, and the suite fails on a change
+  that broke nothing. Give each kind of cell its own class and let the check name it.
+
+- **A consumer identifies a thing by its ID, and never by recovering the ID from the
+  text it rendered.** A check that strips the id back out of a rendered label with a
+  pattern is guessing identity by string: it mis-reads the label the moment the
+  rendering changes, and it cannot fail on the thing it exists to protect. Where a
+  name is not unique on its own — two transitions can share a trigger, because one
+  command has two branches — the rendering carries the id beside the name ("Submit
+  (TR-004)") and carries it as DATA: the id travels in its own element, so the
+  consumer reads the id from the markup and compares it with the id it already knows.
+  This holds wherever an id is written down — in the export, in the markup, in the
+  checks, in the matrix. Identity is a fact the data states, never a shape the text
+  suggests.
+
+- **An assertion must not forbid what the document actually says.** When the export
+  resolves a cell and the result is EMPTY, that is usually a fact about the document
+  — it named something the document does not have — not a defect in the export.
+  Assert that the page REVEALS the emptiness; asserting that the resolution succeeded
+  forbids the export from reporting a real gap, and the gap it hid was the finding.
+
+- **Identity is an id, and it travels as data.** A component that names a thing
+  carries that id in a data attribute, and the checks compare ids with ids. Never
+  infer an id from a rendered label: that guesses at identity by string.
+
+- **`references/explorer-rendering.md`** — how a reference is drawn.
+
+- **An instrument's consumer must cover every section the instrument carries, and an
+  empty section is still a section.** The export carried the divergences and the
+  executable gaps; the page rendered neither. Both were empty, so nothing was lost
+  that day — and the page would have dropped them silently the day one was not
+  empty, because there was never a view to hold them. **A check of the form "the
+  table's row count equals the array's length" passes against a page with no table
+  at all**, because zero equals zero: assert the VIEW exists and says so when the
+  data is empty, then assert it holds everything when it is not.
+  **Audit the FIELDS the export carries, not the tabs the page has.** The gaps
+  appear where a field exists in the export and the page renders it in symbols, or
+  renders it nowhere. Enumerate the export's fields whose value is an expression,
+  then find each one's render site and ask whether it is read in words, shown in
+  symbols, or missing: a field shown in symbols where the reader would have read it
+  is a visible gap, and a field rendered NOWHERE is worse, because the reader is
+  told a rule applies and is never shown it.
+
+- **The gate's coverage depends on a convention in the page, so a page that breaks
+  the convention loses the gate silently.** The contract-vs-page checker finds tables
+  by their call site — `DataTable($("#someId"), { id: "tName", … })` — so a table
+  rendered through a VARIABLE (`DataTable(host, {…})`) is never seen: its columns are
+  never compared with the contract's, and its absence is never reported. The gate
+  stays green over a table nobody checks. Write every table's host as a literal, and
+  when the gate names a table no view claims, DECLARE it in the contract rather than
+  reshaping the page until the checker stops noticing — a gate satisfied by hiding
+  from it is not a gate.
+
+- **An assertion that compares what the page SHOWS with the document's RAW string
+  must render the expectation through the page's own helper.** The page renders
+  Markdown emphasis — `**or**` becomes bold — so the raw source keeps the asterisks
+  and the comparison fails on any emphasised text, and the failure reads as "the
+  field is missing" when the field is on screen. Build the expectation by passing
+  the source through the page's own cell renderer and reading its text, so the
+  assertion compares like with like.
+
+- **Do not leave the deliverable half-migrated.** A layout rewrite that changes the
+  markup but not the scripts that read it leaves a broken page. When the structure
+  changes, change the markup and the code that drives it in the same pass and re-verify
+  in the browser before moving on.
+
+- **A layout assertion must be shown to fail.** A check that passes against the
+  broken build is measuring the wrong thing — the headless default window is small
+  enough that the overflow cannot happen. Set a desktop viewport in the harness, then
+  revert the fix and confirm the assertion catches it.
+
+- **An assertion that measures an element must put it on screen first.** A hidden
+  element's rectangle is all zeros, so a comparison against it passes trivially —
+  "the checked column is narrower than the widest" holds for every column in the page
+  when nothing was measured. Open the tab, assert the measurement is non-zero, and
+  only then compare. A check that cannot fail is worse than no check, because it
+  reports the defect as absent. Judge the layout at the reference viewport too: a
+  column that fits at the harness's desktop width genuinely clips in a narrow
+  interactive window, and the small window is not the reader's.
+
+- **A view that is present in the DOM is not a view the reader can see.** Assert
+  visibility, not presence: exactly one section on screen at a time, and the primary
+  panel's rectangle inside the viewport. A stacked layout, a panel pushed below the
+  fold, and a canvas whose content sits outside its `viewBox` all leave every
+  element-count check passing while the artifact the reader came for is not on
+  screen — and the screenshot shows a complete-looking page with the graph missing.
+  **Look at the screenshot of the whole page**, not only of the diagram's crop: a
+  missing primary artifact is invisible to an assertion that counts elements and
+  obvious in a picture.
+
+- **The CSS selector and the script that toggles classes must name the same class.**
+  When the stylesheet hides `section.on` and the script toggles a different class,
+  no section ever gains the class the stylesheet watches, every section keeps its
+  default display, and they stack — pushing the primary panel off-screen while the
+  page still looks alive. Hide by default, reveal with one class, and use that class
+  in both places.
+
+- **A NEGATIVE TEST WHOSE MUTATION DID NOT APPLY IS NOT A PASSING TEST.** To prove a
+  comparison script can fail, break a copy of the artifact and confirm the script
+  rejects it — and confirm the mutation actually landed before believing the
+  result. A `replace()` that finds no match changes nothing and reports success,
+  so the "failing" case passes for the wrong reason and the script looks correct
+  while never having failed. Print or assert that the file changed. The same
+  applies to any negative case: a renamed ID, a downgraded severity, a removed
+  row — each must be caught, and the catch must name the disagreement.
+
+- **`String.replace()` with one argument inserts the string `"undefined"`.**
+  `s.replace(/^### /)` coerces the missing replacement to that string, so every parsed
+  title renders as `undefinedISS-01`. The file parses and looks fine until a title is
+  actually read; grep for one-argument `.replace(` before shipping a generator.
+
+- **A duplicate declaration is fatal and blanks every view.** When data moves out of
+  the program into a document, the old declarations must go in the same pass — a
+  duplicate `const` is a parse error that empties the page without a visible cause.
+  The same collision happens between two *features* that each own a piece of view
+  state: a new panel's selection variable must not reuse a name an existing feature
+  already holds, or the whole script dies at parse time and every view goes blank.
+  Grep before declaring: `grep -n '\bfSel\b' explorer.html`.

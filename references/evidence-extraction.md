@@ -210,3 +210,66 @@ Store the converted Markdown next to the analysis so a reviewer can check any qu
 without re-deriving it, and state in the deliverable which conversion it was built
 from (filename + version of the document, and the skill that produced the Markdown).
 The deliverable is not verifiable if the reader cannot find the thing being quoted.
+
+---
+
+## Pitfalls: reading the source itself
+
+The source is a document, and it is read, not parsed by a tool of ours. These are the ways that reading has gone wrong.
+
+- **Unwrap Markdown decoration BEFORE comparing a cell to a sentinel value AND before
+  reading it as an expression.** A cell
+  reading `` `not expressible` `` is the sentinel `not expressible` — the backticks
+  are decoration, and a comparison made against the raw cell misses them, so every
+  unexpressible condition is reported as evaluable and the whole unchecked set
+  silently becomes a checked one. Strip the decoration first, then compare, then
+  read. This is a rule about the SOURCE's cells: the deliverable states the kind
+  outright — `expression.kind` is `notExpressible` — so nothing in it carries
+  decoration to unwrap.
+  parse; the order is the difference between an honest coverage report and a wrong
+  one.
+  **The reader on the page side has the same defect, and it is quieter.** The
+  decoration is stripped before a comparison but not before a TOKENIZER, whose
+  default branch discards the characters outside the grammar — so the backticks
+  vanish and `` `true` `` reaches the keyword reader as the literal `true`, which
+  is read as the answer "Yes". A constant-true guard then says yes/no instead of
+  saying there is no condition, and every such guard in the document is wrong the
+  same way. Unwrap once at the top of the reader, and give every reader of the same
+  language the same unwrap — a fix applied to one and not the other is a defect
+  waiting for the other call site.
+
+- **A Markdown table parser must skip separator rows.** A header edit that adds a
+  column without removing the old separator leaves two separator rows, and the
+  parser that skips only the second row reads the first one as data — a phantom
+  record whose fields are dashes. It reaches the output as a finding, a term, or a
+  transition, and it counts toward a total the reader trusts. Reject any row whose
+  cells are only dashes and colons, whatever its position.
+
+- **One section can hold two different tables.** A section whose first table is a
+  role inventory and whose second is a set of numbered rules parses as one table,
+  and every rule row lands in the role records or is dropped. Route a row by what
+  it CONTAINS — a cell holding an id of the series being collected — not by which
+  section it is in.
+
+- **Convert the input with the skill; never hand-roll an extractor.** The
+  conversion stage is the front door of the whole pipeline, and it is where the
+  document's structure is decided. Microsoft's `github/awesome-copilot`
+  instruction set (`convert-word-to-md` / `convert-pdf-to-md` /
+  `convert-excel-to-md`) runs MarkItDown and produces what the analysis needs:
+  real headings, real lists, and **tables as Markdown tables**. A hand-rolled
+  unzip-and-strip flattens the spec's tables into one loose word per line — and
+  a spec's tables are evidence. Flattened, they are unreadable and uncitable.
+  See `references/evidence-extraction.md`.
+
+- **The Hermes venv has no `pip`.** The conversion skill needs Python 3.10+ and
+  `markitdown`; use `uv` with an isolated environment rather than assuming
+  `python -m pip` works:
+  `uv venv "$TMPDIR/mdvenv" --python 3.12` then
+  `uv pip install --python "$TMPDIR/mdvenv/Scripts/python.exe" "markitdown[docx]>=0.1.0"`.
+  Put the venv in the scratch directory — a bare `mdvenv` path creates it in the
+  working directory, beside the source document and the deliverable, where it reads as
+  part of the output.
+
+- **A folder of mixed input needs ALL the sibling skills.** `.docx`, `.pdf` and
+  `.xlsx` each have their own conversion skill; invoking only one silently
+  skips the others.
