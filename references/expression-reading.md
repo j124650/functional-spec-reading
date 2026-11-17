@@ -141,6 +141,51 @@ reader expects a complete rule, and the fragment looks plausible. When the reade
 cannot read the whole expression it returns nothing and the caller shows the formal
 form: the symbols are then the authority, and the page never states a rule in half.
 
+## Ordering compares text, not arithmetic
+
+`<`, `<=`, `>` and `>=` are **ordinal string comparisons** whenever a term is one
+of the operands — never arithmetic.
+
+The engine reads a term by its declared kind: a **flag** reads as its boolean, a
+**set** reads as its members joined by commas, and everything else reads as
+**text**. `input` is text too. Numeric ordering happens only between two literal
+numbers written in the expression itself; every other comparison falls through
+to a string comparison, and strings compare by character.
+
+So this is what the engine does with money:
+
+| the expression says | the engine compares | the engine's answer |
+|---|---|---|
+| `total >= discount` with total `9.00`, discount `12.00` | `"9.00"` vs `"12.00"` | **true** — and 9.00 is *less* than 12.00 |
+| `total >= discount` with total `12.00`, discount `9.00` | `"12.00"` vs `"9.00"` | **false** — and 12.00 is *more* than 9.00 |
+| `input >= total` | the input's text against the total's text | true only when the input's text sorts after it |
+
+**Therefore a numeric rule must not be written as a comparison over terms.** The
+guard will hold or fail for reasons that have nothing to do with the arithmetic,
+and the state behind it will be reachable or not by accident. This is the same
+class of defect as the guard that reads a collection nothing fills: the model
+looks right and evaluates wrong.
+
+**Write the numeric rule as a flag the transition sets.**
+
+```
+| TR-004 | ST-002 | ST-003 | CMD-004 Apply discount | ... | `set('discount within limit', true)` |
+```
+
+and let the guard read the flag:
+
+```
+| TR-005 | ST-003 | ST-004 | ... | `discount within limit` |
+```
+
+Where the specification does not state the arithmetic, the flag is a **declared
+gap** — a question, or a completeness finding that says the source never says
+when a discount is within the limit — not an invented comparison. A run that
+needs the arithmetic says so in the deliverable instead of encoding it.
+
+Equality is the same: `==` compares two numbers numerically, two booleans by
+their truth, and everything else as text.
+
 ## Effects are a statement language
 
 **An effect is a statement language, not a rule.** `set('clock started', true); if

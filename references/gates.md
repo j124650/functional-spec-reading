@@ -142,6 +142,13 @@ A **set element must be named**: `add('sale lines', input)` adds the *value* of
 collection looks empty. Name the element — `add('sale lines', 'line')` — and say in
 the vocabulary that the specification never says what a line contains.
 
+And **a comparison over terms is not arithmetic.** The engine reads a term as
+text and compares ordinally, so `total >= discount` is true when "9.00" sorts
+after "12.00" — and false when "12.00" sorts after "9.00". A numeric rule is
+written as a flag the transition sets and a guard reads; where the source never
+states the arithmetic, that is a declared gap. `references/expression-reading.md`
+has the rule and the table.
+
 ## What "a reachability claim" has to be based on
 
 The engine explores the state space and reports what it reaches and what breaks. A
