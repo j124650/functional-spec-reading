@@ -296,94 +296,6 @@ proceed. Maintain stable IDs across all documents and all iterations.
 
 See `references/evidence-and-traceability.md`.
 
-### 2c. The write phase — one file per key, in dependency order
-
-The procedure above is ordered as **passes over the source**. The deliverable is
-ordered as **keys**. Two orders, and the run has to map one onto the other — and
-it maps it by reading, which is where the time goes.
-
-So the write phase is stated here, and it is the phase that produces the artifact.
-
-**One file per key, in a `fragments/` directory, named `NN-<key>.json`** — the
-number is the order below, the name is the key exactly as the template spells it.
-Then:
-
-```
-node scripts/assemble.js <fragments-dir> <the deliverable .json>
-```
-
-builds the deliverable, in the contract's key order, and refuses to write one
-that does not fit the contract. **One name for the deliverable, and one place for
-it**: the prompt's `domain-model-and-state-machines.json`, written where the reader
-works — beside the source, unless they name another destination. The assembler is what puts the keys in the
-contract's order, so **the order you write in is the order the dependencies
-run in**, and it need not be the template's.
-
-| | keys, in the order to write them | why here |
-|---|---|---|
-| 1 | `document`, `sources` | the header and the file's own id; every citation carries it |
-| 2 | `referencedButNotSupplied`, `sourceLocatorRegister` | what the source points at but does not supply, and where each paragraph lives |
-| 3 | `glossary`, `overloadedTerms`, `undefinedTerms` | **the language first** — every later record names things, so the names come first |
-| 4 | `roles`, `roleRewrittenRules`, `domainConcepts` | the roles the spec's rules belong to, the rules rewritten in terms of them, and the concepts they are about |
-| 5 | `entities`, `valueObjects`, `boundedContexts`, `contextMap`, `aggregates`, `nonAggregateCandidates` | the structure the rules apply to |
-| 6 | `expressionVocabulary` | **after the things it names** — a vocabulary term that no entity or aggregate field introduces is a term with nothing behind it |
-| 7 | `commands`, `domainEvents`, `policies` | what the structure does |
-| 8 | `stateMachines`, `states`, `transitions`, `invariants` | the behavioural core, written against the vocabulary that is now fixed |
-| 9 | `crossMachineDependencies`, `scenarios`, `completenessFindings`, `issues`, `questions` | what spans machines, what the source's own examples do, what is missing |
-| 10 | `traceability`, `idRegistry` | the closing books, both **counted** from what is already written |
-
-**The two closing books are counted, not written.** Once every claim is in place:
-
-```
-node scripts/build-derived.js <the deliverable .json> --fragments <fragments-dir>
-```
-
-writes `10-traceability.json` and `10-idRegistry.json` — one traceability row per
-claim, each referencing the claim's **own** id, and one registry row per identifier
-series the document issues. **They are fragments like any other**, so a rebuild
-cannot drop them, and they cannot drift from the document because they are counted
-from it. Run it again after any change to a claim.
-
-**The engine's verdict belongs to the write phase, not to the end of it.** Once
-`expressionVocabulary`, `states`, `transitions` and `invariants` are written:
-
-```
-node scripts/feedback.js <fragments-dir>
-```
-
-It assembles what is written so far — the keys with no fragment yet are empty — asks
-the engine to check and export it, and prints the verdict: the unreachable states, the
-violations, the findings. It answers in seconds about **your** model. **Do not write a
-probe script to find out what the engine does** — the rules are in
-`references/executable-spec-model.md`, `references/expression-reading.md` and
-`references/gates.md`.
-
-**Each key is written once.** A gate that names a record is repaired by editing
-**that one record inside its own file**, and the assembler rebuilds. Re-emitting a
-whole key to fix one record is the single largest avoidable cost in a run: the
-prepatch control spent **2.7× the deliverable** in output tokens, and most of the
-excess was keys written twice.
-
-**Two things end the repair loop.** The gate passes — or the same gate has failed
-three times for the same reason. Then the defect is in the model's shape rather than
-in the record, and it belongs in `completenessFindings` as a stated reason, not in
-another turn of the loop.
-
-**When the assembler refuses the document, it is naming a shape, not a content.**
-It names the key and the field. Fix that shape in the fragment it names. A key the
-contract fixes that the source does not support is written as an **empty array** — an
-empty array is a fact, a missing key is a defect.
-
-**The run has a stop condition, and it is written down.** `references/scenarios.md`
-carries it: when no bytes have been written for two turns and the run is past fifteen
-minutes, stop reading and write the next fragment. A run that is reading instead of
-writing is not being thorough — it is losing the budget, and the source it is
-re-reading is already in its context.
-
-**And the file is the job.** The deliverable is the artifact; the fragments are
-how it is written, and the page is a view of it. Everything else is optional and
-comes after it.
-
 ### 3. Pass 1 — the glossary, term by term, verified across occurrences
 
 For each domain term: what the spec defines it as, where that definition lives, and what
@@ -538,7 +450,99 @@ prose cannot tell that a claim of mechanical reproduction was hand-asserted, and
 cannot check whether a cited section resolves. Give it the gates, the engine's check,
 and the source, and ask it to report what came back.
 
-### 10. Pass 8 — deliver the consolidated file
+### 10. The write phase — one file per key, in dependency order
+
+The passes above are the analysis; this section is the emission of it. The deliverable is
+ordered as **keys**. The analysis fills the keys in one order and the file is written in
+another, and the second follows the first. Write the keys once the analysis has filled
+them — not before, and not by re-reading the source to find out what to say.
+
+**One file per key, in a `fragments/` directory, named `NN-<key>.json`** — the
+number is the order below, the name is the key exactly as the template spells it.
+Then:
+
+```
+node scripts/assemble.js <fragments-dir> <the deliverable .json>
+```
+
+builds the deliverable, in the contract's key order, and refuses to write one
+that does not fit the contract. **One name for the deliverable, and one place for
+it**: the prompt's `domain-model-and-state-machines.json`, written where the reader
+works — beside the source, unless they name another destination. The assembler is what puts the keys in the
+contract's order, so **the order you write in is the order the dependencies
+run in**, and it need not be the template's.
+
+| | keys | the prompt fills them | why here |
+|---|---|---|---|
+| 1 | `document`, `sources` | §1.2, §6 | the header and the file's own id; every citation carries it |
+| 2 | `referencedButNotSupplied`, `sourceLocatorRegister` | §6, §1.2 | what the source points at but does not supply, and where each paragraph lives |
+| 3 | `glossary`, `overloadedTerms`, `undefinedTerms` | §2.1 | **the language first** — every later record names things, so the names come first |
+| 4 | `roles`, `roleRewrittenRules`, `domainConcepts` | Pass 2, §2 | the roles the spec's rules belong to, the rules rewritten in terms of them, and the concepts they are about |
+| 5 | `entities`, `valueObjects`, `boundedContexts`, `contextMap`, `aggregates`, `nonAggregateCandidates` | §2.2–§2.4 | the structure the rules apply to |
+| 6 | `expressionVocabulary` | §3.5.2 | **after the things it names** — a vocabulary term that no entity or aggregate field introduces is a term with nothing behind it |
+| 7 | `commands`, `domainEvents`, `policies` | §2.6, §2.5, §2.7 | what the structure does |
+| 8 | `stateMachines`, `states`, `transitions`, `invariants` | §3.1–§3.4, §3.6 | the behavioural core, written against the vocabulary that is now fixed |
+| 9 | `crossMachineDependencies`, `scenarios`, `completenessFindings`, `issues`, `questions` | §4, §5, §9, §7 | what spans machines, what the source's own examples do, what is missing |
+| 10 | `traceability`, `idRegistry` | §6, §8.1 | the closing books, both **counted** from what is already written |
+
+**§8.1 of the prompt is the shape of every record; the column above is where the content
+comes from.** Six keys have no section of their own in the prompt — `overloadedTerms`,
+`undefinedTerms`, `roleRewrittenRules`, `domainConcepts`, `boundedContexts`, `contextMap` —
+so their content comes from the passes above and from §2.4, and §8.1 gives their shape.
+
+**The two closing books are counted, not written.** Once every claim is in place:
+
+```
+node scripts/build-derived.js <the deliverable .json> --fragments <fragments-dir>
+```
+
+writes `10-traceability.json` and `10-idRegistry.json` — one traceability row per
+claim, each referencing the claim's **own** id, and one registry row per identifier
+series the document issues. **They are fragments like any other**, so a rebuild
+cannot drop them, and they cannot drift from the document because they are counted
+from it. Run it again after any change to a claim.
+
+**The engine's verdict belongs to the write phase, not to the end of it.** Once
+`expressionVocabulary`, `states`, `transitions` and `invariants` are written:
+
+```
+node scripts/feedback.js <fragments-dir>
+```
+
+It assembles what is written so far — the keys with no fragment yet are empty — asks
+the engine to check and export it, and prints the verdict: the unreachable states, the
+violations, the findings. It answers in seconds about **your** model. **Do not write a
+probe script to find out what the engine does** — the rules are in
+`references/executable-spec-model.md`, `references/expression-reading.md` and
+`references/gates.md`.
+
+**Each key is written once.** A gate that names a record is repaired by editing
+**that one record inside its own file**, and the assembler rebuilds. Re-emitting a
+whole key to fix one record is the single largest avoidable cost in a run: the
+prepatch control spent **2.7× the deliverable** in output tokens, and most of the
+excess was keys written twice.
+
+**Two things end the repair loop.** The gate passes — or the same gate has failed
+three times for the same reason. Then the defect is in the model's shape rather than
+in the record, and it belongs in `completenessFindings` as a stated reason, not in
+another turn of the loop.
+
+**When the assembler refuses the document, it is naming a shape, not a content.**
+It names the key and the field. Fix that shape in the fragment it names. A key the
+contract fixes that the source does not support is written as an **empty array** — an
+empty array is a fact, a missing key is a defect.
+
+**The run has a stop condition, and it is written down.** `references/scenarios.md`
+carries it: when no bytes have been written for two turns and the run is past fifteen
+minutes, stop reading and write the next fragment. A run that is reading instead of
+writing is not being thorough — it is losing the budget, and the source it is
+re-reading is already in its context.
+
+**And the file is the job.** The deliverable is the artifact; the fragments are
+how it is written, and the page is a view of it. Everything else is optional and
+comes after it.
+
+### 11. Pass 8 — deliver the consolidated file
 
 **A reachability claim is a claim.** The previous deliverable asserted "all
 eight states are reachable" while the executable model found Awaiting Approvals
