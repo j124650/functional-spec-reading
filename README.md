@@ -131,9 +131,14 @@ node scripts/check-id-catalogue.js explorer/explorer.html <deliverable.json>
 
 ## Run the helpers
 
-The eight scripts under `scripts/` are dependency-free Node programs.
+The scripts under `scripts/` are dependency-free Node programs. The first four run
+the pipeline end to end:
 
 ```bash
+node scripts/assemble.js <fragments-dir> <out.json>    # build the deliverable from per-key fragments
+node scripts/gate.js <document.json> [source.md] [export.json] [page.html]   # every gate, once
+node scripts/check-section-accountability.js <source.md> <document.json>    # every section accounted for
+node scripts/check-citation-fidelity.js <source.md> <document.json>       # every record cites the spec
 node scripts/test-explorer-cdp.js <page.html> [checks.js]   # headless-Chrome regression test for the HTML explorer
 node scripts/check-explorer.js <explorer.html> <document.json> # verifies the page still matches the document it summarises
 node scripts/check-export-contract.js <export.json> [contract.json] # checks the export against the contract it must satisfy
