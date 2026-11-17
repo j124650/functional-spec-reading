@@ -94,6 +94,7 @@ The pipeline has eight passes, and the order matters — later passes depend on 
 | `references/export-contract.md` | The contract between the exporter and the explorer, and the three obligations it binds. |
 | `templates/domain-model-template.json` | The skeleton of the deliverable — every key, every field, in order. |
 | `examples/example-domain-model.json` | A worked example showing the format — and what must *not* be inferred. |
+| `examples/bread-purchase-spec.md` | A small fictional specification to run the skill against — a shop sale of bread, with two roles, six stages and a table of rules the model has to account for. |
 | `scripts/` | Node helpers: vocabulary build, explorer generation, and the explorer test harness. |
 
 ## Install
