@@ -23,11 +23,13 @@ contract — so the work is extraction, reconstruction and proof.
 
 **What you produce is fixed.** `references/spec-processing-prompt.md` is the contract:
 one consolidated `domain-model-and-state-machines.json`, the DDD-shaped key list
-that holds the model, the identifier scheme, and the evidence classes. **What the words mean is fixed too.**
-`references/ddd-vocabulary.md` is the authority — the definitions and patterns of the
-DDD Reference (Eric Evans, 2015, CC BY 4.0). Load both before extracting; a methodology
-without an authority cannot be checked, and a deliverable without a contract is a pile of
-notes.
+that holds the model, the identifier scheme, and the evidence classes. **Load it, and
+the template, before extracting.** The DDD Reference itself —
+`references/ddd-vocabulary.md`, the authority for what the words *mean* — is
+**consulted, not preloaded**: read it when a term's status or a pattern's grounding is
+in doubt, not before the first record. A methodology without an authority cannot be
+checked, and a deliverable without a contract is a pile of notes; but an authority
+read in full is a hundred kilobytes nobody needed.
 
 ## When to Use
 
@@ -273,8 +275,11 @@ List every section heading and every table. The document's own structure tells y
 sections are normative, which are rationale, and which are decisions.
 
 **Take a source inventory first.** Every document, section, and relevant identifier
-gets a `SRC-###` ID, with its version, date, and authority. Then decide what the
-supplied documents are: **one specification, or several with different authority?**
+gets a `SRC-###` ID, with its version, date, and authority. Where a paragraph of a
+source document is used as evidence, it gets a `PAR-###` ID in reading order, scoped by
+its source, recorded in the source/locator register and kept stable across iterations.
+Then decide what the supplied documents are: **one specification, or several with
+different authority?**
 
 That decision changes the model, so record it. When documents disagree, do **not**
 silently pick one — preserve both claims, identify which is newer or more
@@ -285,22 +290,9 @@ ships.
 **Read the whole specification before concluding a concept or lifecycle is absent.**
 Absence is a finding only after a complete reading.
 
-### 2b. Establish the source inventory and scope
-
-- List every supplied document, file, section, and relevant source identifier.
-- **Register every supplied source document under a `SRC-###` ID** — one document,
-  one ID — in the source inventory, with its version, date, and authority. The ID
-  names the document, so it is what every citation carries.
-- Where a paragraph of a source document is used as evidence, give it a `PAR-###` ID in
-  reading order, scoped by its source, and record the mapping in the source/locator
-  register. Keep it stable across iterations.
-- Determine whether the user expects all documents to be treated as one specification
-  or as sources with different authority.
-- If source precedence is unclear and materially affects interpretation, record the
-  ambiguity; ask one concise question only if work cannot responsibly proceed.
-- Read the entire available specification before concluding that a concept or
-  lifecycle is absent.
-- Maintain stable IDs across all documents and analysis iterations.
+**Where source precedence is unclear and materially affects interpretation, record
+the ambiguity** — and ask one concise question only if the work cannot responsibly
+proceed. Maintain stable IDs across all documents and all iterations.
 
 See `references/evidence-and-traceability.md`.
 
@@ -321,7 +313,9 @@ node scripts/assemble.js <fragments-dir> <the deliverable .json>
 ```
 
 builds the deliverable, in the contract's key order, and refuses to write one
-that does not fit the contract. The assembler is what puts the keys in the
+that does not fit the contract. **One name for the deliverable, and one place for
+it**: the prompt's `domain-model-and-state-machines.json`, written where the reader
+works — beside the source, unless they name another destination. The assembler is what puts the keys in the
 contract's order, so **the order you write in is the order the dependencies
 run in**, and it need not be the template's.
 
@@ -330,19 +324,49 @@ run in**, and it need not be the template's.
 | 1 | `document`, `sources` | the header and the file's own id; every citation carries it |
 | 2 | `referencedButNotSupplied`, `sourceLocatorRegister` | what the source points at but does not supply, and where each paragraph lives |
 | 3 | `glossary`, `overloadedTerms`, `undefinedTerms` | **the language first** — every later record names things, so the names come first |
-| 4 | `roleRewrittenRules`, `domainConcepts` | the spec's rules as roles, and the concepts they are about |
+| 4 | `roles`, `roleRewrittenRules`, `domainConcepts` | the roles the spec's rules belong to, the rules rewritten in terms of them, and the concepts they are about |
 | 5 | `entities`, `valueObjects`, `boundedContexts`, `contextMap`, `aggregates`, `nonAggregateCandidates` | the structure the rules apply to |
 | 6 | `expressionVocabulary` | **after the things it names** — a vocabulary term that no entity or aggregate field introduces is a term with nothing behind it |
 | 7 | `commands`, `domainEvents`, `policies` | what the structure does |
 | 8 | `stateMachines`, `states`, `transitions`, `invariants` | the behavioural core, written against the vocabulary that is now fixed |
 | 9 | `crossMachineDependencies`, `scenarios`, `completenessFindings`, `issues`, `questions` | what spans machines, what the source's own examples do, what is missing |
-| 10 | `roles`, `traceability`, `idRegistry` | the closing books, all derived from what is already written |
+| 10 | `traceability`, `idRegistry` | the closing books, both derived from what is already written |
+
+**The engine's verdict belongs to the write phase, not to the end of it.** Once
+`expressionVocabulary`, `states`, `transitions` and `invariants` are written:
+
+```
+node scripts/feedback.js <fragments-dir>
+```
+
+It assembles what is written so far — the keys with no fragment yet are empty — asks
+the engine to check and export it, and prints the verdict: the unreachable states, the
+violations, the findings. It answers in seconds about **your** model. **Do not write a
+probe script to find out what the engine does** — the rules are in
+`references/executable-spec-model.md`, `references/expression-reading.md` and
+`references/gates.md`.
 
 **Each key is written once.** A gate that names a record is repaired by editing
 **that one record inside its own file**, and the assembler rebuilds. Re-emitting a
 whole key to fix one record is the single largest avoidable cost in a run: the
 prepatch control spent **2.7× the deliverable** in output tokens, and most of the
 excess was keys written twice.
+
+**Two things end the repair loop.** The gate passes — or the same gate has failed
+three times for the same reason. Then the defect is in the model's shape rather than
+in the record, and it belongs in `completenessFindings` as a stated reason, not in
+another turn of the loop.
+
+**When the assembler refuses the document, it is naming a shape, not a content.**
+It names the key and the field. Fix that shape in the fragment it names. A key the
+contract fixes that the source does not support is written as an **empty array** — an
+empty array is a fact, a missing key is a defect.
+
+**The run has a stop condition, and it is written down.** `references/scenarios.md`
+carries it: when no bytes have been written for two turns and the run is past fifteen
+minutes, stop reading and write the next fragment. A run that is reading instead of
+writing is not being thorough — it is losing the budget, and the source it is
+re-reading is already in its context.
 
 **And the file is the job.** The deliverable is the artifact; the fragments are
 how it is written, and the page is a view of it. Everything else is optional and
@@ -363,14 +387,15 @@ Give each entry a status: `Defined` · `Defined (partial)` · `Conflicting` (two
 incompatible meanings) · `Overloaded` (one word, several meanings) · `Undefined` (used as if
 understood, never defined) · `Pending` (depends on an open question or outside decision).
 
-Produce three products: the glossary table; the **overloaded-term table** (word → meaning A →
-meaning B → sections); and the **undefined-terms list** (term → where used → what must be
-decided).
+Produce three products, and they are keys, not tables: the **`glossary`** records, the
+**`overloadedTerms`** records (word → meaning A → meaning B → sections), and the
+**`undefinedTerms`** records (term → where used → what must be decided).
 
 ### 4. Pass 2 — roles, not people
 
-The roles are the unit of permission and ownership. Person names are *instances* and belong in
-a separate mapping table.
+The roles are the unit of permission and ownership. Person names are *instances*, and
+they belong in the `instances` field of the **`roles`** records — not in a table of
+their own, because the deliverable has one shape and every fact in it is a record.
 
 Flag every rule written around a person's name that should be written around a role — the
 tell is that the role is reassignable, so a person-named rule silently changes behaviour when
@@ -413,7 +438,7 @@ in the source you have already read, which is still in context.
 The stage machine must be checked for unreachable states, dead ends, and missing
 transitions. Two ways to do that, and the difference matters:
 
-**Arguing** — read the transition table you built in §14 and trace each state's
+**Arguing** — read the transition table you built in §3.4 and trace each state's
 incoming and outgoing edges. State which states are reachable and how, which are not,
 and where the trace dead-ends. **This is the default.** For a spec of this size it is
 what the prompt asks for, and it needs no instrument beyond the document.
@@ -424,9 +449,10 @@ what the prompt asks for, and it needs no instrument beyond the document.
 **Computing needs the document to carry the rules in a form the model can read.** A guard
 written in prose — "the customer e-mail is on file" — cannot be evaluated, so a model
 that has to evaluate it must have somebody hand-encode it, and a hand-encoded rule layer
-is that document's rules, written in code. To compute against *any* document, §14's
-transitions carry a **guard expression and an effect expression**, §15's invariants carry a
-**formal expression**, and §3.1 declares the **vocabulary** those expressions draw on.
+is that document's rules, written in code. To compute against *any* document, §3.4's
+transitions carry a **guard expression and an effect expression**, §3.6's invariants
+carry a **formal expression**, and §3.5.2 declares the **vocabulary** those
+expressions draw on.
 Build the model after the document, against the rules the document already states.
 
 **How to build the instrument is in `references/executable-spec-model.md`** — the leak
@@ -905,51 +931,39 @@ in `references/executable-spec-model.md`, `references/expression-reading.md` and
 `references/gates.md`. The engine's verdict on your own fragments is what tells
 you whether you applied them.
 
-### Before delivering:
+### Before delivering
 
-1. Every glossary entry has a definition source and a status.
-2. Every transition row cites a section; every "unstated" transition says so explicitly.
-3. Every finding is labelled confirmed-defect or spec-gap, with the evidence quoted.
-4. Every finding ID referenced in the document resolves to a row that defines it.
-5. **Every transition ID resolves to a row that defines it, and the transition namespace
-   is globally unique.** A document whose sections each define IDs in their own series
-   must not let one series restart inside another's range: two machines that both begin
-   at TR-030 make every reference to TR-030 ambiguous, and a reader cannot tell which
-   machine a citation points at. Give each series a disjoint block, and check the
-   references *outside* the defining section as well — the same number can mean
-   different things in different rows.
-6. The document's ID registry lists every ID issued, with the count matching what the
-   document actually uses.
-7. Every reachability claim in the completeness section is stated as an argument from
-   the transition table, or — if you computed it — as a path the traversal produced.
-   Never as an inspection.
-8. Each generated artifact was checked **as soon as it was written**, not in a batch at
-   the end. An artifact that survives unverified to the summary gets reported as
-   delivered.
-9. A reviewer who has not seen the source can follow a finding from evidence to remedy.
-10. **Every source reference carries a registered `SRC-###` id.** Scan the whole file for
-    source mentions: every one must be a citation object with a registered `source` and a
-    `locator` — `{ "source": "SRC-001", "locator": "§6.3" }` or `{ "source": "SRC-001",
-    "locator": "PAR-014" }`. A bare filename, a bare section number, a bare page number
-    and a bare requirement id are not citations. Every id used must exist in the `sources`
-    array and map to the right document; every `PAR-###` used as a locator must be in the
-    `sourceLocatorRegister`; and the paragraph glyph must not appear as a locator. Fix a
-    failure before calling the deliverable complete.
-11. **The file matches the contract.** Every top-level key the prompt fixes is present
-    (even where its array is empty); every record carries the fields §8.1 lists for it, in
-    that order; every enumerated value is in its closed set; every id series is issued by
-    exactly one array; and every record with a `classification` has a `rationale` beside
-    it. The file parses as JSON with a standard parser and no repair.
-12. **A green run is evidence of CONSISTENCY, not of BREADTH.** The gates check that
-    the file is well formed, that every expression resolves, that every identifier
-    resolves, that every row of the source's own tables is accounted for. None of
-    them counts the lifecycles the source describes against the lifecycles the model
-    holds: a model of two state machines passes every gate on a specification that
-    describes five. Count them yourself — the source's own section headings and stage
-    tables enumerate what it describes, and each one must be a machine, a state, or a
-    stated reason it is not — and report that count beside the gate results, because
-    "every gate passes" and "the analysis is as complete as the source allows" are
-    different claims and only the second one is what the reader asked for.
+**The gates are the check.** One command runs all nine and names what failed:
+
+```
+node scripts/gate.js <the deliverable .json> [the source .md] [the export .json] [the page .html]
+```
+
+The assembler has already checked the shape — every key present, every record's fields
+in the contract's order, every enum in its closed set, every id series issued once, a
+rationale beside every classification — and the engine's `check` has resolved every
+expression against the document's own vocabulary. `references/gates.md` says what each
+gate asks and what its failure means.
+
+**Two things no gate can judge, and they are the reader's question.**
+
+1. **Breadth.** The gates check that every row of the source's tables is accounted for
+   and every section is cited — but they do not count the lifecycles the source
+   describes against the lifecycles the model holds, and a model of two state machines
+   passes every gate on a specification that describes five. Count them yourself: the
+   source's own headings and stage tables enumerate what it describes, and each one
+   must be a machine, a state, or a stated reason it is not. Report that count beside
+   the gate results, because *"every gate passes"* and *"the analysis is as complete as
+   the source allows"* are different claims, and only the second is what was asked.
+2. **Honesty.** Every claim that reads as a fact is a fact the source states. An
+   `INFERRED` record shows its reasoning and what a stakeholder must confirm; a
+   `CANDIDATE` says it needs a domain expert; a gap the source leaves open is
+   declared in the deliverable rather than silently absent. **A green run is evidence
+   of CONSISTENCY, not of BREADTH** — and a run that reports both has answered the
+   reader.
+
+**Each artifact was checked as soon as it was written**, not in a batch at the end: an
+artifact that survives unverified to the summary gets reported as delivered.
 
 **The checks below apply only to an artifact you actually built.** The executable model
 and the explorer page are *optional instruments*; the deliverable is the document. Do not

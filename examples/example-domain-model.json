@@ -208,9 +208,153 @@
     }
   ],
   "nonAggregateCandidates": [],
-  "commands": [],
-  "domainEvents": [],
-  "policies": [],
+  "commands": [
+    {
+      "id": "CMD-001",
+      "name": "Create loan",
+      "actor": "Librarian",
+      "target": "ENT-002",
+      "requiredInput": [],
+      "preconditions": [
+        "item eligible"
+      ],
+      "invariants": [
+        "INV-002"
+      ],
+      "effects": "A loan exists and the item is on loan to the borrower.",
+      "events": [
+        "EVT-001"
+      ],
+      "rejectionConditions": [
+        "the item is not eligible for loan"
+      ],
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§2"
+        }
+      ]
+    },
+    {
+      "id": "CMD-002",
+      "name": "Record return",
+      "actor": "Librarian",
+      "target": "ENT-002",
+      "requiredInput": [],
+      "preconditions": [
+        "item returned"
+      ],
+      "invariants": [
+        "INV-001"
+      ],
+      "effects": "The item is back and the loan is closed.",
+      "events": [
+        "EVT-002"
+      ],
+      "rejectionConditions": [],
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§3"
+        }
+      ]
+    }
+  ],
+  "domainEvents": [
+    {
+      "id": "EVT-001",
+      "name": "Loan created",
+      "meaning": "The library and the borrower have entered a borrowing agreement.",
+      "trigger": "CMD-001 Create loan",
+      "preconditions": [
+        "item eligible"
+      ],
+      "resultingFacts": [
+        "a loan is open",
+        "the item is on loan"
+      ],
+      "affectedConcepts": [
+        "ENT-001",
+        "ENT-002"
+      ],
+      "consequences": "The due date applies from this point.",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§2"
+        }
+      ]
+    },
+    {
+      "id": "EVT-002",
+      "name": "Item returned",
+      "meaning": "The borrowed copy is back in the library.",
+      "trigger": "CMD-002 Record return",
+      "preconditions": [
+        "item returned"
+      ],
+      "resultingFacts": [
+        "the item is available again",
+        "the loan is closed"
+      ],
+      "affectedConcepts": [
+        "ENT-002"
+      ],
+      "consequences": "The loan is no longer outstanding.",
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§3"
+        }
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "id": "POL-001",
+      "name": "Loan eligibility",
+      "trigger": "CMD-001 Create loan",
+      "condition": "item eligible",
+      "action": "the loan is created and the due date is set",
+      "scope": "Library lending",
+      "participants": [
+        "Librarian"
+      ],
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§2"
+        }
+      ]
+    },
+    {
+      "id": "POL-002",
+      "name": "Overdue flagging",
+      "trigger": "the due date passes",
+      "condition": "!item returned",
+      "action": "the loan is flagged overdue",
+      "scope": "Library lending",
+      "participants": [],
+      "classification": "EXPLICIT",
+      "rationale": null,
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§3"
+        }
+      ]
+    }
+  ],
   "stateMachines": [
     {
       "id": "SM-001",
@@ -351,22 +495,25 @@
       "commands": [],
       "requiredInputs": [],
       "guard": {
-        "text": "Item is eligible for loan",
+        "text": "The item must be eligible for loan",
         "expression": {
-          "kind": "expression",
-          "value": "item eligible"
+          "kind": "notExpressible",
+          "reason": "Nothing precedes the first transition of a machine, so no flag can be filled before it and no guard on it can ever hold. The eligibility rule is a precondition of CMD-001, and this transition records that the assessment happened."
         }
       },
       "validations": [],
       "invariantsChecked": [],
       "actor": [],
-      "effect": null,
+      "effect": {
+        "kind": "expression",
+        "value": "set('item eligible', true)"
+      },
       "events": [],
       "rejection": null,
       "synchronous": true,
       "disposition": "ALLOWED",
       "classification": "EXPLICIT",
-      "rationale": null,
+      "rationale": "The first transition of a machine cannot carry a guard: the engine starts at a position, not at a set of field values, so nothing can fill a flag before it. The eligibility rule is a precondition of CMD-001, and the effect records that the assessment happened.",
       "notes": [],
       "evidence": []
     },
@@ -394,7 +541,7 @@
       "synchronous": true,
       "disposition": "ALLOWED",
       "classification": "EXPLICIT",
-      "rationale": null,
+      "rationale": "The guard reads the flag the return transitions fill, so the due date can only pass on a loan whose item is still out.",
       "notes": [],
       "evidence": []
     },
@@ -407,10 +554,10 @@
       "commands": [],
       "requiredInputs": [],
       "guard": {
-        "text": "Item is returned",
+        "text": "The item has been returned",
         "expression": {
-          "kind": "expression",
-          "value": "item returned"
+          "kind": "notExpressible",
+          "reason": "Recording the return IS the fact. A guard that read the flag this transition sets would be circular: the flag is false until the return is recorded, so the transition could never fire. The rule is carried by the transition itself."
         }
       },
       "validations": [],
@@ -425,7 +572,7 @@
       "synchronous": true,
       "disposition": "ALLOWED",
       "classification": "EXPLICIT",
-      "rationale": null,
+      "rationale": "Recording the return IS the fact. A guard that read the flag this transition sets would be circular: the flag is false until the return is recorded, so the transition could never fire.",
       "notes": [],
       "evidence": []
     },
@@ -438,10 +585,10 @@
       "commands": [],
       "requiredInputs": [],
       "guard": {
-        "text": "Item is returned",
+        "text": "The item has been returned",
         "expression": {
-          "kind": "expression",
-          "value": "item returned"
+          "kind": "notExpressible",
+          "reason": "Recording the return IS the fact. A guard that read the flag this transition sets would be circular: the flag is false until the return is recorded, so the transition could never fire. The rule is carried by the transition itself."
         }
       },
       "validations": [],
@@ -456,7 +603,7 @@
       "synchronous": true,
       "disposition": "ALLOWED",
       "classification": "EXPLICIT",
-      "rationale": null,
+      "rationale": "Recording the return IS the fact. A guard that read the flag this transition sets would be circular: the flag is false until the return is recorded, so the transition could never fire.",
       "notes": [],
       "evidence": []
     }
@@ -524,8 +671,117 @@
     }
   ],
   "crossMachineDependencies": [],
-  "scenarios": [],
-  "completenessFindings": [],
+  "scenarios": [
+    {
+      "id": "SCN-001",
+      "name": "A borrowed item is returned",
+      "initialConditions": "The item has been loaned and the due date has not passed.",
+      "actor": "Librarian",
+      "commands": [
+        "CMD-002"
+      ],
+      "guards": [
+        "item returned"
+      ],
+      "transitions": [
+        "TR-003"
+      ],
+      "events": [
+        "EVT-002"
+      ],
+      "result": "The loan is closed and the item is available again.",
+      "exceptions": [],
+      "invariants": [
+        "INV-001"
+      ],
+      "parts": [
+        {
+          "label": "Initial conditions",
+          "text": "The item has been loaned and the due date has not passed.",
+          "evidence": []
+        },
+        {
+          "label": "Actor",
+          "text": "Librarian",
+          "evidence": []
+        },
+        {
+          "label": "Commands",
+          "text": "CMD-002 Record return",
+          "evidence": []
+        },
+        {
+          "label": "Guards",
+          "text": "item returned",
+          "evidence": []
+        },
+        {
+          "label": "State transitions",
+          "text": "TR-003 ST-001 to ST-002",
+          "evidence": []
+        },
+        {
+          "label": "Events",
+          "text": "EVT-002 Item returned",
+          "evidence": []
+        },
+        {
+          "label": "Result",
+          "text": "The loan is closed and the item is available again.",
+          "evidence": []
+        },
+        {
+          "label": "Exceptions",
+          "text": "None stated in the source.",
+          "evidence": []
+        },
+        {
+          "label": "Invariants in force",
+          "text": "INV-001 A returned loan is not an outstanding loan.",
+          "evidence": []
+        },
+        {
+          "label": "Evidence",
+          "text": "§3",
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§3"
+        }
+      ]
+    }
+  ],
+  "completenessFindings": [
+    {
+      "machine": "SM-001",
+      "check": "reachability",
+      "finding": "Every state of the loan lifecycle is reachable: TR-001 creates the loan, TR-002 makes it overdue, and TR-003 and TR-004 return it.",
+      "severity": "Low",
+      "rationale": "The transition table is closed - ST-001 has TR-002 and TR-003 outgoing, ST-002 and ST-003 have none, and TR-001 enters ST-001.",
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§2"
+        }
+      ]
+    },
+    {
+      "machine": "SM-001",
+      "check": "unspecified transitions",
+      "finding": "The source never says whether a returned loan may be reopened, so no transition out of ST-002 is modelled.",
+      "severity": "Medium",
+      "rationale": "A modelled transition would assert a rule the source does not state; the gap is declared as F-001 instead.",
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§3"
+        }
+      ]
+    }
+  ],
   "issues": [
     {
       "id": "F-001",
@@ -555,7 +811,41 @@
       "evidence": []
     }
   ],
-  "traceability": [],
+  "traceability": [
+    {
+      "id": "F-001",
+      "type": "issue",
+      "summary": "The source never says whether a returned loan may be reopened.",
+      "classification": "UNSPECIFIED",
+      "sourceIds": [
+        "SRC-001"
+      ],
+      "rationale": "",
+      "openQuestion": ""
+    },
+    {
+      "id": "F-002",
+      "type": "completeness finding",
+      "summary": "Every state of the loan lifecycle is reachable: TR-001 creates the loan, TR-002 makes it overdue, and TR-003 and TR-004 return it.",
+      "classification": "EXPLICIT",
+      "sourceIds": [
+        "SRC-001"
+      ],
+      "rationale": "The transition table is closed - ST-001 has TR-002 and TR-003 outgoing, ST-002 and ST-003 have none, and TR-001 enters ST-001.",
+      "openQuestion": ""
+    },
+    {
+      "id": "F-003",
+      "type": "completeness finding",
+      "summary": "The source never says whether a returned loan may be reopened, so no transition out of ST-002 is modelled.",
+      "classification": "EXPLICIT",
+      "sourceIds": [
+        "SRC-001"
+      ],
+      "rationale": "A modelled transition would assert a rule the source does not state; the gap is declared as F-001 instead.",
+      "openQuestion": ""
+    }
+  ],
   "idRegistry": [
     {
       "series": "SRC",
@@ -563,7 +853,16 @@
       "first": "SRC-001",
       "last": "SRC-001",
       "definedIn": "sources",
-      "crossReferencedFrom": []
+      "crossReferencedFrom": [
+        "commands",
+        "domainEvents",
+        "policies",
+        "scenarios",
+        "completenessFindings",
+        "traceability",
+        "idRegistry",
+        "roles"
+      ]
     },
     {
       "series": "TERM",
@@ -571,7 +870,9 @@
       "first": "TERM-001",
       "last": "TERM-001",
       "definedIn": "glossary",
-      "crossReferencedFrom": []
+      "crossReferencedFrom": [
+        "idRegistry"
+      ]
     },
     {
       "series": "ENT",
@@ -581,7 +882,10 @@
       "definedIn": "entities",
       "crossReferencedFrom": [
         "aggregates",
-        "stateMachines"
+        "commands",
+        "domainEvents",
+        "stateMachines",
+        "idRegistry"
       ]
     },
     {
@@ -590,7 +894,9 @@
       "first": "VO-001",
       "last": "VO-001",
       "definedIn": "valueObjects",
-      "crossReferencedFrom": []
+      "crossReferencedFrom": [
+        "idRegistry"
+      ]
     },
     {
       "series": "AGG",
@@ -599,7 +905,41 @@
       "last": "AGG-001",
       "definedIn": "aggregates",
       "crossReferencedFrom": [
-        "stateMachines"
+        "stateMachines",
+        "idRegistry"
+      ]
+    },
+    {
+      "series": "CMD",
+      "count": 2,
+      "first": "CMD-001",
+      "last": "CMD-002",
+      "definedIn": "commands",
+      "crossReferencedFrom": [
+        "scenarios",
+        "idRegistry"
+      ]
+    },
+    {
+      "series": "EVT",
+      "count": 2,
+      "first": "EVT-001",
+      "last": "EVT-002",
+      "definedIn": "domainEvents",
+      "crossReferencedFrom": [
+        "commands",
+        "scenarios",
+        "idRegistry"
+      ]
+    },
+    {
+      "series": "POL",
+      "count": 2,
+      "first": "POL-001",
+      "last": "POL-002",
+      "definedIn": "policies",
+      "crossReferencedFrom": [
+        "idRegistry"
       ]
     },
     {
@@ -609,8 +949,11 @@
       "last": "SM-001",
       "definedIn": "stateMachines",
       "crossReferencedFrom": [
+        "entities",
         "states",
-        "transitions"
+        "transitions",
+        "completenessFindings",
+        "idRegistry"
       ]
     },
     {
@@ -620,8 +963,10 @@
       "last": "ST-003",
       "definedIn": "states",
       "crossReferencedFrom": [
+        "stateMachines",
+        "transitions",
         "invariants",
-        "stateMachines"
+        "idRegistry"
       ]
     },
     {
@@ -631,7 +976,10 @@
       "last": "TR-004",
       "definedIn": "transitions",
       "crossReferencedFrom": [
-        "stateMachines"
+        "stateMachines",
+        "states",
+        "scenarios",
+        "idRegistry"
       ]
     },
     {
@@ -642,7 +990,20 @@
       "definedIn": "invariants",
       "crossReferencedFrom": [
         "aggregates",
-        "states"
+        "commands",
+        "states",
+        "scenarios",
+        "idRegistry"
+      ]
+    },
+    {
+      "series": "SCN",
+      "count": 1,
+      "first": "SCN-001",
+      "last": "SCN-001",
+      "definedIn": "scenarios",
+      "crossReferencedFrom": [
+        "idRegistry"
       ]
     },
     {
@@ -651,7 +1012,10 @@
       "first": "F-001",
       "last": "F-001",
       "definedIn": "issues",
-      "crossReferencedFrom": []
+      "crossReferencedFrom": [
+        "traceability",
+        "idRegistry"
+      ]
     },
     {
       "series": "Q",
@@ -659,15 +1023,22 @@
       "first": "Q-001",
       "last": "Q-001",
       "definedIn": "questions",
-      "crossReferencedFrom": []
+      "crossReferencedFrom": [
+        "idRegistry"
+      ]
     }
   ],
   "roles": [
     {
-      "name": "",
-      "mayDo": "",
-      "instances": "",
-      "evidence": []
+      "name": "Librarian",
+      "mayDo": "create a loan, record a return",
+      "instances": "the member of staff at the circulation desk",
+      "evidence": [
+        {
+          "source": "SRC-001",
+          "locator": "§1"
+        }
+      ]
     }
   ]
 }

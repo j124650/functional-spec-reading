@@ -142,6 +142,12 @@ A **set element must be named**: `add('sale lines', input)` adds the *value* of
 collection looks empty. Name the element — `add('sale lines', 'line')` — and say in
 the vocabulary that the specification never says what a line contains.
 
+And **the first transition of a machine cannot carry a guard.** The engine's initial
+state is a position, not a set of field values, so a flag is false until some
+transition fills it — and nothing precedes the first transition. A guard there reads
+a flag that can never be true. The honest form is `notExpressible` with the reason.
+The same reasoning catches a guard that reads the flag its own transition fills.
+
 And **a comparison over terms is not arithmetic.** The engine reads a term as
 text and compares ordinally, so `total >= discount` is true when "9.00" sorts
 after "12.00" — and false when "12.00" sorts after "9.00". A numeric rule is

@@ -186,6 +186,28 @@ needs the arithmetic says so in the deliverable instead of encoding it.
 Equality is the same: `==` compares two numbers numerically, two booleans by
 their truth, and everything else as text.
 
+## The first transition of a machine cannot carry a guard
+
+The engine's initial state is a machine's **position**, not a set of field values.
+Every flag starts unset, and nothing can fill one before the first transition — so a
+guard on that transition reads a flag that is false, always, and the state behind it
+is unreachable.
+
+The honest form is the `notExpressible` marker, with the reason:
+
+```
+"guard": { "text": "The item must be eligible for loan",
+            "expression": { "kind": "notExpressible",
+                            "reason": "Nothing precedes the first transition of a machine, so no flag can be filled before it. The rule is a precondition of the command, and this transition records that the assessment happened." } }
+```
+
+The checker requires a guard on every transition, so a transition that genuinely has
+no condition carries the marker rather than an empty guard.
+
+**The same reasoning catches a circular guard.** A transition whose guard reads a flag
+that the transition's own effect fills can never fire: the flag is false until the
+transition runs. The rule belongs to the transition, and its effect records it.
+
 ## Effects are a statement language
 
 **An effect is a statement language, not a rule.** `set('clock started', true); if
