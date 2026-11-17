@@ -23,6 +23,7 @@ const CONTRACT = path.join(SKILL, "explorer", "export.contract.json");
 
 const GATES = [
   { name: "check-model-expressions", args: [doc], files: [doc] },
+  { name: "check-evidence-class", args: [doc], files: [doc] },
   { name: "check-source-coverage", args: source ? [source, doc] : null, files: source ? [source, doc] : [] },
   { name: "check-section-accountability", args: source ? [source, doc] : null, files: source ? [source, doc] : [] },
   { name: "check-citation-fidelity", args: source ? [source, doc] : null, files: source ? [source, doc] : [] },

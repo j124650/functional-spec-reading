@@ -39,7 +39,7 @@ They are written down here, in this skill:
   evaluate it, and what a reachability claim must be based on.
 - **`references/expression-reading.md`** — the expression language: what evaluates,
   what does not, and what the engine reports for each.
-- **`references/gates.md`** — what each of the nine gates asks of the deliverable:
+- **`references/gates.md`** — what each of the ten gates asks of the deliverable:
   how each one matches, what its failure means, and what to fix. The gates are the
   pass criteria, and this file is what they ask.
 

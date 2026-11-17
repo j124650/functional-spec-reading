@@ -36,7 +36,32 @@ cannot be checked.
 its type — or the expression names the wrong thing. Never widen the vocabulary to
 make a wrong expression parse.
 
-### 2. `check-source-coverage.js` — every ROW of the source's tables is accounted for
+### 2. `check-evidence-class.js` — a claim's evidence matches its class
+
+The rule the whole skill exists for: **never present an inferred rule as an
+explicit requirement**, and declare the gaps the source leaves open rather than
+inventing an answer. It is written in three places and checked in none — the
+assembler checks that the `rationale` *field* exists, not that it says anything.
+
+| the class | the obligation |
+|---|---|
+| `EXPLICIT` | the source says it — **at least one citation** |
+| `INFERRED` | you derived it — a citation **and** a reasoning chain in the rationale |
+| `CANDIDATE` | it needs confirmation — a citation **and** what would confirm it |
+| `CONFLICTING` | the source disagrees — a citation |
+| `UNSPECIFIED` | the source is silent — the record **declares** the silence: a rationale, or it is a question, a gap, an undefined term, a referenced-but-not-supplied artefact, or a completeness finding |
+| none | a record that asserts something with no class is a defect: **a claim with no declared warrant** |
+
+**What it means.** A classification is a claim about *where the claim came from*,
+and the evidence array is the proof of it. A record that says `EXPLICIT` and cites
+nothing is the failure this skill exists to prevent, and nothing else in the suite
+sees it: the citation gate checks that citations *resolve*, not that there are any.
+
+**The repair is the document's.** Either the record is what the source says — cite
+it — or it is not: reclassify it `INFERRED` with the reasoning, or `CANDIDATE` with
+what would confirm it, or `UNSPECIFIED` with what is missing.
+
+### 3. `check-source-coverage.js` — every ROW of the source's tables is accounted for
 
 The source's tables state facts outright: a stage in its stage table, a role in its
 roles table, a rule in its notification matrix, a question in its questions table, an
@@ -66,7 +91,7 @@ use the source's own words, not a synonym, or the row is not matched.
 **The repair is the document's.** Account for the row — as a record, or as a
 completeness finding that says why it is not modelled.
 
-### 3. `check-section-accountability.js` — every SECTION of the source is accounted for
+### 4. `check-section-accountability.js` — every SECTION of the source is accounted for
 
 The coverage gate asks about the source's **tables**; this one asks about its
 **sections**, because a specification states most of what it states in prose.
@@ -76,7 +101,7 @@ A section is **modelled** when a record cites it (or a subsection of it),
 cites it. A hole is a part of the source the model did not read. Sections that are
 not numbered — `Changelog` — are exempt.
 
-### 4. `check-citation-fidelity.js` — every record cites the spec, and every citation resolves
+### 5. `check-citation-fidelity.js` — every record cites the spec, and every citation resolves
 
 Three rules:
 - a record carries **at least one** citation;
@@ -88,32 +113,32 @@ Three rules:
 **The repair is the document's.** A record with no citation says something the
 document cannot account for: either it needs a citation, or it should not exist.
 
-### 5. `check-scope-resolution.js` — every scope resolves
+### 6. `check-scope-resolution.js` — every scope resolves
 
 Every invariant's `scope` must resolve to at least one id — the states it holds in,
 or the transitions it guards. A scope of `AllStates` is written out as the states
 it holds in; `binding` is separate from the scope and names the aggregate or
 context the rule binds to.
 
-### 6. `check-export-contract.js` — the export conforms to the contract
+### 7. `check-export-contract.js` — the export conforms to the contract
 
 The export must satisfy `explorer/export.contract.json`: every required property
 present, every kind right, every record carrying its required fields, the counts
 the contract states matching the data, and every view naming a property the export
 actually carries.
 
-### 7. `check-contract-vs-page.js` — the contract and the page agree
+### 8. `check-contract-vs-page.js` — the contract and the page agree
 
 The page must implement what the contract describes: the same views, the same
 tables, the same controls. It is checked by shape, not by instance.
 
-### 8. `check-explorer.js` — the page and the document agree
+### 9. `check-explorer.js` — the page and the document agree
 
 The page is a view of the document; its findings must match the document's. If the
 page shows a finding the document does not have, or misses one it has, this gate
 names the disagreement.
 
-### 9. `check-id-catalogue.js` — every identifier reaches the page
+### 10. `check-id-catalogue.js` — every identifier reaches the page
 
 The page's catalogue must carry every identifier series the document issues: every
 `SRC`, `PAR`, `TERM`, `N`, `CON`, `ENT`, `VO`, `BC`, `AGG`, `CMD`, `EVT`, `POL`,

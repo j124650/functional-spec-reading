@@ -1,22 +1,26 @@
 #!/usr/bin/env node
-/* Build the two derived keys of the deliverable from the document itself.
+/* Build the two derived keys of the deliverable FROM the deliverable.
  *
- *   node scripts/build-derived.js <document.json> [--write]
+ *   node scripts/build-derived.js <document.json> [--fragments <dir>]
  *
- * The deliverable carries two books that are not written by hand:
+ * The deliverable carries two books that are counted, not written:
  *
  *   idRegistry   every identifier series the document issues - its count, its
  *                first and last id, the key that defines it, and the keys that
  *                reference it.
- *   traceability one row per finding: what was claimed, its class, the sources
- *                it rests on, and the question it leaves open.
+ *   traceability one row per CLAIM: the record's own id, the series it belongs
+ *                to, a summary, its evidence class, the sources it rests on and
+ *                its rationale. The id is a REFERENCE - the id of the record
+ *                the row traces - never a new one.
  *
  * Both are counted from the document, so they cannot drift from it. A hand-typed
  * id registry is wrong the moment one id is added, and nothing notices - the
  * catalogue gate reads the registry and the document, and a registry that lies
  * about the document is a registry the gate cannot trust.
  *
- * With --write the two keys are replaced in the document. Without it the script
+ * With --fragments <dir> the two books are written as FRAGMENTS - the same files
+ * the rest of the deliverable is written as - so the deliverable stays derived
+ * from its fragments and a rebuild cannot drop them. Without it the script only
  * prints what it would write.
  */
 "use strict";
@@ -24,13 +28,16 @@ const fs = require("fs");
 const path = require("path");
 
 const SKILL = path.resolve(__dirname, "..");
-const [, , docArg, ...flags] = process.argv;
+const args = process.argv.slice(2);
+const docArg = args[0];
 if (!docArg) {
-  console.error("usage: node build-derived.js <document.json> [--write]");
+  console.error("usage: node build-derived.js <document.json> [--fragments <dir>]");
   process.exit(2);
 }
-const write = flags.includes("--write");
+const fragIndex = args.indexOf("--fragments");
+const fragDir = fragIndex >= 0 ? args[fragIndex + 1] : null;
 const doc = JSON.parse(fs.readFileSync(docArg, "utf8"));
+const tpl = JSON.parse(fs.readFileSync(path.join(SKILL, "templates", "domain-model-template.json"), "utf8"));
 
 /* ---- which key issues which series ---- */
 const SERIES = [
@@ -55,7 +62,6 @@ for (const [series, key] of SERIES) {
   if (!ids.length) continue;
   const nums = ids.map(numOf).filter((n) => n !== null);
   const sorted = nums.length ? ids.slice().sort((a, b) => numOf(a) - numOf(b)) : ids.slice().sort();
-  // where else is this series named? any other key whose records carry these ids
   const referencedFrom = [];
   for (const [otherKey, otherRows] of Object.entries(doc)) {
     if (otherKey === key || !Array.isArray(otherRows)) continue;
@@ -72,52 +78,47 @@ for (const [series, key] of SERIES) {
   });
 }
 
-/* ---- the traceability rows ---- */
+/* ---- the traceability rows: one per CLAIM, referencing the claim's own id ---- */
+const DERIVED = new Set(["traceability", "idRegistry"]);
+const summaryOf = (r) => r.statement || r.summary || r.meaning || r.name || r.term || r.word || r.finding || r.check || "";
 const traceability = [];
-const srcIds = (Array.isArray(doc.sources) ? doc.sources : []).map((s) => s.id).filter(Boolean);
-const srcOf = (r) => {
-  const ev = Array.isArray(r.evidence) ? r.evidence : [];
-  const ids = ev.map((e) => e && e.source).filter(Boolean);
-  return ids.length ? [...new Set(ids)] : (srcIds.length ? [srcIds[0]] : []);
-};
-const kindOf = (r) => {
-  const k = (r.kind || "").toLowerCase();
-  if (k.includes("spec") || k.includes("gap")) return "spec gap";
-  if (k.includes("defect") || k.includes("conflict")) return "confirmed defect";
-  return "finding";
-};
-for (const issue of Array.isArray(doc.issues) ? doc.issues : []) {
-  traceability.push({
-    id: issue.id,
-    type: "issue",
-    summary: issue.statement || "",
-    classification: issue.classification || "EXPLICIT",
-    sourceIds: srcOf(issue),
-    rationale: issue.rationale || "",
-    openQuestion: issue.clarification || issue.remedy || ""
-  });
-}
-for (const finding of Array.isArray(doc.completenessFindings) ? doc.completenessFindings : []) {
-  const id = `F-${String(traceability.length + 1).padStart(3, "0")}`;
-  traceability.push({
-    id,
-    type: "completeness finding",
-    summary: finding.finding || finding.check || "",
-    classification: "EXPLICIT",
-    sourceIds: srcOf(finding),
-    rationale: finding.rationale || "",
-    openQuestion: ""
+for (const [key, template] of Object.entries(tpl)) {
+  if (!Array.isArray(template) || !template.length || typeof template[0] !== "object") continue;
+  if (DERIVED.has(key)) continue;
+  if (!("classification" in template[0])) continue;
+  const rows = Array.isArray(doc[key]) ? doc[key] : [];
+  rows.forEach((r) => {
+    const id = idOf(r);
+    if (!id) return;                       // a record with no id traces nothing
+    const ev = Array.isArray(r.evidence) ? r.evidence : [];
+    const sourceIds = [...new Set(ev.map((e) => e && e.source).filter(Boolean))];
+    traceability.push({
+      id,
+      type: key,
+      summary: summaryOf(r),
+      // a record that declares no class is not an explicit claim: a question
+      // traces a silence, not a fact
+      classification: r.classification || "UNSPECIFIED",
+      sourceIds,
+      rationale: typeof r.rationale === "string" ? r.rationale : "",
+      openQuestion: r.proposedClarification || r.clarification || r.decisionNeeded || ""
+    });
   });
 }
 
 console.log(`idRegistry: ${registry.length} series`);
 registry.forEach((r) => console.log(`  ${r.series.padEnd(5)} ${String(r.count).padStart(3)}  ${r.first}..${r.last}  in ${r.definedIn}`));
-console.log(`traceability: ${traceability.length} rows`);
-traceability.forEach((t) => console.log(`  ${t.id}  ${t.type.padEnd(20)} ${t.summary.slice(0, 70)}`));
+console.log(`traceability: ${traceability.length} rows (one per claim)`);
+traceability.forEach((t) => console.log(`  ${t.id.padEnd(8)} ${t.type.padEnd(16)} ${String(t.classification).padEnd(11)} ${t.summary.slice(0, 54)}`));
 
-if (write) {
-  doc.idRegistry = registry;
-  doc.traceability = traceability;
-  fs.writeFileSync(docArg, JSON.stringify(doc, null, 2) + "\n", "utf8");
-  console.log(`\nwrote ${docArg}`);
+if (fragDir) {
+  fs.mkdirSync(fragDir, { recursive: true });
+  const write = (name, value) => {
+    fs.writeFileSync(path.join(fragDir, name), JSON.stringify(value, null, 2) + "\n", "utf8");
+    console.log(`wrote ${path.join(fragDir, name)}`);
+  };
+  write("10-traceability.json", traceability);
+  write("10-idRegistry.json", registry);
+} else {
+  console.log("\n(no --fragments given: nothing written)");
 }

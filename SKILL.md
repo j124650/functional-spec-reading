@@ -209,7 +209,7 @@ the document has to satisfy that engine, so its rules are part of what you produ
   to it, how a scope resolves, and what an effect must look like to be evaluable.
 - **`references/expression-reading.md`** — the expression language: what
   evaluates, what does not, and what the engine reports for each.
-- **`references/gates.md`** — what each of the nine gates asks of the deliverable:
+- **`references/gates.md`** — what each of the ten gates asks of the deliverable:
   how each one matches, what its failure means, and what to fix.
 
 **Read those three, and not the engine's source and not the gate scripts.** The
@@ -330,7 +330,19 @@ run in**, and it need not be the template's.
 | 7 | `commands`, `domainEvents`, `policies` | what the structure does |
 | 8 | `stateMachines`, `states`, `transitions`, `invariants` | the behavioural core, written against the vocabulary that is now fixed |
 | 9 | `crossMachineDependencies`, `scenarios`, `completenessFindings`, `issues`, `questions` | what spans machines, what the source's own examples do, what is missing |
-| 10 | `traceability`, `idRegistry` | the closing books, both derived from what is already written |
+| 10 | `traceability`, `idRegistry` | the closing books, both **counted** from what is already written |
+
+**The two closing books are counted, not written.** Once every claim is in place:
+
+```
+node scripts/build-derived.js <the deliverable .json> --fragments <fragments-dir>
+```
+
+writes `10-traceability.json` and `10-idRegistry.json` — one traceability row per
+claim, each referencing the claim's **own** id, and one registry row per identifier
+series the document issues. **They are fragments like any other**, so a rebuild
+cannot drop them, and they cannot drift from the document because they are counted
+from it. Run it again after any change to a claim.
 
 **The engine's verdict belongs to the write phase, not to the end of it.** Once
 `expressionVocabulary`, `states`, `transitions` and `invariants` are written:
@@ -561,14 +573,14 @@ a row in passing has not accounted for it. Fix the model, not the checker.
 table row is only part of what a specification states; most of it is prose in
 numbered sections, and a section nobody cites is a part of the source the model
 did not read. Every section must be accounted for — modelled, or declared with a
-reason in `completenessFindings` — and the nine gates together check all of it:
+reason in `completenessFindings` — and the ten gates together check all of it:
 
 ```
 node scripts/gate.js <the deliverable .json> [the source .md] [the export .json] [the page .html]
 ```
 
 It runs every gate, prints one line per gate, and names what failed. Use it
-rather than the individual scripts: a run that opens the nine `check-*.js` files
+rather than the individual scripts: a run that opens the ten `check-*.js` files
 to learn what they ask has spent seven minutes reading the equivalent of
 `references/gates.md`, which says the same thing in prose. Read that file
 instead — it is what the gates ask.
