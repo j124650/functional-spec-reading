@@ -137,4 +137,4 @@ the document that owns them.
 
 `references/ddd-vocabulary.md` quotes *Domain-Driven Design Reference* (Eric Evans, 2015),
 © Eric Evans, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — attribution is carried
-with the quoted material.
+here and in `SKILL.md`.

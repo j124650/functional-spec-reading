@@ -92,16 +92,6 @@ const p = s => L.push(s);
 
 p("# DDD vocabulary");
 p("");
-p("The definitions and pattern catalogue of *Domain-Driven Design Reference*");
-p("(Eric Evans, 2015), used as the authority for what the reader's output means.");
-p("");
-p("> **Provenance.** The text is quoted from the DDD Reference, © Eric Evans,");
-p("> licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).");
-p("> Source: <https://www.domainlanguage.com/wp-content/uploads/2016/05/DDD_Reference_2015-03.pdf>");
-p("> (a faithful, machine-readable re-typesetting of the same work is at");
-p("> <https://github.com/ul/ddd-reference>). The patterns are listed under their");
-p("> book's own names; the mapping in the last section is this skill's, not the book's.");
-p("");
 p("Use this file to decide **what a term means and what a claim is called**. Use");
 p("`references/spec-processing-prompt.md` for **what to produce**.");
 p("");
