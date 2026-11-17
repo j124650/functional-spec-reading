@@ -53,6 +53,22 @@ content as `references/gates.md` in a worse form. Reading either costs turns and
 tells you less. When a gate rejects something, its own output names the record and
 the rule that rejected it — that is the whole repair loop.
 
+**And do not write a probe script to find out what the engine does.** The gates
+run on a complete deliverable, so until the last fragment is written a run has no
+mechanical feedback — and a run with no feedback builds probe documents and reads
+the answers out of reachability counts. Sixteen probes in one run; forty minutes
+in another. Instead, as soon as the vocabulary, the states, the transitions and
+the invariants are written:
+
+```
+node scripts/feedback.js <fragments-dir>
+```
+
+That assembles what is written so far, asks the engine to check and export it,
+and prints the verdict — the unreachable states, the violations, the findings. It
+answers in seconds what a probe script answers in minutes, and it answers about
+your model rather than about a toy one.
+
 ### 1.2 How a reference names where it comes from
 
 **Every reference to a source names the source document it comes from, and it is

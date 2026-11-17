@@ -18,9 +18,11 @@ const fs = require("fs");
 const path = require("path");
 
 const SKILL = path.resolve(__dirname, "..");
-const [, , dir, out, templateArg] = process.argv;
+const argv = process.argv.slice(2);
+const positional = argv.filter((a) => !a.startsWith("--"));
+const [dir, out, templateArg] = positional;
 if (!dir || !out) {
-  console.error("usage: node assemble.js <fragments-dir> <out.json> [template.json]");
+  console.error("usage: node assemble.js <fragments-dir> <out.json> [template.json] [--partial]");
   process.exit(2);
 }
 const templatePath = templateArg || path.join(SKILL, "templates", "domain-model-template.json");
@@ -33,9 +35,18 @@ for (const f of fs.readdirSync(dir).filter(f => f.endsWith(".json")).sort()) {
   fragments[key] = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
 }
 
+/* --partial: a key with no fragment yet is an empty array, and the build goes
+ * ahead. That is what makes the engine's verdict available while the model is
+ * still being written - the alternative is that the only feedback a run has
+ * arrives after the last fragment, which is how a run ends up writing probe
+ * scripts to find out what the engine thinks. The FINAL build is strict. */
+const partial = process.argv.includes("--partial");
+const missing = Object.keys(template).filter((key) => !(key in fragments));
 const problems = [];
-for (const key of Object.keys(template)) {
-  if (!(key in fragments)) problems.push(`no fragment for the key "${key}"`);
+if (partial) {
+  for (const key of missing) fragments[key] = Array.isArray(template[key]) ? [] : {};
+} else {
+  for (const key of missing) problems.push(`no fragment for the key "${key}"`);
 }
 for (const key of Object.keys(fragments)) {
   if (!(key in template)) problems.push(`the fragment "${key}" is not a key of the contract`);
@@ -88,3 +99,8 @@ const counts = Object.keys(doc)
   .map(k => `${k} ${Array.isArray(doc[k]) ? doc[k].length : 1}`).join("  ");
 console.log(`assembled ${Object.keys(doc).length} keys -> ${out}`);
 console.log(counts);
+if (partial) {
+  const present = Object.keys(template).length - missing.length;
+  console.log(`PARTIAL: ${present} of ${Object.keys(template).length} keys present`);
+  if (missing.length) console.log(`still to write: ${missing.join(", ")}`);
+}

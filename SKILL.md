@@ -1335,7 +1335,34 @@ there once and in full; the rules below are the ones that reach past the explore
   the noise.
 ## Verification
 
-Before delivering:
+### The feedback loop, while the model is still being written
+
+The gates run on a **complete** deliverable. Until the last fragment exists, a run
+has no mechanical feedback at all — and the only instrument left is the engine,
+which a run reaches by building probe documents and reading reachability counts
+out of them. Sixteen probes in one run; forty minutes in another. Both were a
+run discovering what the engine does the hard way, because the only way it
+could.
+
+**So get the engine's verdict early.** Once the vocabulary, the states, the
+transitions and the invariants are written:
+
+```
+node scripts/feedback.js <fragments-dir>
+```
+
+It assembles what is written so far — the keys with no fragment yet are empty —
+asks the engine to check it, asks it to export it, and prints the verdict: the
+unreachable states, the violations, the findings. It answers in seconds what a
+probe script answers in minutes, and it answers about **your** model rather than
+about a toy one.
+
+**Do not write a probe script to find out what the engine does.** The rules are
+in `references/executable-spec-model.md`, `references/expression-reading.md` and
+`references/gates.md`. The engine's verdict on your own fragments is what tells
+you whether you applied them.
+
+### Before delivering:
 
 1. Every glossary entry has a definition source and a status.
 2. Every transition row cites a section; every "unstated" transition says so explicitly.
