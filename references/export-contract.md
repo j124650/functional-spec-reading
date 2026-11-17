@@ -514,8 +514,8 @@ export it and build the page by itself.
 
 | | Where | Branch |
 |---|---|---|
-| the contract, the checkers, the rendering spec | this skill's clone | **`main`** |
-| the exporter, the page, the export | this skill's clone, beside them | **`main`** |
+| the contract, the checkers, the rendering spec | this repository | **`main`** |
+| the exporter, the page, the export | this repository, beside them | **`main`** |
 
 - The exporter is `model/Onboarding.Model` (`Program.cs` plus `Model/*.cs`); the page is
   `explorer/explorer.template.html`.
@@ -525,8 +525,9 @@ export it and build the page by itself.
 - The CDP suite is `scripts/test-explorer-cdp.js` here:
   `node <skill>/scripts/test-explorer-cdp.js explorer/explorer.html explorer/checks.js` -
   run it after every change to the page, and expect a count, not a green tick.
-- Edit the contract in the **installed** skill, then copy it to the clone and push; the two
-  must stay byte-identical, and the clone's branch is `main`, not `master`.
+- The repository IS the source of truth, and it is worked in directly. Commit and push
+  from the working copy; deploy by pulling the branch `main` wherever the skill is
+  needed. There is no second copy to keep in step - the deployed copy is a clone.
 - The engine moves with the skill. When the exporter changes, the change lands here, in
   the same commit as the contract it answers to, and the page is rebuilt here - so there
   is never a version of the engine that the contract in this repository does not describe.

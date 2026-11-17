@@ -9,3 +9,13 @@ model/Onboarding.Model/explorer-data.json
 
 # A lock file left behind by an editor.
 .~lock.*
+
+# The development folder's own material: the specification being read, the
+# analyses produced from it, and the experiments. Local working space - the
+# skill does not carry them, and they do not travel with a clone.
+Experiments/
+*.docx
+Customer Onboarding - Functional Spec (non-technical) (1) 1/
+Bread Purchase - Functional Spec.md
+bread-purchase-domain-model.json
+domain-model-and-state-machines.json
